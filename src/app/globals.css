@@ -1,0 +1,1605 @@
+@import "tailwindcss";
+
+/**
+ * Theme is driven by `data-theme` on <html>, not the OS media query, so the
+ * built-in `dark:` variant would not match. These replace it. The attribute
+ * always holds a resolved value — "system" is turned into one before it is
+ * stored, so nothing here has to reason about it.
+ */
+@custom-variant dark (&:where(html[data-theme="dark"] *, html[data-theme="dark"]));
+
+/**
+ * The light variant, with a hole in it for title pages at phone widths.
+ *
+ * A phone's title page is dark whatever the reader has chosen: the text sits on
+ * film artwork rather than on the page, and there is no light-theme version of
+ * that worth having. Desktop puts the text *beside* the artwork and follows the
+ * theme like every other page.
+ *
+ * Re-declaring the ink ramp for those pages only gets half the way. The other
+ * half is the ninety-odd `light:` overrides across the components a title page
+ * mounts: they hang off the attribute, not off the variables, so without this
+ * they keep firing and leave text keyed for paper sitting on the dark surfaces
+ * the ramp just produced.
+ *
+ * Hence the two branches — the width is the thing that decides, and a variant is
+ * the only place a decision like that can be made once for all ninety of them.
+ * Doing it in the selector rather than by switching `data-theme` from JavaScript
+ * is what keeps it free of a flash, and of the console warning that comes with
+ * trying to run a script from inside a component.
+ */
+@custom-variant light {
+  @media (width >= 40rem) {
+    &:where(html[data-theme="light"] *, html[data-theme="light"]) {
+      @slot;
+    }
+  }
+
+  @media (width < 40rem) {
+    &:where(
+        html[data-theme="light"]:not(:has(.title-page)) *,
+        html[data-theme="light"]:not(:has(.title-page))
+      ) {
+      @slot;
+    }
+  }
+}
+
+@theme {
+  --color-ink-950: #07070c;
+  --color-ink-900: #0c0c14;
+  --color-ink-850: #11111c;
+  --color-ink-800: #171724;
+  --color-ink-700: #232336;
+  --color-ink-600: #34344d;
+  --color-ink-400: #6f6f8f;
+  --color-ink-300: #9a9ab8;
+  --color-ink-100: #e6e6f2;
+
+  /* 300 is the lightest of the ramp, for icons and text sitting on a tinted
+     flare background. It was in use before it was ever defined, which meant
+     `text-flare-300` generated no class at all and those elements quietly
+     inherited whatever colour was around them. */
+  --color-flare-300: #c4b5fd;
+  --color-flare-400: #a78bfa;
+  --color-flare-500: #8b5cf6;
+  --color-flare-600: #7c3aed;
+  --color-ember-400: #fbbf24;
+  --color-ember-500: #f59e0b;
+  --color-fresh-500: #34d399;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/**
+ * Light theme. Rather than duplicating every utility, the ink ramp itself is
+ * inverted: `ink-950` becomes the lightest surface and `ink-100` the darkest
+ * text, so every existing `bg-ink-850` / `text-ink-400` keeps its meaning.
+ */
+:root[data-theme="light"] {
+  --color-ink-950: #f7f7fb;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #ececf3;
+  --color-ink-700: #dcdce8;
+  --color-ink-600: #c2c2d4;
+  --color-ink-400: #6b6b85;
+  --color-ink-300: #4a4a60;
+  --color-ink-100: #16161f;
+
+  /* Inverted like the ink ramp: the "lightest" violet has to be the darkest
+     one here, or it disappears against a pale card. */
+  --color-flare-300: #5b21b6;
+  --color-flare-400: #6d28d9;
+  --color-flare-500: #7c3aed;
+  --color-flare-600: #6d28d9;
+  --color-ember-400: #b45309;
+  --color-ember-500: #d97706;
+  --color-fresh-500: #047857;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+
+    /*
+     * Keep the scrollbar's track reserved even when there is nothing to scroll.
+     *
+     * Anything that opens over the page — the search panel, the dialogs — sets
+     * `overflow: hidden` on <body> so the page underneath cannot scroll away.
+     * That takes the scrollbar with it, the viewport gets a scrollbar's width
+     * wider, and every `fixed inset-x-0` element on screen — the tab bar most
+     * visibly — jumps outwards for as long as the overlay is open. Reserving
+     * the gutter up front means nothing moves.
+     *
+     * Costs nothing where the scrollbar is an overlay, which is every touch
+     * device and macOS by default.
+     */
+    scrollbar-gutter: stable;
+  }
+
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+
+  /**
+   * iOS zooms the page in whenever a focused field's text is under 16px, and
+   * never zooms back out. Every input in the app is smaller than that by
+   * design, so the size is forced back up on touch screens only — desktop keeps
+   * the smaller type.
+   */
+  @media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  body {
+    background:
+      radial-gradient(120% 80% at 12% -10%, #241a4d 0%, transparent 55%),
+      radial-gradient(90% 60% at 95% 0%, #3b1d3d 0%, transparent 50%),
+      var(--color-ink-950);
+    background-attachment: fixed;
+    color: var(--color-ink-100);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /**
+   * Two-part treatment. The mask dissolves the artwork itself so it has no
+   * bottom edge; the overlay dims it enough for text. Masking is what removes
+   * the visible "line" a colour gradient alone leaves behind.
+   */
+  .title-backdrop {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 35%,
+      rgb(0 0 0 / 0.5) 65%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 35%,
+      rgb(0 0 0 / 0.5) 65%,
+      transparent 100%
+    );
+  }
+
+  /*
+   * The title page hero's crisp image. See `title-hero-art.tsx` for how the
+   * layers fit together; the bed's and the fade's own stops are set from the
+   * component, because they depend on where this one ends.
+   *
+   * The ramp is back where it was before an attempt to hide the artwork's bottom
+   * edge by starting it at 30%. That was the wrong lever — it did not remove the
+   * edge, it just blurred a third more of the picture on the way to it. The edge
+   * is a colour problem and it is solved a layer below.
+   */
+  .hero-plate {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 45%,
+      rgb(0 0 0 / 0.55) 75%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 45%,
+      rgb(0 0 0 / 0.55) 75%,
+      transparent 100%
+    );
+  }
+
+  /*
+   * The dim over the artwork — and deliberately the same one in both themes.
+   *
+   * It used to ramp towards the page background: violet in the dark, near-white
+   * in the light. That is what made every hero end in the theme's colour rather
+   * than the film's. So it stays a neutral shade throughout.
+   *
+   * And it is gone well before the bottom. Anything still darkening the artwork
+   * where the artwork stops has to be accounted for on the far side of that
+   * boundary, and the page below has no way to know about it — so the last
+   * stretch is left to the fade underneath, which already arrives at exactly the
+   * colour the page continues in.
+   *
+   * It can be a single gradient because the page it sits on is dark in both
+   * themes — see the `.title-page` block at the foot of this file.
+   */
+  .hero-wash {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(7 7 12 / 0.14) 0%,
+      rgb(7 7 12 / 0.22) 45%,
+      rgb(7 7 12 / 0.14) 70%,
+      transparent 88%
+    );
+  }
+
+  /*
+   * The blur the lower half of the hero sits on.
+   *
+   * A full-bleed band rather than a card: the information under the title is
+   * the page, not a widget on it, and a rounded box around it read as one. What
+   * makes it work without an edge is the mask — nothing at all at the top of the
+   * subtitle, full blur 64px below it, and gone again at the bottom. So there is
+   * no line anywhere along it, only artwork that gradually stops being sharp,
+   * and nothing above the subtitle is touched.
+   *
+   * Blurring what is actually behind the text, rather than dimming by a fixed
+   * amount, is what holds up over a bright poster and a near-black still alike.
+   *
+   * Phone widths only: on desktop the text is beside the artwork rather than on
+   * top of it. The breakpoint lives here rather than as a `max-sm:` variant on
+   * the class, because this is a plain rule in the base layer and Tailwind only
+   * builds variants for utilities it owns.
+   */
+  @media (max-width: 639px) {
+    .hero-veil {
+      background-color: rgb(7 7 12 / 0.3);
+      -webkit-backdrop-filter: blur(18px) saturate(135%);
+      backdrop-filter: blur(18px) saturate(135%);
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgb(0 0 0) 64px,
+        rgb(0 0 0) calc(100% - 160px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0,
+        rgb(0 0 0) 64px,
+        rgb(0 0 0) calc(100% - 160px),
+        transparent 100%
+      );
+    }
+  }
+
+  /*
+   * A title treatment is artwork, not type, and most of them are white lettering
+   * with no outline of their own. The shadow is what stops one from vanishing
+   * into a pale patch of the still behind it.
+   */
+  .hero-logo {
+    filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.55)) drop-shadow(0 0 18px rgb(0 0 0 / 0.35));
+  }
+
+  /*
+   * The wash behind a person, built from the posters of their work. Same
+   * two-part treatment as a title's backdrop — a mask to dissolve the artwork
+   * so it has no bottom edge, and an overlay to give the text something to sit
+   * on — because it is doing the same job with different source material.
+   */
+  .person-backdrop {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 30%,
+      rgb(0 0 0 / 0.45) 65%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      rgb(0 0 0) 0%,
+      rgb(0 0 0) 30%,
+      rgb(0 0 0 / 0.45) 65%,
+      transparent 100%
+    );
+  }
+
+  .person-backdrop-fade {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(7 7 12 / 0.35) 0%,
+      rgb(7 7 12 / 0.6) 45%,
+      rgb(7 7 12 / 0.82) 75%,
+      rgb(7 7 12 / 0.96) 100%
+    );
+  }
+
+  /* Light mode needs a far heavier wash: the text on this is dark, and posters
+     are saturated. Same reasoning as the title backdrop above it. */
+  html[data-theme="light"] .person-backdrop-fade {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(247 247 251 / 0.55) 0%,
+      rgb(247 247 251 / 0.72) 45%,
+      rgb(247 247 251 / 0.9) 75%,
+      rgb(247 247 251 / 0.99) 100%
+    );
+  }
+
+  .title-backdrop-fade {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(7 7 12 / 0.25) 0%,
+      rgb(7 7 12 / 0.55) 45%,
+      rgb(7 7 12 / 0.78) 75%,
+      rgb(7 7 12 / 0.94) 100%
+    );
+  }
+
+  /* Light mode needs a much heavier wash: the text sitting on this artwork is
+     dark, and film stills are mostly dark. */
+  html[data-theme="light"] .title-backdrop-fade {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(247 247 251 / 0.3) 0%,
+      rgb(247 247 251 / 0.5) 45%,
+      rgb(247 247 251 / 0.8) 75%,
+      rgb(247 247 251 / 0.97) 100%
+    );
+  }
+
+  /*
+   * The typeset heading, sitting on the sharp part of the artwork rather than on
+   * the blur below it — so it is the one piece of text with nothing behind it.
+   *
+   * The old halo here was a light-theme fix, back when the text was dark. It is
+   * light in both themes now, so what it needs is the opposite: a shadow dark
+   * enough to hold it against a pale patch of a still, in either theme.
+   */
+  @media (max-width: 639px) {
+    .artwork-text > h1 {
+      text-shadow:
+        0 1px 3px rgb(0 0 0 / 0.6),
+        0 0 20px rgb(0 0 0 / 0.45);
+    }
+  }
+
+  /*
+   * The rating slider on a phone.
+   *
+   * The fill is a gradient squeezed into however far along you are, so the bar
+   * warms from amber to green as the score climbs — the same three bands the
+   * number above it already uses, read as one continuous run instead of three
+   * steps. `background-size` is set inline from the current value.
+   *
+   * The thumb has to be styled per engine: `accent-color` reaches the fill but
+   * not the handle, and a native handle at this size is a grey speck.
+   */
+  .rating-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--color-ink-800);
+    background-image: linear-gradient(to right, #fbbf24, #34d399);
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+
+  .rating-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 1.375rem;
+    width: 1.375rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
+  }
+
+  .rating-slider::-moz-range-thumb {
+    height: 1.375rem;
+    width: 1.375rem;
+    border: 0;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.5);
+  }
+
+  /* Sign-in veil: lighter than before in dark mode so the artwork shows
+     through, heavier in light mode where the form text is dark. */
+  .auth-veil {
+    background-color: rgb(7 7 12 / 0.5);
+  }
+
+  html[data-theme="light"] .auth-veil {
+    background-color: rgb(247 247 251 / 0.82);
+  }
+
+  html[data-theme="light"] .bg-radial-fade {
+    background-image: radial-gradient(
+      75% 65% at 50% 50%,
+      rgb(247 247 251 / 0.5) 0%,
+      rgb(247 247 251 / 0.9) 100%
+    );
+  }
+
+  html[data-theme="light"] body {
+    background:
+      radial-gradient(120% 80% at 12% -10%, #ded7fb 0%, transparent 55%),
+      radial-gradient(90% 60% at 95% 0%, #fbe3ef 0%, transparent 50%),
+      var(--color-ink-950);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: var(--color-flare-600);
+    color: white;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-700) transparent;
+  }
+
+  /**
+   * Stops the full-bleed hero artwork poking a horizontal scrollbar out.
+   *
+   * It has to be `clip`, not `hidden`: `hidden` makes the element a scroll
+   * container, which breaks `position: sticky` hit testing on mobile Safari —
+   * the header paints but stops taking taps. And it has to sit on <body>, not
+   * <main>: clipping on <main> would clip the 100vw artwork back to the
+   * content column, which is exactly what it is trying to escape.
+   */
+  body {
+    overflow-x: clip;
+  }
+}
+
+@utility card {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--color-ink-700) 70%, transparent);
+  background: color-mix(in oklab, var(--color-ink-850) 78%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+/**
+ * Scrim for text sitting on artwork. Always dark, in both themes: posters and
+ * stills are dark images, so a theme-following scrim turns into a white glow
+ * in light mode.
+ */
+/**
+ * Vignette behind the sign-in form: light enough to keep the artwork alive,
+ * and inverted in light mode where the text on top is dark.
+ */
+@utility bg-radial-fade {
+  background-image: radial-gradient(
+    75% 65% at 50% 50%,
+    rgb(0 0 0 / 0.15) 0%,
+    rgb(0 0 0 / 0.55) 100%
+  );
+}
+
+@utility scrim-b {
+  background-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.85) 0%,
+    rgb(0 0 0 / 0.35) 40%,
+    transparent 70%
+  );
+}
+
+@utility scrim-full {
+  background-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.92) 0%,
+    rgb(0 0 0 / 0.6) 45%,
+    rgb(0 0 0 / 0.25) 100%
+  );
+}
+
+@utility rail {
+  display: flex;
+  gap: 0.875rem;
+  /* How far the edge fade reaches in. Enough that an item sliding under it
+     dissolves rather than losing a hard-edged sliver, but no more: against a
+     pale page the fade itself becomes the thing you notice. */
+  --rail-fade: 1.5rem;
+  overflow-x: auto;
+  /* `proximity`, not `mandatory`: mandatory snapping fights the finger on
+     touch and makes flicking through a row feel blocky. */
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  /* `overflow-x: auto` leaves the vertical axis computing to `auto` too, so a
+     child that sticks out by a few pixels turns the row into a vertical
+     scroller. Nothing in a rail is ever meant to scroll upwards. */
+  overflow-y: hidden;
+  /* Momentum scrolling on iOS. */
+  -webkit-overflow-scrolling: touch;
+  /* Vertical breathing room: `overflow-x: auto` also clips vertically, which
+     would otherwise cut the top off hover rings and scaled artwork. */
+  padding-top: 0.375rem;
+  padding-bottom: 0.625rem;
+  scrollbar-width: none;
+}
+
+@utility rail-item {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+/**
+ * Edge fades. A row that bleeds to the viewport edge otherwise slices the
+ * partly-scrolled item off with a hard vertical line and no gutter, which reads
+ * as a rendering bug rather than "there is more this way". Fading the last
+ * couple of centimetres gives that item somewhere to go, and doubles as the
+ * affordance that the row scrolls.
+ *
+ * Applied per side by the Rail component, so the fade only ever appears where
+ * there is actually content hidden behind it.
+ */
+.rail-fade-start {
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--rail-fade));
+}
+
+.rail-fade-end {
+  mask-image: linear-gradient(to left, transparent 0, #000 var(--rail-fade));
+}
+
+.rail-fade-start.rail-fade-end {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--rail-fade),
+    #000 calc(100% - var(--rail-fade)),
+    transparent 100%
+  );
+}
+
+/* Light mode: artwork against a pale page has far less contrast to lose, so the
+   same fade reads as a smear. Keep it to a hint. */
+html[data-theme="light"] .rail {
+  --rail-fade: 1rem;
+}
+
+/**
+ * Touch devices: drop snapping entirely and stop the browser painting hover
+ * transitions mid-flick. Backdrop blur on every poster badge is the expensive
+ * one — a dozen blurred layers moving at once is what makes a row stutter.
+ */
+@media (hover: none) {
+  .rail {
+    scroll-snap-type: none;
+  }
+
+  .rail img {
+    transition: none !important;
+  }
+
+  .rail .backdrop-blur-md,
+  .rail .backdrop-blur-sm {
+    backdrop-filter: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/**
+ * Staggered entrance for list items. `--fade-delay` is set inline per item so a
+ * row arrives as a ripple rather than all at once; the delay is capped by the
+ * caller so a long row does not take a visible age to finish.
+ */
+.fade-in {
+  animation: fade-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--fade-delay, 0ms);
+}
+
+/**
+ * Scroll-driven reveal, used by the recap. The hidden state is applied by the
+ * class rather than by a keyframe so nothing animates until the element is
+ * actually seen — and so a bar chart can grow from zero on the way in.
+ */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Bars inside a reveal grow out of the axis rather than appearing at height. */
+.reveal .grow-bar {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal-in .grow-bar {
+  transform: none;
+}
+
+/**
+ * Indeterminate progress. The work behind it is a single server call whose real
+ * position we cannot see, so this deliberately sweeps rather than filling: it
+ * says "still going" without inventing a percentage.
+ */
+@keyframes progress-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.progress-sweep {
+  width: 33%;
+  animation: progress-sweep 1.15s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/*
+ * Placeholder blocks for content still loading. A sheen travels across a flat
+ * surface rather than the block pulsing as a whole: a page of pulsing rectangles
+ * all breathing in time is far more distracting than one that just glints.
+ */
+@keyframes skeleton-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  background-color: var(--color-ink-800);
+  background-image: linear-gradient(
+    90deg,
+    transparent 20%,
+    color-mix(in oklab, var(--color-ink-700) 70%, transparent) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sheen 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .fade-in {
+    animation: none;
+  }
+
+  /* Flat blocks still read as "not here yet" — the sheen is decoration. */
+  .skeleton {
+    background-image: none;
+    animation: none;
+  }
+
+  /* The recap still reveals, it just does not travel or grow to do it. */
+  .reveal,
+  .reveal .grow-bar {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Still needs to read as busy, so it pulses in place instead of travelling. */
+  .progress-sweep {
+    width: 100%;
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ===========================================================================
+ * Accent colour.
+ *
+ * The same trick the seasons use, moving `--color-flare-*` and nothing else, so
+ * every violet thing in the app follows without any of them knowing about it.
+ *
+ * These sit *above* the seasonal block deliberately. The two write the same
+ * four variables at the same specificity, so whichever comes last wins — and a
+ * seasonal costume should win, because it is temporary and the user can see
+ * exactly why it happened. Their own accent comes back in November.
+ *
+ * Violet is the default and needs no rule; it is what the ramp already is.
+ * ======================================================================== */
+
+:root[data-accent="cyan"] {
+  --color-flare-300: #67e8f9;
+  --color-flare-400: #22d3ee;
+  --color-flare-500: #06b6d4;
+  --color-flare-600: #0891b2;
+}
+:root[data-accent="cyan"][data-theme="light"] {
+  --color-flare-300: #155e75;
+  --color-flare-400: #0e7490;
+  --color-flare-500: #0891b2;
+  --color-flare-600: #155e75;
+}
+
+:root[data-accent="emerald"] {
+  --color-flare-300: #6ee7b7;
+  --color-flare-400: #34d399;
+  --color-flare-500: #10b981;
+  --color-flare-600: #059669;
+}
+:root[data-accent="emerald"][data-theme="light"] {
+  --color-flare-300: #065f46;
+  --color-flare-400: #047857;
+  --color-flare-500: #059669;
+  --color-flare-600: #065f46;
+}
+
+:root[data-accent="amber"] {
+  --color-flare-300: #fcd34d;
+  --color-flare-400: #fbbf24;
+  --color-flare-500: #f59e0b;
+  --color-flare-600: #d97706;
+}
+:root[data-accent="amber"][data-theme="light"] {
+  --color-flare-300: #92400e;
+  --color-flare-400: #b45309;
+  --color-flare-500: #d97706;
+  --color-flare-600: #92400e;
+}
+
+:root[data-accent="rose"] {
+  --color-flare-300: #fda4af;
+  --color-flare-400: #fb7185;
+  --color-flare-500: #f43f5e;
+  --color-flare-600: #e11d48;
+}
+:root[data-accent="rose"][data-theme="light"] {
+  --color-flare-300: #9f1239;
+  --color-flare-400: #be123c;
+  --color-flare-500: #e11d48;
+  --color-flare-600: #9f1239;
+}
+
+:root[data-accent="blue"] {
+  --color-flare-300: #93c5fd;
+  --color-flare-400: #60a5fa;
+  --color-flare-500: #3b82f6;
+  --color-flare-600: #2563eb;
+}
+:root[data-accent="blue"][data-theme="light"] {
+  --color-flare-300: #1e40af;
+  --color-flare-400: #1d4ed8;
+  --color-flare-500: #2563eb;
+  --color-flare-600: #1e40af;
+}
+
+/* ===========================================================================
+ * Seasonal dressing.
+ *
+ * Three costumes, switched by `data-season` on <html> — see `src/lib/seasons.ts`.
+ *
+ * Deliberately narrow: only the primary accent moves. The ink ramp, the page
+ * background and the gold `ember` highlight all stay exactly as they are, so
+ * the app still looks like itself wearing a hat rather than like a different
+ * app three months a year. Everything else the season does is decoration
+ * layered behind the page.
+ *
+ * That layer is a child of <body> at `z-index: -1`, which paints it above the
+ * background on <body> and below everything in the document. Nothing in here
+ * takes pointer events, and everything that moves stops for
+ * `prefers-reduced-motion`.
+ * ======================================================================== */
+
+/* -- The primary accent, and nothing else --------------------------------- */
+:root[data-season="scifi"] {
+  --color-flare-400: #22d3ee;
+  --color-flare-500: #06b6d4;
+  --color-flare-600: #0891b2;
+}
+
+:root[data-season="scifi"][data-theme="light"] {
+  --color-flare-400: #0e7490;
+  --color-flare-500: #0891b2;
+  --color-flare-600: #155e75;
+}
+
+:root[data-season="horror"] {
+  --color-flare-400: #fb923c;
+  --color-flare-500: #f97316;
+  --color-flare-600: #ea580c;
+}
+
+:root[data-season="horror"][data-theme="light"] {
+  --color-flare-400: #c2410c;
+  --color-flare-500: #ea580c;
+  --color-flare-600: #9a3412;
+}
+
+:root[data-season="holiday"] {
+  --color-flare-400: #4ade80;
+  --color-flare-500: #22c55e;
+  --color-flare-600: #16a34a;
+}
+
+:root[data-season="holiday"][data-theme="light"] {
+  --color-flare-400: #15803d;
+  --color-flare-500: #16a34a;
+  --color-flare-600: #166534;
+}
+
+/* -- The decorative layer ------------------------------------------------- */
+.season-decor {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/** Full-bleed ambience: gradients and tiled dots, one composited layer each. */
+.season-layer {
+  position: absolute;
+  inset: 0;
+}
+
+/** A drawn thing in a fixed spot, rather than a wash across the whole page. */
+.season-motif {
+  position: absolute;
+  color: currentColor;
+}
+
+/* --------------------------------------------------------------- sci-fi -- */
+
+/**
+ * Stars. Two sheets of dots at different sizes and speeds, each a tiled
+ * background rather than a few hundred elements — the whole starfield costs one
+ * composited layer per sheet.
+ */
+.season-stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 70% 65%, rgb(186 230 253 / 0.8), transparent),
+    radial-gradient(1px 1px at 45% 10%, rgb(255 255 255 / 0.7), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgb(255 255 255 / 0.6), transparent),
+    radial-gradient(1px 1px at 12% 80%, rgb(165 243 252 / 0.7), transparent);
+  background-size: 260px 260px;
+  animation: season-drift 90s linear infinite;
+  opacity: 0.8;
+}
+
+.season-stars-far {
+  background-image:
+    radial-gradient(1px 1px at 33% 55%, rgb(255 255 255 / 0.55), transparent),
+    radial-gradient(1px 1px at 78% 12%, rgb(255 255 255 / 0.45), transparent),
+    radial-gradient(1px 1px at 8% 38%, rgb(199 210 254 / 0.5), transparent);
+  background-size: 170px 170px;
+  animation: season-drift 160s linear infinite reverse;
+  opacity: 0.55;
+}
+
+/* Light mode: white pinpricks on a pale page are invisible, so they darken. */
+html[data-theme="light"] .season-stars,
+html[data-theme="light"] .season-stars-far {
+  filter: invert(1);
+  opacity: 0.35;
+}
+
+/* Two slow pulses of nebula, so the field is not evenly empty. */
+.season-nebula {
+  background:
+    radial-gradient(40% 30% at 78% 18%, rgb(34 211 238 / 0.1) 0%, transparent 70%),
+    radial-gradient(45% 35% at 15% 70%, rgb(99 102 241 / 0.12) 0%, transparent 70%);
+  animation: season-breathe 14s ease-in-out infinite;
+}
+
+/* The obligatory horizon grid, faint enough to read as texture. */
+.season-grid {
+  top: auto;
+  height: 42vh;
+  background-image:
+    linear-gradient(to right, rgb(34 211 238 / 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(34 211 238 / 0.14) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+  opacity: 0.45;
+}
+
+/* A ringed planet hanging in the bottom corner, well out of the way. */
+.season-planet {
+  right: -6vw;
+  bottom: -8vh;
+  width: min(46vw, 420px);
+  color: #22d3ee;
+  opacity: 0.16;
+  animation: season-breathe 22s ease-in-out infinite;
+}
+
+/* A saucer crossing the page, once every couple of minutes. */
+.season-ufo {
+  top: 18vh;
+  left: 0;
+  width: 76px;
+  color: #67e8f9;
+  opacity: 0.5;
+  animation: season-cross 46s linear infinite;
+}
+
+.season-ufo-bob {
+  display: block;
+  animation: season-bob 4.5s ease-in-out infinite;
+}
+
+/* Streaks, on long delays so they read as something you happened to catch. */
+.season-shooting {
+  top: 0;
+  left: 55%;
+  height: 2px;
+  width: 140px;
+  border-radius: 999px;
+  background: linear-gradient(to left, rgb(255 255 255 / 0.9), transparent);
+  opacity: 0;
+  animation: season-shoot 17s ease-in infinite;
+}
+
+.season-shooting-late {
+  left: 22%;
+  width: 100px;
+  animation-duration: 29s;
+  animation-delay: 8s;
+}
+
+/* --------------------------------------------------------------- horror -- */
+
+/* Fog: wide, soft bands crossing the page in opposite directions. */
+.season-fog {
+  background:
+    radial-gradient(60% 40% at 20% 85%, rgb(249 115 22 / 0.14) 0%, transparent 70%),
+    radial-gradient(50% 35% at 80% 90%, rgb(220 38 38 / 0.12) 0%, transparent 70%);
+  animation: season-fog 26s ease-in-out infinite alternate;
+}
+
+.season-fog-high {
+  background: radial-gradient(45% 25% at 60% 10%, rgb(168 85 247 / 0.1) 0%, transparent 70%);
+  animation: season-fog 34s ease-in-out infinite alternate-reverse;
+}
+
+/* The dark closing in at the edges — the cheapest way to unsettle a page. */
+.season-vignette {
+  background: radial-gradient(85% 70% at 50% 45%, transparent 45%, rgb(12 3 0 / 0.45) 100%);
+}
+
+html[data-theme="light"] .season-vignette {
+  background: radial-gradient(85% 70% at 50% 45%, transparent 50%, rgb(90 40 10 / 0.14) 100%);
+}
+
+/* Cobwebs in the top corners, where a ceiling would be. */
+.season-web {
+  top: 0;
+  width: min(30vw, 260px);
+  color: #e5e7eb;
+  opacity: 0.16;
+}
+
+.season-web-left {
+  left: 0;
+}
+
+.season-web-right {
+  right: 0;
+  transform: scaleX(-1);
+}
+
+html[data-theme="light"] .season-web {
+  color: #1f2937;
+  opacity: 0.12;
+}
+
+/* A spider on its thread, easing down and back up again. */
+.season-spider {
+  top: 0;
+  right: 12vw;
+  width: 34px;
+  color: #d1d5db;
+  opacity: 0.35;
+  animation: season-dangle 19s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+html[data-theme="light"] .season-spider {
+  color: #111827;
+  opacity: 0.3;
+}
+
+/* Bats crossing the page. Travel and wingbeat are separate elements so one
+   long, cheap transform is not fighting a fast one on the same node. */
+.season-bat {
+  top: 22vh;
+  left: 0;
+  width: 42px;
+  color: #0b0b12;
+  opacity: 0.55;
+  animation: season-cross 33s linear infinite;
+}
+
+.season-bat-high {
+  top: 9vh;
+  width: 28px;
+  opacity: 0.4;
+  animation-duration: 41s;
+  animation-delay: 6s;
+}
+
+.season-bat-low {
+  top: 52vh;
+  width: 34px;
+  opacity: 0.3;
+  animation-duration: 52s;
+  animation-delay: 15s;
+}
+
+html[data-theme="light"] .season-bat {
+  color: #1f2937;
+}
+
+.season-bat-flap {
+  display: block;
+  animation: season-flap 0.5s ease-in-out infinite;
+}
+
+.season-bat-high .season-bat-flap {
+  animation-duration: 0.38s;
+}
+
+.season-bat-low .season-bat-flap {
+  animation-duration: 0.62s;
+}
+
+/* -------------------------------------------------------------- holiday -- */
+
+/**
+ * Snow. The same tiled-dot trick as the stars, falling instead of drifting:
+ * two sheets at different sizes give it depth with no node per flake.
+ */
+.season-snow {
+  background-image:
+    radial-gradient(2.5px 2.5px at 25% 15%, rgb(255 255 255 / 0.9), transparent),
+    radial-gradient(2px 2px at 70% 45%, rgb(255 255 255 / 0.8), transparent),
+    radial-gradient(2px 2px at 10% 70%, rgb(255 255 255 / 0.75), transparent);
+  background-size: 220px 220px;
+  animation: season-fall 12s linear infinite;
+}
+
+.season-snow-far {
+  background-image:
+    radial-gradient(1.5px 1.5px at 55% 25%, rgb(255 255 255 / 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 88% 70%, rgb(255 255 255 / 0.5), transparent),
+    radial-gradient(1px 1px at 35% 90%, rgb(255 255 255 / 0.45), transparent);
+  background-size: 150px 150px;
+  animation: season-fall 22s linear infinite;
+}
+
+/* White flakes on a white page are invisible, so they turn dark instead. */
+html[data-theme="light"] .season-snow,
+html[data-theme="light"] .season-snow-far {
+  filter: invert(1) opacity(0.35);
+}
+
+/* Warm light from the top corners, like a string of lights out of frame. */
+.season-glow {
+  background:
+    radial-gradient(35% 22% at 12% 0%, rgb(251 191 36 / 0.16) 0%, transparent 70%),
+    radial-gradient(35% 22% at 88% 0%, rgb(239 68 68 / 0.14) 0%, transparent 70%);
+  animation: season-breathe 9s ease-in-out infinite;
+}
+
+/* -- Keyframes ------------------------------------------------------------ */
+@keyframes season-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 260px 130px;
+  }
+}
+
+@keyframes season-fall {
+  from {
+    background-position: 0 -220px;
+  }
+  to {
+    background-position: 40px 220px;
+  }
+}
+
+@keyframes season-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes season-fog {
+  from {
+    transform: translate3d(-4%, 0, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(4%, -2%, 0) scale(1.15);
+  }
+}
+
+/* Off one edge, across, and off the other — with a long wait in between so it
+   is an event rather than a loop you start watching. */
+@keyframes season-cross {
+  0% {
+    transform: translate3d(-15vw, 0, 0);
+  }
+  55%,
+  100% {
+    transform: translate3d(115vw, -6vh, 0);
+  }
+}
+
+@keyframes season-bob {
+  0%,
+  100% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes season-flap {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.45);
+  }
+}
+
+@keyframes season-shoot {
+  0%,
+  82% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(28deg);
+  }
+  84% {
+    opacity: 0.9;
+  }
+  96%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-42vw, 46vh, 0) rotate(28deg);
+  }
+}
+
+@keyframes season-dangle {
+  0%,
+  100% {
+    transform: translateY(-12vh);
+  }
+  45%,
+  60% {
+    transform: translateY(6vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The ambience stays, it simply stops moving. */
+  .season-layer,
+  .season-motif {
+    animation: none !important;
+  }
+
+  /* Anything whose whole point is the journey is taken off the page instead of
+     being left parked in the middle of it. */
+  .season-ufo,
+  .season-bat,
+  .season-shooting,
+  .season-spider {
+    display: none;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Title pages
+ * ---------------------------------------------------------------------------
+ *
+ * Deliberately outside every `@layer`. Unlayered rules beat layered ones no
+ * matter their specificity, and these have to win against Tailwind utilities
+ * sitting on the elements they are correcting — the nav's `sticky`, the main
+ * element's `pt-5 md:pt-9`, the back row's `top-[4.5rem]`. Inside `@layer base`
+ * they would all lose, and `!important` on each one would say less about why.
+ *
+ * A title page is a page about a piece of artwork. The artwork is the
+ * background, the fade under the hero is built from the film's own colours, and
+ * everything else gets out of the way of it.
+ */
+
+/* Dark whatever the reader has chosen, on a phone. The ramp goes back to its
+   dark values — the light theme is only an inversion of these — and the `light:`
+   variant is already excluded from matching here, up at the top of this file.
+   Desktop is left entirely alone: it follows the theme, as it always did. */
+@media (max-width: 639px) {
+  html[data-theme="light"]:has(.title-page) {
+    color-scheme: dark;
+
+    --color-ink-950: #07070c;
+    --color-ink-900: #0c0c14;
+    --color-ink-850: #11111c;
+    --color-ink-800: #171724;
+    --color-ink-700: #232336;
+    --color-ink-600: #34344d;
+    --color-ink-400: #6f6f8f;
+    --color-ink-300: #9a9ab8;
+    --color-ink-100: #e6e6f2;
+
+    --color-flare-300: #c4b5fd;
+    --color-flare-400: #a78bfa;
+    --color-flare-500: #8b5cf6;
+    --color-flare-600: #7c3aed;
+    --color-ember-400: #fbbf24;
+    --color-ember-500: #f59e0b;
+    --color-fresh-500: #34d399;
+  }
+}
+
+/*
+ * The page's own colour, sampled from the bottom of the artwork — so the
+ * background carries on from where the hero's fade ends instead of returning to
+ * the app's violet.
+ *
+ * A fixed layer rather than a rule on `body`, because the colour is per title
+ * and has to arrive with the page: a stylesheet cannot carry a value that
+ * changes on every navigation, and the alternatives — a `<style>` tag or a
+ * variable set from JavaScript — either outlive the page they belong to or
+ * arrive a frame late. The colour itself is an inline style on the element.
+ *
+ * A title with no usable artwork renders no layer at all and keeps the app's
+ * own background.
+ */
+.page-tint {
+  background-image: radial-gradient(
+    120% 80% at 12% -10%,
+    rgb(255 255 255 / 0.05) 0%,
+    transparent 55%
+  );
+}
+
+/*
+ * No header bar on a phone. The artwork starts at the top of the window and the
+ * back row takes over as the only chrome, which is why it moves up to meet it
+ * and why it carries the bell and the avatar.
+ *
+ * Desktop keeps the header: there the artwork is a band behind a normal page
+ * rather than the page itself, and losing the nav bought nothing.
+ */
+@media (max-width: 639px) {
+  body:has(.title-page) > header {
+    display: none;
+  }
+
+  body:has(.title-page) > main {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  body:has(.title-page) .back-row {
+    top: calc(env(safe-area-inset-top) + 0.5rem);
+  }
+
+  /*
+   * Surfaces, on a page whose background is a colour taken from a film.
+   *
+   * The ink ramp is a fixed set of near-blacks, which is right on the app's own
+   * violet and wrong on anything else — against a warm page it reads as a cold
+   * grey patch, and the darker the panel the more obviously it is not made of
+   * the same thing as what is behind it. So on a title page a surface is not a
+   * colour at all: it is a little white, let through, over a blur of whatever it
+   * happens to be sitting on. That is the iOS material, and the reason it works
+   * anywhere is that it has no colour of its own to disagree with.
+   *
+   * `.card` is a Tailwind utility, so this has to be unlayered to reach it —
+   * which is exactly what the whole block already is.
+   *
+   * Scoped from `body` rather than from `.title-page` itself: the back row and
+   * the chrome beside it are mounted outside the article, for reasons the
+   * `BackButton` comment goes into, and they are as much part of this page as
+   * anything inside it.
+   */
+  body:has(.title-page) .card,
+  body:has(.title-page) .ios-surface {
+    background-color: rgb(255 255 255 / 0.09);
+    border-color: rgb(255 255 255 / 0.14);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  /*
+   * Text is white here, not the ramp's near-white.
+   *
+   * `ink-100` is #e6e6f2 — a violet cast, which is right on the app's own violet
+   * background and slightly wrong on a page coloured by a film. Redeclaring the
+   * variable rather than restyling anything reaches every `text-ink-100` on the
+   * page at once, and leaves the rest of the app alone.
+   */
+  body:has(.title-page) {
+    --color-ink-100: #ffffff;
+  }
+
+  /* Anything that should simply be white: the heart before it is lit, the
+     "Streaming on" label, your own score. The ramp's greys read as disabled
+     against this page, and its violets belong to the app rather than the film. */
+  body:has(.title-page) .ios-bright {
+    color: #ffffff;
+  }
+
+  /*
+   * Menus and popovers.
+   *
+   * Heavier than a card and much more blurred, which is what a menu is made of
+   * on iOS: it has to be readable over whatever it happens to open on top of,
+   * and here that is artwork. `ink-850` is a flat near-black that sat on the
+   * page like a cut-out.
+   */
+  body:has(.title-page) .ios-menu {
+    background-color: rgb(24 24 28 / 0.72);
+    border-color: rgb(255 255 255 / 0.14);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+  }
+
+  /*
+   * The empty half of the rating bar.
+   *
+   * `ink-800` is a solid near-black, which on this page reads as a hole rather
+   * than as the rest of a track. A little white is the same material as
+   * everything else here, and lets the page's own colour through it.
+   */
+  body:has(.title-page) .ios-slider {
+    background-color: rgb(255 255 255 / 0.18);
+  }
+
+  /*
+   * The primary button, and the one link in the hero.
+   *
+   * The accent violet is the app's colour, and this is the one page that has a
+   * colour of its own — a saturated purple pill on artwork sampled from a film
+   * was the only thing on screen belonging to something else. White carries
+   * "primary" perfectly well, and it is what the artwork underneath is already
+   * lighting.
+   */
+  body:has(.title-page) .ios-primary {
+    background-color: rgb(255 255 255 / 0.6);
+    color: #0c0c14;
+    box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.9);
+  }
+
+  /* Filled once the claim has been made. Both are the same button, at two
+     strengths — a different colour would have made them two buttons. */
+  body:has(.title-page) .ios-primary-on {
+    background-color: rgb(255 255 255 / 0.95);
+  }
+
+  body:has(.title-page) .ios-primary:hover {
+    background-color: #ffffff;
+  }
+
+  body:has(.title-page) .ios-link {
+    color: #ffffff;
+  }
+
+  /*
+   * The second line of a card, and the body of a review.
+   *
+   * `ink-400` is a violet-grey, which had the same problem as the panels: it is
+   * a colour, and it was not this page's. White at a fraction is the same idea
+   * as the surfaces — no hue to be wrong, just less of the text colour already
+   * in use.
+   */
+  body:has(.title-page) .ios-dim {
+    color: rgb(255 255 255 / 0.62);
+  }
+
+  /*
+   * A season and its episodes are one card, not two.
+   *
+   * The row that opens a season is the card's header; the episode list is its
+   * body. They arrived as two separate panels with a gap between them, which
+   * read as a heading floating above something unrelated. The block draws the
+   * border and the material, and the list inside gives its own up — an inner
+   * card inside an outer one is two edges where there should be none.
+   *
+   * After `.card` in this file on purpose: same specificity, so the later rule
+   * is the one that lands.
+   */
+  body:has(.title-page) .season-block {
+    background-color: rgb(255 255 255 / 0.09);
+    border-color: rgb(255 255 255 / 0.14);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  body:has(.title-page) .season-panel {
+    margin-top: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/*
+ * The trailer, once it has been handed the whole screen.
+ *
+ * Both layouts, and unlayered for the same reason as everything above: the
+ * 16:9 box and the width cap are Tailwind utilities on the same element, and
+ * fullscreen means filling what you are given rather than holding a shape.
+ */
+.trailer-frame:fullscreen {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  border: 0;
+  background: #000;
+}
+
+/*
+ * The artwork settles into place when a title page opens.
+ *
+ * Both the crisp plate and the blurred bed carry it, and both have to run to
+ * exactly the same schedule — they are the same image at two levels of focus,
+ * and a hair of drift between them shows up as the picture pulling apart.
+ * Applied to the images rather than to their boxes, because the bed's box is
+ * already stretched by a transform of its own.
+ *
+ * Slow and short: it is meant to feel like the page arriving, not like an
+ * effect. `both` holds the first frame, so nothing flashes at full size before
+ * it starts.
+ */
+@keyframes hero-zoom {
+  from {
+    transform: scale(1.12);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/*
+ * The resting state is the *start* of the zoom, not the end of it.
+ *
+ * The artwork is a network request away, so the animation cannot be attached at
+ * mount — it would play to an empty box and be over before the picture arrived.
+ * The image sits held at the opening frame instead, and `hero-zoom-run` is added
+ * the moment it reports itself loaded. `both` then holds the closing frame, so
+ * nothing springs back afterwards.
+ */
+.hero-zoom {
+  transform: scale(1.12);
+}
+
+.hero-zoom-run {
+  animation: hero-zoom 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom {
+    transform: none;
+  }
+
+  .hero-zoom-run {
+    animation: none;
+  }
+}
+
+/*
+ * Moving between episodes.
+ *
+ * A sideways move says "along the same shelf" in a way a fade does not: the
+ * outgoing episode leaves in the direction it was pushed and the incoming one
+ * arrives from the other side, so the reader always knows which way they went.
+ *
+ * The entrance is on the page itself and the exit is applied by `EpisodePager`
+ * just before it navigates, which is what lets the two meet in the middle
+ * without either of them knowing about the other.
+ */
+@keyframes episode-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--episode-from, 3%));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.episode-page {
+  animation: episode-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.episode-page-out-left,
+.episode-page-out-right {
+  animation: none;
+  opacity: 0;
+  transition:
+    opacity 0.16s ease-in,
+    transform 0.16s ease-in;
+}
+
+.episode-page-out-left {
+  transform: translateX(-6%);
+}
+
+.episode-page-out-right {
+  transform: translateX(6%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .episode-page,
+  .episode-page-out-left,
+  .episode-page-out-right {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+}
+
+/*
+ * The wash behind an episode, built from its own still.
+ *
+ * The same idea as a title page's hero at the scale of one episode: the page's
+ * colour comes from what it is about, rather than from the app. Masked so it
+ * has no bottom edge, and washed so the text on it has something to sit on.
+ */
+.episode-wash {
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 40%, transparent 100%);
+}
+
+.episode-wash-fade {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(7 7 12 / 0.5) 0%,
+    rgb(7 7 12 / 0.62) 45%,
+    rgb(7 7 12 / 0.78) 100%
+  );
+}
+
+html[data-theme="light"] .episode-wash-fade {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(247 247 251 / 0.68) 0%,
+    rgb(247 247 251 / 0.82) 45%,
+    rgb(247 247 251 / 0.95) 100%
+  );
+}

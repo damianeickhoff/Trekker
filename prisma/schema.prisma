@@ -1,0 +1,506 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  /// Null for accounts created by signing in with Plex — they have no password
+  /// of their own and authenticate through plex.tv every time.
+  passwordHash String?
+  /// plex.tv account id, set when the account is linked to Plex.
+  plexAccountId String? @unique
+  /// plex.tv auth token for *this* user, from the sign-in flow. Used to read
+  /// their personal watchlist, which lives on plex.tv rather than the server.
+  plexAuthToken String?
+  /// Which Plex account is playing, for the "now watching" card. Filled in from
+  /// the sign-in flow; settable by hand for accounts that use a password.
+  plexUsername  String?
+
+  /// Streaming services the user pays for, as TMDB provider ids, comma
+  /// separated. Used to warn before requesting something they can already watch.
+  providers String?
+
+  /// Backdrop shown behind the profile header, chosen from a title page.
+  coverBackdrop String?
+  coverTitle    String?
+  accent       String   @default("violet")
+  /// What the user picked: "dark" | "light" | "system".
+  theme         String  @default("system")
+  /// What that currently resolves to: "dark" | "light". Stored separately
+  /// because only the browser knows what "system" means, and the server has to
+  /// put a concrete value on <html> in the very first byte it sends.
+  themeResolved String  @default("dark")
+  /// Avatar is kept in the database and served by /api/avatar/[id], so it does
+  /// not depend on writing into the statically-served public folder.
+  avatarData   Bytes?
+  avatarType   String?
+  avatarSetAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  /// Optional Plex Media Server link, e.g. http://192.168.1.10:32400
+  plexUrl       String?
+  /// X-Plex-Token for that server. Stored as given — keep the database private.
+  plexToken     String?
+  /// Server machine identifier, used to build app.plex.tv deep links.
+  plexMachineId String?
+
+  /// Overseerr / Jellyseerr instance, e.g. http://192.168.1.10:5055
+  seerrUrl    String?
+  /// API key for that instance.
+  seerrApiKey String?
+
+  /// Trakt is per user: everyone imports their own history, so everyone brings
+  /// their own API client id and profile name. TRAKT_CLIENT_ID in the
+  /// environment is used as a fallback when a user has not set one.
+  traktClientId String?
+  traktUsername String?
+
+  /// The two completion bonuses behind the level: how many shows have been
+  /// watched to the end of a finished run, and how many franchises are complete.
+  /// Both need TMDB to answer, which is far too expensive for a profile render,
+  /// so they are cached here and refreshed whenever the achievements page
+  /// recomputes the board. Everything else the level is made of — episodes,
+  /// films, ratings, badges — is counted live, because it is a plain count.
+  levelFinishedShows      Int      @default(0)
+  levelFinishedFranchises Int      @default(0)
+  levelSyncedAt           DateTime?
+
+  /// The starting line. Everyone begins at level 0, so nothing that arrived with
+  /// an imported history counts towards the level — see `achievements/xp.ts`.
+  /// Plays carry their own source and need nothing here; badges are marked
+  /// `carried` as they unlock; only the two completion bonuses are plain
+  /// numbers, so what they stood at when the line was drawn is kept here and
+  /// subtracted from the current counts.
+  levelBaseShows      Int       @default(0)
+  levelBaseFranchises Int       @default(0)
+  levelBaselineAt     DateTime?
+
+  /// Whether the monthly challenge strip on the dashboard is folded away. On the
+  /// account rather than in the browser so the choice follows you between the
+  /// phone and the desktop — it is a preference about the app, not about one
+  /// device's screen.
+  challengesCollapsed Boolean @default(false)
+
+  /// Every achievement id this account has been measured against, comma
+  /// separated. What makes a *newly added* achievement that a years-old imported
+  /// history satisfies on sight count as carried in rather than earned — without
+  /// it, adding a badge to the catalogue would hand out XP for watching nothing.
+  levelKnownKeys String?
+
+  episodes       WatchedEpisode[]
+  movies         WatchedMovie[]
+  plays          Play[]
+  watchlist      WatchlistItem[]
+  favourites     Favourite[]
+  lists          MediaList[]
+  ratings        Rating[]
+  episodeRatings EpisodeRating[]
+  pushDevices    PushSubscription[]
+  droppedShows   DroppedShow[]
+  achievements   UnlockedAchievement[]
+  challenges     ChallengeRun[]
+  readNotices    NotificationRead[]
+
+  deletedPlays   DeletedPlay[]
+
+  sentRequests     Friendship[] @relation("SentFriendRequests")
+  receivedRequests Friendship[] @relation("ReceivedFriendRequests")
+}
+
+/// A viewing the user deleted that had come from a source carrying its own id.
+///
+/// Deleting a play removes the row, and with it the `sourceRef` that was the
+/// only evidence the sync had already seen that Plex history entry — so the next
+/// sync imported it again, ten minutes later, forever. This is the gravestone:
+/// `recordPlay` consults it before creating anything sourced, so "I did not
+/// watch that" survives a re-sync.
+///
+/// Deliberately permanent. Watching the thing again on Plex writes a *new*
+/// history entry with a new `viewedAt`, hence a new ref, which is not buried
+/// here — so a real rewatch still lands.
+model DeletedPlay {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "plex" | "trakt" — matches `Play.source`.
+  source    String
+  sourceRef String
+  deletedAt DateTime @default(now())
+
+  @@unique([userId, source, sourceRef])
+}
+
+/// One row per pair, owned by whoever asked first. A pair is friends only once
+/// the addressee has accepted; until then the row is the outstanding request.
+model Friendship {
+  id          String    @id @default(cuid())
+  requesterId String
+  requester   User      @relation("SentFriendRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User      @relation("ReceivedFriendRequests", fields: [addresseeId], references: [id], onDelete: Cascade)
+  /// "pending" | "accepted"
+  status      String    @default("pending")
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}
+
+/// One row per episode a user has watched.
+///
+/// This and `WatchedMovie` are a uniqueness index over `Play` rather than a
+/// second record of what happened: they answer "have I seen this", while the
+/// play log answers "how often, and when". Only `src/lib/plays.ts` writes them.
+model WatchedEpisode {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showId        Int
+  showName      String
+  showPoster    String?
+  seasonNumber  Int
+  episodeNumber Int
+  episodeName   String
+  runtime       Int      @default(42)
+  /// The *first* time it was watched — the oldest play. Rewatches move
+  /// `lastWatchedAt` instead, so "when did I discover this" survives them.
+  watchedAt     DateTime @default(now())
+  lastWatchedAt DateTime?
+  /// How many plays there are. Denormalised so the title page does not need a
+  /// GROUP BY, and a free drift check against COUNT(*) on the log.
+  plays         Int      @default(1)
+
+  @@unique([userId, showId, seasonNumber, episodeNumber])
+  @@index([userId, watchedAt])
+}
+
+model WatchedMovie {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId   Int
+  title     String
+  poster    String?
+  runtime   Int      @default(0)
+  /// TMDB audience score (0-100) captured when it was logged.
+  score     Int?
+  /// The first time it was watched. See `WatchedEpisode.watchedAt`.
+  watchedAt DateTime @default(now())
+  lastWatchedAt DateTime?
+  plays     Int      @default(1)
+
+  @@unique([userId, movieId])
+  @@index([userId, watchedAt])
+}
+
+/// One viewing. Append-only: the log of what was actually watched and when,
+/// which is what makes rewatches countable.
+///
+/// Everything that asks "how much have I watched" reads this; everything that
+/// asks "have I seen it" reads `WatchedMovie` / `WatchedEpisode`. Writes go
+/// through `recordPlay` in `src/lib/plays.ts` and nowhere else — that is what
+/// keeps the two in step.
+model Play {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "movie" | "tv"
+  mediaType     String
+  /// The film's id, or the *show's* id for an episode.
+  tmdbId        Int
+  /// Film title, or show name. Denormalised so the log describes itself.
+  title         String
+  poster        String?
+  seasonNumber  Int?
+  episodeNumber Int?
+  episodeName   String?
+  runtime       Int      @default(0)
+  watchedAt     DateTime @default(now())
+  /// "manual" | "plex" | "trakt" | "backfill"
+  source        String   @default("manual")
+  /// Stable id from whichever source reported it, where one exists. Plex play
+  /// history gives `${ratingKey}:${viewedAt}`; a manual tick has nothing, hence
+  /// null. SQLite treats nulls as distinct in a unique index, so the manual and
+  /// backfilled rows never collide with each other — only the sourced ones do,
+  /// which is exactly the deduplication wanted.
+  sourceRef     String?
+
+  @@unique([userId, source, sourceRef])
+  @@index([userId, watchedAt])
+  @@index([userId, mediaType, tmdbId, watchedAt])
+}
+
+/// A notification the user has dismissed.
+///
+/// Notifications themselves are *derived* rather than stored — an outstanding
+/// friend request is a pending `Friendship`, a new badge is an
+/// `UnlockedAchievement` — so the list can never disagree with reality: accept a
+/// request and its notification stops existing, with nothing to keep in step.
+/// The one thing that cannot be derived is whether it has been seen, which is
+/// all this table holds.
+model NotificationRead {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// `friend:<friendshipId>` or `badge:<achievementId>`.
+  key    String
+  readAt DateTime @default(now())
+  /// Cleared away rather than merely seen. A read notification stays on the
+  /// list, greyed — a friend request you have read is still one you have not
+  /// answered — so "clear" is the separate, deliberate act of getting rid of it.
+  dismissed Boolean @default(false)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+/// Something still meant to be watched.
+model WatchlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType String // "movie" | "tv"
+  tmdbId    Int
+  title     String
+  poster    String?
+  score     Int?
+  addedAt   DateTime @default(now())
+
+  /// Filled in lazily so the watchlist can be sorted by length and filtered by
+  /// what is streaming. Both go stale, hence the timestamp.
+  runtime    Int?
+  /// Comma-separated streaming provider names for the owner's region, or ""
+  /// when nothing streams it. Null means "not looked up yet".
+  streaming  String?
+  /// The same offers as TMDB provider ids. Names are what gets shown; ids are
+  /// what gets compared, because TMDB lists one service under several of them
+  /// and which one a title comes back under varies — see `KNOWN_PROVIDERS`.
+  streamingIds String?
+  enrichedAt DateTime?
+
+  @@unique([userId, mediaType, tmdbId])
+}
+
+/// Something loved, as opposed to something queued.
+///
+/// Deliberately not a `MediaList`: the heart on a title page is one press with
+/// no list to choose, every user has exactly one of these, and it must never be
+/// renamed or deleted. A row of its own keeps that guarantee in the schema
+/// rather than in the code that reads it.
+model Favourite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType String // "movie" | "tv"
+  tmdbId    Int
+  title     String
+  poster    String?
+  score     Int?
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, mediaType, tmdbId])
+  @@index([userId, addedAt])
+}
+
+/// A list the user made: either one they fill by hand, or a standing question.
+///
+/// The watchlist and the favourites are *not* rows here — they are fixed parts
+/// of the app with their own tables, their own meaning and their own consumers
+/// (Plex sync reads the watchlist; the calendar and the quiz do too). This table
+/// is only for the lists a user invents, which is what makes deleting one safe.
+model MediaList {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String
+  /// "manual" — the user adds titles by hand.
+  /// "smart"  — the titles are whatever `filters` currently answers.
+  kind   String @default("manual")
+  /// The smart list's question, as JSON matching `SmartFilters` in
+  /// `src/lib/smart-filters.ts`. Null on a manual list. Stored as text because
+  /// nothing ever queries *into* it: it is read whole, parsed, and re-run.
+  filters String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  /// When a smart list's answers were last rebuilt from TMDB. Null means never,
+  /// which is also what a freshly edited list is set back to.
+  refreshedAt DateTime?
+
+  items MediaListItem[]
+
+  @@index([userId, createdAt])
+}
+
+/// One title on a list.
+///
+/// For a manual list this is the record — the only place that membership
+/// exists. For a smart list it is a cache of the last answer, thrown away and
+/// rewritten on every refresh, so that opening the list is a database read
+/// rather than a fan of TMDB requests.
+model MediaListItem {
+  id        String    @id @default(cuid())
+  listId    String
+  list      MediaList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  mediaType String // "movie" | "tv"
+  tmdbId    Int
+  title     String
+  poster    String?
+  score     Int?
+  /// Release year as TMDB gives it, for the card caption. Text, because it is
+  /// only ever printed and TMDB leaves it blank on unannounced titles.
+  year      String?
+  /// Where it sits in the list: insertion order by hand, TMDB's own ranking on
+  /// a smart list. Sorting on this is what keeps "best rated first" meaningful
+  /// after the rows have been shuffled through the database.
+  position  Int      @default(0)
+  addedAt   DateTime @default(now())
+
+  @@unique([listId, mediaType, tmdbId])
+  @@index([listId, position])
+}
+
+/// A thumbs up or down on a single episode. Separate from Rating, which is a
+/// percentage on a whole title — nobody wants to score an episode out of 100.
+model EpisodeRating {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showId        Int
+  seasonNumber  Int
+  episodeNumber Int
+  liked         Boolean
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, showId, seasonNumber, episodeNumber])
+  @@index([userId, showId])
+}
+
+/// A show the user has given up on. The watched episodes stay — this only says
+/// "stop asking me about it", so it drops out of Up next and the calendar.
+model DroppedShow {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showId    Int
+  showName  String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, showId])
+  @@index([userId])
+}
+
+/// One row per browser that has agreed to receive notifications. The keys are
+/// the browser's own, and are useless to anyone but its push service.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  /// Free text from the browser, so a user can tell their devices apart.
+  label     String?
+  createdAt DateTime @default(now())
+  /// Last date (YYYY-MM-DD) this device was told about, so a reminder is not
+  /// repeated if the job runs more than once a day.
+  lastSent  String?
+
+  @@index([userId])
+}
+
+/// An achievement a user has earned. Progress itself is always recomputed from
+/// the watch history — only the moment of earning is worth keeping, because it
+/// is the one thing that cannot be derived again later.
+///
+/// `key` is an id from the catalogue in `src/lib/achievements/catalogue.ts`.
+/// Rows for keys that no longer exist are ignored rather than deleted, so a
+/// renamed achievement does not throw away someone's history.
+model UnlockedAchievement {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key        String
+  unlockedAt DateTime @default(now())
+  /// True when this badge came with an imported history rather than being earned
+  /// here: either it was already satisfied when the account's starting line was
+  /// drawn, or it was added to the catalogue later and a years-old history met it
+  /// on sight. The badge is kept and shown either way — it is a true statement
+  /// about what someone has watched — but it pays no XP towards the Trekker
+  /// level. It still counts towards the lifetime figure.
+  carried    Boolean  @default(false)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+/// A monthly challenge someone finished. One row per challenge per month, so a
+/// challenge that comes round again next year is a fresh thing to win.
+///
+/// Like `UnlockedAchievement`, only the moment is stored — the progress behind
+/// it is recomputed from that month's plays every time it is shown. The XP is
+/// written down because the reward is fixed when it is won: retuning a
+/// challenge later should not quietly restate what someone already earned.
+model ChallengeRun {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Challenge id from `src/lib/challenges/catalogue.ts`.
+  key         String
+  /// The month it belongs to, as "YYYY-MM".
+  period      String
+  xp          Int
+  completedAt DateTime @default(now())
+
+  @@unique([userId, key, period])
+  @@index([userId, period])
+}
+
+/// Facts about a title that TMDB knows and we do not store on the watched rows:
+/// genres, language, release date, franchise. Shared by every user rather than
+/// copied per row, and refreshed only when it ages out — the achievements page
+/// asks about hundreds of titles at once and none of this moves.
+model TitleMeta {
+  id             String   @id @default(cuid())
+  mediaType      String // "movie" | "tv"
+  tmdbId         Int
+  title          String
+  /// Genre names, comma separated. Names rather than ids because TMDB numbers
+  /// film and television genres differently for the same idea.
+  genres         String
+  /// ISO 639-1, e.g. "en", "ko".
+  originalLanguage String?
+  /// YYYY-MM-DD: a film's release, a show's first air date.
+  releaseDate    String?
+  runtime        Int?
+  /// TMDB collection ("belongs to" franchise), films only.
+  collectionId   Int?
+  collectionName String?
+  fetchedAt      DateTime @default(now())
+
+  @@unique([mediaType, tmdbId])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType String
+  tmdbId    Int
+  title     String
+  poster    String?
+  score     Int // 1-100 percentage
+  review    String?
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mediaType, tmdbId])
+}
