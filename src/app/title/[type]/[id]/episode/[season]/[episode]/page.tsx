@@ -152,6 +152,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             <Step href={href(neighbours.next)} direction="next" />
           </div>
 
+          <div className="min-w-0">
           <header className="mt-5 flex items-start justify-between gap-4 lg:mt-0">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{detail.name}</h1>
@@ -235,10 +236,11 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
           </header>
 
           {detail.overview && (
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-100 lg:col-span-2">
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-100">
               {detail.overview}
             </p>
           )}
+          </div>
 
           {people.length > 0 && (
             <section className="mt-8 lg:col-span-2">
