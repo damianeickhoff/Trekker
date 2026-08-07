@@ -7,8 +7,11 @@ import { avatarUrl } from "@/lib/avatar";
 import { currentSeason } from "@/lib/current-season";
 import { db } from "@/lib/db";
 import { getNotifications } from "@/lib/notification-centre";
+import { displayEmail } from "@/lib/plex-seat";
 import { Nav } from "@/components/nav";
+import { AchievementToaster } from "@/components/achievement-toaster";
 import { OriginProvider } from "@/components/origin";
+import { ScreensaverIdle } from "@/components/screensaver-idle";
 import { SeasonDecor } from "@/components/season-decor";
 import { ThemeSync, type Theme } from "@/components/theme";
 
@@ -34,7 +37,15 @@ const chrome = cache(async () => {
   const account = user
     ? await db.user.findUnique({
         where: { id: user.id },
-        select: { theme: true, themeResolved: true, accent: true },
+        select: {
+          theme: true,
+          themeResolved: true,
+          accent: true,
+          // Read here rather than in a query of its own: the layout already
+          // fetches this row on every page, and the idle watcher needs one
+          // number off it.
+          screensaverIdle: true,
+        },
       })
     : null;
 
@@ -43,6 +54,7 @@ const chrome = cache(async () => {
     resolved: account?.themeResolved === "light" ? ("light" as const) : ("dark" as const),
     // Violet is the ramp's own colour, so it needs no attribute at all.
     accent: account?.accent && account.accent !== "violet" ? account.accent : undefined,
+    screensaverIdle: account?.screensaverIdle ?? 0,
   };
 });
 
@@ -76,6 +88,20 @@ export const viewport: Viewport = {
   themeColor: "#07070c",
   // The installed app draws under the status bar / home indicator.
   viewportFit: "cover",
+  /**
+   * The app never scales. Two separate things were making it: iOS zooms in on a
+   * focused field whose text is under 16px — handled in the stylesheet — and it
+   * zooms on a double tap, which only this can stop. Pinning the scale closes
+   * both, and matters most in the installed app, where there is no address bar
+   * to show you that you are zoomed and no way to pinch back out to a known
+   * good size.
+   *
+   * The cost is real: pinch-to-zoom goes with it. Text is sized in rem
+   * throughout, so the system text-size setting still reaches everything.
+   */
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function RootLayout({
@@ -84,13 +110,28 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
-  const { theme, resolved, accent } = await chrome();
+  const { theme, resolved, accent, screensaverIdle } = await chrome();
 
   const { setting: seasonSetting, season, canOverride } = await currentSeason();
 
   // The bell lives in the header, so this runs on every page. Three small
   // indexed reads, and nothing is fetched over the network for it.
   const notifications = user ? await getNotifications(user.id) : null;
+
+  // When the newest badge was earned, taken from the notifications the bell has
+  // already been given rather than from a query of its own.
+  //
+  // This is what makes the celebration land at the same moment the bell does.
+  // The toaster cannot poll its way to "immediately", and it cannot watch the
+  // route either, because the usual way to earn a badge — ticking an episode —
+  // re-renders this layout without changing the URL. A value that moves when a
+  // badge is earned is something it *can* watch.
+  const newestBadgeAt = Math.max(
+    0,
+    ...(notifications?.items ?? [])
+      .filter((item) => item.kind === "achievement")
+      .map((item) => item.at.getTime()),
+  );
 
   return (
     <html
@@ -104,10 +145,28 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col">
         <ThemeSync theme={theme} />
         <OriginProvider>
+        {/* Watches for the app being left alone. Listens to nothing at all
+            until somebody has asked it to — see the component. */}
+        {user && <ScreensaverIdle minutes={screensaverIdle} />}
         <SeasonDecor season={season} />
+
+        {/* Over whatever page you happen to be on: earning a badge is rarely
+            something you did on the page you are looking at. */}
+        <AchievementToaster enabled={user !== null} signal={newestBadgeAt} />
+
         <Nav
           user={
-            user ? { ...user, avatarUrl: avatarUrl(user) } : null
+            user
+              ? {
+                  ...user,
+                  avatarUrl: avatarUrl(user),
+                  // A managed Plex Home profile has no address of its own, and
+                  // the one on the row is a placeholder minted to satisfy a
+                  // unique index. Showing it would be showing them a lie.
+                  email: displayEmail(user.email),
+                  canSwitchProfile: Boolean(user.plexAccountId),
+                }
+              : null
           }
           season={season}
           seasonSetting={canOverride ? seasonSetting : null}

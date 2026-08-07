@@ -16,10 +16,20 @@ import { logPlexScrobble } from "@/lib/plex-scrobble";
 import { syncPlexWatchlist } from "@/lib/plex-watchlist-sync";
 
 /**
- * Who is watching what on Plex right now — the viewer, and any friends with a
- * linked Plex account. Answers `{ session: null, friends: [] }` rather than an
- * error for every "nothing is playing" case, so the card has one shape to deal
- * with.
+ * Who *else* is watching what on Plex right now.
+ *
+ * It used to report the viewer's own session too, and that was the one thing on
+ * it nobody needed: you are the person watching it. So the answer is friends
+ * only, and it costs one fewer TMDB lookup every fifteen seconds per signed-in
+ * tab, since describing a session is what resolves its title back to a page
+ * here.
+ *
+ * The viewer's own session is still *matched*, though — see below. It is what
+ * drives the scrobble for anyone without a Plex Pass webhook, and that has
+ * nothing to do with whether a card is drawn.
+ *
+ * Answers `{ friends: [] }` rather than an error for every "nothing is playing"
+ * case, so the card has one shape to deal with.
  */
 
 /**
@@ -95,7 +105,7 @@ async function scrobbleIfFinished(userId: string, session: SessionMetadata) {
 }
 
 export async function GET() {
-  const empty = { session: null, friends: [] as PlexSession[] };
+  const empty = { friends: [] as PlexSession[] };
 
   const user = await getCurrentUser();
   if (!user) return NextResponse.json(empty);
@@ -117,6 +127,10 @@ export async function GET() {
   const sessions = await getSessions(connection);
   if (sessions.length === 0) return NextResponse.json(empty);
 
+  // Matched but not described. Nothing renders it any more; it is here because
+  // finishing something on Plex is how a play gets logged for anyone whose
+  // server cannot send a webhook, and because a friend's session must not be
+  // reported twice when the friend is the viewer.
   const mine = matchSession(sessions, {
     accountId: identity.plexAccountId,
     username: identity.plexUsername,
@@ -142,29 +156,23 @@ export async function GET() {
         })
       : [];
 
-  const [session, friends] = await Promise.all([
-    mine ? describeSession(connection, mine) : null,
-    Promise.all(
-      friendAccounts.map(async (friend) => {
-        const match = matchSession(sessions, {
-          accountId: friend.plexAccountId,
-          username: friend.plexUsername,
-        });
-        if (!match || match === mine) return null;
+  const friends = await Promise.all(
+    friendAccounts.map(async (friend) => {
+      const match = matchSession(sessions, {
+        accountId: friend.plexAccountId,
+        username: friend.plexUsername,
+      });
+      if (!match || match === mine) return null;
 
-        const described = await describeSession(connection, match);
-        if (!described) return null;
+      const described = await describeSession(connection, match);
+      if (!described) return null;
 
-        return {
-          ...described,
-          who: { id: friend.id, name: friend.name, avatar: avatarUrl(friend) },
-        };
-      }),
-    ),
-  ]);
+      return {
+        ...described,
+        who: { id: friend.id, name: friend.name, avatar: avatarUrl(friend) },
+      };
+    }),
+  );
 
-  return NextResponse.json({
-    session,
-    friends: friends.filter((f) => f !== null),
-  });
+  return NextResponse.json({ friends: friends.filter((f) => f !== null) });
 }

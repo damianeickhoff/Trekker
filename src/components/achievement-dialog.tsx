@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { AchievementState, EvidenceItem } from "@/lib/achievements";
 import { img } from "@/lib/images";
+import { barWidth } from "@/lib/format";
 import { BadgeMedal, formatUnlocked, tierLabel } from "./achievement-badge";
 
 type Evidence = {
@@ -126,7 +127,7 @@ export function AchievementDialog({
                 <div className="h-2 overflow-hidden rounded-full bg-ink-800">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-                    style={{ width: `${Math.max(2, item.percent)}%` }}
+                    style={{ width: `${barWidth(item.percent)}%` }}
                   />
                 </div>
                 <p className="mt-1.5 flex items-baseline justify-between gap-3 text-xs text-ink-500">

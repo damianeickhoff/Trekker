@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
       // Trailer stills. The player itself is only loaded once it is asked for,
       // so the resting state of a trailer is one of these.
       { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
+      // Plex Home profile pictures, on the "who's watching?" screen. plex.tv
+      // serves them from a couple of hosts depending on how the avatar was set.
+      { protocol: "https", hostname: "plex.tv" },
+      { protocol: "https", hostname: "**.plex.tv" },
+      { protocol: "https", hostname: "**.gravatar.com" },
     ],
     /**
      * TMDB already serves pre-sized images (w185/w342/w780/w1280) from a CDN,

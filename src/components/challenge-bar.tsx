@@ -28,7 +28,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { setChallengesCollapsed } from "@/lib/challenge-actions";
+import { setChallengesCollapsed } from "@/lib/panel-actions";
+import { barWidth } from "@/lib/format";
 import type { MonthlyChallenges } from "@/lib/challenges";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -183,7 +184,7 @@ export function ChallengeBar({
                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-ink-800">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-                        style={{ width: `${Math.max(2, challenge.percent)}%` }}
+                        style={{ width: `${barWidth(challenge.percent)}%` }}
                       />
                     </div>
                   )}

@@ -58,6 +58,20 @@ export function scorePlate(score: number, fair = 50, good = 70) {
   return score >= good ? SCORE_PLATE.good : score >= fair ? SCORE_PLATE.fair : SCORE_PLATE.poor;
 }
 
+/**
+ * The three bands as a text colour, for a score written as plain type rather
+ * than worn as a plate — the Plex strip's percentage beside a title. Exported so
+ * that "what counts as good" is decided in one place: a number that is amber on
+ * a poster and green on a strip is two different judgements of the same film.
+ */
+export function scoreTone(score: number) {
+  return score >= 70
+    ? "text-emerald-400 light:text-emerald-700"
+    : score >= 50
+      ? "text-amber-400 light:text-amber-700"
+      : "text-red-400 light:text-red-700";
+}
+
 /** The pill itself, minus the plate — see `scorePlate`. */
 export const SCORE_PILL = `inline-flex h-6 items-center gap-1.5 px-2.5 text-[10px] font-bold tabular-nums text-white ${OVERLAY_SHAPE}`;
 
@@ -78,12 +92,7 @@ export function ScoreBadge({
   // Nothing rated yet: show nothing rather than an empty placeholder.
   if (!score) return null;
 
-  const tone =
-    score >= 70
-      ? "text-emerald-400 light:text-emerald-700"
-      : score >= 50
-        ? "text-amber-400 light:text-amber-700"
-        : "text-red-400 light:text-red-700";
+  const tone = scoreTone(score);
 
   if (variant === "outline") {
     return (

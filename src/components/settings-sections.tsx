@@ -1,29 +1,37 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Cast,
   CheckCircle2,
+  ChevronDown,
   Download,
   DownloadCloud,
+  MonitorPlay,
+  Palette,
+  Play,
   Server,
   Trash2,
   Upload,
+  UserRound,
 } from "lucide-react";
 import { useActionState, useRef, useState } from "react";
 import { importPlexWatchlist, type PlexSyncState } from "@/lib/plex-import-actions";
 import { importPlexHistory, type PlexHistoryState } from "@/lib/plex-history-actions";
-import {
-  importFromTrakt,
-  importTraktExport,
-  type ImportState,
-} from "@/lib/import-actions";
 import {
   disconnectPlex,
   savePlexSettings,
   savePlexUsername,
   type PlexFormState,
 } from "@/lib/plex-actions";
+import { saveScreensaver } from "@/lib/screensaver-actions";
+import {
+  IDLE_CHOICES,
+  SCREENSAVER_SOURCES,
+  describeIdle,
+  sourceLabel,
+} from "@/lib/screensaver-options";
 import {
   disconnectSeerr,
   disconnectTrakt,
@@ -34,38 +42,118 @@ import {
   uploadAvatar,
   type SettingsState,
 } from "@/lib/settings-actions";
+import { ACCENTS } from "@/lib/accents";
 import { AvatarCropper } from "./avatar-cropper";
 import { PlexWebhookHint } from "./plex-webhook-hint";
 import { AccentPicker, ThemeSwitcher, type Theme } from "./theme";
+import { ImportProgress, ImportSummary, useTraktImport } from "./trakt-import";
 import { BusyBar } from "./ui";
 
+/**
+ * A run of settings under one heading.
+ *
+ * The page was a single column of thirty-odd controls with nothing between them
+ * but a gap, so "where do I change my accent" and "where do I point this at my
+ * Plex" were the same length of scroll. Three headings — you, the things it
+ * talks to, the instance — turn that into a place you can aim at.
+ */
+export function SettingsGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mt-7">
+      <h2 className="mb-2 px-1 text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+        {title}
+      </h2>
+      <div className="space-y-2">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * One setting, folded away with what it currently holds written on the outside.
+ *
+ * The same shape as a smart list's filters, and for the same reason. Laid out
+ * flat this page is nine panels and about forty controls, which is a wall you
+ * scroll rather than a page you read; folded, it is nine lines that each answer
+ * the question you came to ask — "am I linked to Plex", "which theme is on" —
+ * and you open only the one you came to change. The summary is what makes that
+ * work. A closed section that did not say "Linked as damian" would just be
+ * hiding things.
+ *
+ * `<details>` rather than a `useState` accordion, again as the filters do: the
+ * keyboard behaviour, the focus handling and the expanded/collapsed
+ * announcement all arrive correct, and there is no state here worth owning.
+ */
 export function SettingsCard({
   title,
   description,
   icon,
+  summary,
+  active = false,
+  defaultOpen = false,
   children,
   aside,
 }: {
   title: string;
   description: string;
+  /** A bare lucide glyph. The tint comes from `active`, not from the caller. */
   icon?: React.ReactNode;
+  /** What this setting currently holds, read on the closed header. */
+  summary?: React.ReactNode;
+  /** On, linked, connected — whatever "set up" means for this one. */
+  active?: boolean;
+  defaultOpen?: boolean;
   children?: React.ReactNode;
+  /** A control that belongs beside the description rather than below it. */
   aside?: React.ReactNode;
 }) {
   return (
-    <section className="card mt-4 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-2.5">
-          {icon}
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-            <p className="mt-0.5 text-xs text-ink-400">{description}</p>
-          </div>
+    <details
+      className={`card group overflow-hidden transition ${active ? "border-flare-500/35" : ""}`}
+      open={defaultOpen}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 transition hover:bg-ink-800/40 [&::-webkit-details-marker]:hidden">
+        {icon && (
+          <span
+            className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition ${
+              active
+                ? "border-flare-500/45 bg-flare-600/20 text-flare-300"
+                : "border-ink-700 bg-ink-800/50 text-ink-400"
+            }`}
+          >
+            {icon}
+          </span>
+        )}
+
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold tracking-tight">{title}</span>
+          <span className="mt-0.5 block truncate text-xs text-ink-400">
+            {summary ?? description}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={16}
+          className="shrink-0 text-ink-500 transition group-open:rotate-180"
+        />
+      </summary>
+
+      <div className="border-t border-ink-800 px-4 py-4">
+        {/* The description moves inside the fold: on the closed header its job
+            is done by the summary, which says something about *your* setup
+            rather than about the feature. */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <p className="max-w-prose text-xs text-ink-400">{description}</p>
+          {aside}
         </div>
-        {aside}
+        {children}
       </div>
-      {children}
-    </section>
+    </details>
   );
 }
 
@@ -110,10 +198,18 @@ export function ProfileSection({
   name,
   email,
   avatarUrl,
+  managed = false,
 }: {
   name: string;
   email: string;
   avatarUrl: string | null;
+  /**
+   * A managed Plex Home profile. They have no address of their own — what is on
+   * the row is a placeholder minted to satisfy a unique index — so the field is
+   * offered as something they may fill in rather than shown as a fact about
+   * them, and the header does not repeat it.
+   */
+  managed?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<SettingsState, FormData>(
     updateProfile,
@@ -135,7 +231,17 @@ export function ProfileSection({
   }
 
   return (
-    <SettingsCard title="Profile" description="Your name, email and picture.">
+    <SettingsCard
+      title="Profile"
+      description={
+        managed
+          ? "Your name and picture. This profile signs in through your Plex Home, so it has no password and needs no address."
+          : "Your name, email and picture."
+      }
+      icon={<UserRound size={16} />}
+      summary={managed ? `${name} · Plex Home profile` : `${name} · ${email}`}
+      active
+    >
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-flare-600 to-ember-500 text-2xl font-black text-white">
           {avatarUrl ? (
@@ -197,7 +303,19 @@ export function ProfileSection({
 
       <form action={formAction} className="mt-5 space-y-3">
         <Field label="Name" name="name" defaultValue={name} required />
-        <Field label="Email" name="email" type="email" defaultValue={email} required />
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          // Blank rather than the stand-in address: a field showing something
+          // nobody chose invites them to keep it. Filling this in is how a Plex
+          // Home profile becomes reachable by email — for a password later, or
+          // for a friend request now.
+          defaultValue={managed ? "" : email}
+          placeholder={managed ? "Add one if you want to" : undefined}
+          required={!managed}
+          hint={managed ? "Optional. Nothing is ever sent to it." : undefined}
+        />
         <Feedback state={state} />
         <button
           type="submit"
@@ -208,28 +326,6 @@ export function ProfileSection({
         </button>
       </form>
     </SettingsCard>
-  );
-}
-
-function ImportSummary({ state }: { state: ImportState }) {
-  if (state.error) {
-    return (
-      <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-        {state.error}
-      </p>
-    );
-  }
-  if (!state.summary) return null;
-
-  return (
-    <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
-      Imported {state.summary.movies} movie{state.summary.movies === 1 ? "" : "s"} and{" "}
-      {state.summary.episodes} episode{state.summary.episodes === 1 ? "" : "s"}
-      {state.summary.updated > 0 && ` · ${state.summary.updated} date${
-        state.summary.updated === 1 ? "" : "s"
-      } corrected`}
-      {state.summary.skipped > 0 && ` · ${state.summary.skipped} skipped`}.
-    </p>
   );
 }
 
@@ -253,21 +349,13 @@ export function TraktSection({
     saveTraktSettings,
     {},
   );
-  // The import takes no input — everything it needs is saved above — so it runs
-  // as a plain call rather than through a form action.
-  const [importState, setImportState] = useState<ImportState>({});
-  const [importing, setImporting] = useState(false);
 
-  async function runImport() {
-    setImporting(true);
-    setImportState(await importFromTrakt());
-    setImporting(false);
-  }
-
-  const [fileState, fileAction, uploading] = useActionState<ImportState, FormData>(
-    importTraktExport,
-    {},
-  );
+  /**
+   * One import at a time, whichever way it was started — the server refuses a
+   * second run anyway, and two panels each claiming to be the one in progress
+   * would be the page disagreeing with itself.
+   */
+  const trakt = useTraktImport();
 
   const connected = Boolean(username);
 
@@ -275,9 +363,18 @@ export function TraktSection({
     <SettingsCard
       title="Trakt"
       description="Bring your watch history across. Upload an export, or connect the API if you have VIP."
-      icon={
-        <DownloadCloud size={18} className={connected ? "text-ember-400" : "text-ink-500"} />
+      icon={<DownloadCloud size={16} />}
+      active={connected || trakt.running}
+      summary={
+        trakt.running
+          ? "Importing right now"
+          : connected
+            ? `API connected as ${username}`
+            : "Ready for an export file"
       }
+      // Open on its own when there is a run to watch, so an import in progress
+      // is not hidden behind a fold the reader has to know to look inside.
+      defaultOpen={trakt.running}
       aside={
         connected ? (
           <div className="flex items-center gap-2">
@@ -296,7 +393,13 @@ export function TraktSection({
         ) : null
       }
     >
-      <form action={fileAction} className="mt-4 space-y-3">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          void trakt.start(new FormData(event.currentTarget));
+        }}
+        className="mt-4 space-y-3"
+      >
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium tracking-wide text-ink-300 uppercase">
             Trakt export file
@@ -313,10 +416,10 @@ export function TraktSection({
           </span>
         </label>
 
-        <ImportSummary state={fileState} />
+        <ImportSummary summary={trakt.summary} error={trakt.error} />
 
-        {uploading ? (
-          <BusyBar label="Reading the export and matching it to TMDB…" />
+        {trakt.running ? (
+          <ImportProgress job={trakt.job} starting={trakt.starting} />
         ) : (
           <button
             type="submit"
@@ -327,7 +430,8 @@ export function TraktSection({
         )}
 
         <p className="text-xs text-ink-500">
-          Anything already logged is left alone, so running this twice is safe.
+          Anything already logged is left alone, so running this twice is safe. The import keeps
+          going on the server if you close this page — come back and it will still be here.
         </p>
       </form>
 
@@ -392,13 +496,15 @@ export function TraktSection({
 
         {connected && (
           <div className="mt-4 space-y-3 border-t border-ink-800/70 pt-4">
-            <ImportSummary state={importState} />
-            {importing ? (
-              <BusyBar label="Fetching your history and matching it to TMDB…" />
+            {/* The same job and the same progress as the file route above: the
+                two differ only in where the history is read from. */}
+            <ImportSummary summary={trakt.summary} error={trakt.error} />
+            {trakt.running ? (
+              <ImportProgress job={trakt.job} starting={trakt.starting} />
             ) : (
               <button
                 type="button"
-                onClick={runImport}
+                onClick={() => void trakt.start()}
                 className="rounded-xl border border-ink-700 px-4 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-800"
               >
                 Import over the API
@@ -451,7 +557,15 @@ export function PlexAccountSection({
           ? `Linked as ${username ?? "your Plex account"}. Powers the "watching now" card and watchlist sync.`
           : "Link your Plex account for the “watching now” card and watchlist sync."
       }
-      icon={<Cast size={18} className={linked ? "text-ember-400" : "text-ink-500"} />}
+      icon={<Cast size={16} />}
+      active={linked}
+      summary={
+        linked
+          ? `Linked as ${username ?? "your Plex account"}`
+          : username
+            ? `Viewing as ${username} · account not linked`
+            : "Not linked"
+      }
       aside={
         linked ? (
           <span className="flex items-center gap-1.5 text-xs text-fresh-500">
@@ -578,6 +692,12 @@ export function PlexAccountSection({
   );
 }
 
+const THEME_LABEL: Record<Theme, string> = {
+  dark: "Dark",
+  light: "Light",
+  system: "Following your system",
+};
+
 export function AppearanceSection({
   theme,
   accent,
@@ -587,10 +707,19 @@ export function AppearanceSection({
   accent: string;
   seasonal?: boolean;
 }) {
+  const accentLabel = ACCENTS.find((option) => option.id === accent)?.label ?? "Violet";
+
   return (
     <SettingsCard
       title="Appearance"
       description="Light, dark, or follow your system. Saved to your profile, so it follows you between devices."
+      icon={<Palette size={16} />}
+      active
+      summary={
+        seasonal
+          ? `${THEME_LABEL[theme]} · wearing this season's colour`
+          : `${THEME_LABEL[theme]} · ${accentLabel}`
+      }
     >
       <div className="mt-4">
         <ThemeSwitcher current={theme} />
@@ -602,6 +731,138 @@ export function AppearanceSection({
         </p>
         <AccentPicker current={accent} seasonal={seasonal} />
       </div>
+    </SettingsCard>
+  );
+}
+
+/**
+ * The screensaver.
+ *
+ * Three questions, and the order is deliberate: when it starts, what it shows,
+ * and whether it knows where you live. Only the first is really a setting — the
+ * other two are what makes the thing worth looking at — so the summary line on
+ * the closed card answers the first one, which is the one somebody opening this
+ * page came to change.
+ *
+ * "Start it now" is a button rather than a link because of the fullscreen call.
+ * A browser only hands over the whole screen in response to somebody pressing
+ * something, so the request has to happen inside this click and not on the page
+ * that follows it; navigating afterwards keeps the window it was just given.
+ */
+export function ScreensaverSection({
+  idle,
+  source,
+  place,
+}: {
+  idle: number;
+  source: string;
+  place: string | null;
+}) {
+  const [state, formAction, pending] = useActionState<SettingsState, FormData>(
+    saveScreensaver,
+    {},
+  );
+  const router = useRouter();
+
+  const select =
+    "w-full rounded-xl border border-ink-700 bg-ink-900/70 px-3.5 py-2.5 text-sm text-ink-100 outline-none transition focus:border-flare-500 focus:ring-2 focus:ring-flare-600/30 light:bg-white";
+
+  async function startNow() {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // Refused, or already fullscreen, or a browser that does not do it on a
+      // phone. The screensaver is worth having either way.
+    }
+    router.push("/screensaver?from=%2Fsettings");
+  }
+
+  return (
+    <SettingsCard
+      title="Screensaver"
+      description="A full-screen slideshow of artwork with the time, the weather and whoever in the house has something playing. Escape, or a tap on the screen, brings you straight back — a moving mouse deliberately does not."
+      icon={<MonitorPlay size={16} />}
+      active={idle > 0}
+      summary={`${describeIdle(idle)} · ${sourceLabel(source)}`}
+      aside={
+        <button
+          type="button"
+          onClick={startNow}
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-ink-700 px-3.5 py-2 text-sm text-ink-100 transition hover:bg-ink-800"
+        >
+          <Play size={14} />
+          Start it now
+        </button>
+      }
+    >
+      <form action={formAction} className="mt-4 space-y-4">
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium tracking-wide text-ink-300 uppercase">
+            Start it on its own
+          </span>
+          <select name="idle" defaultValue={String(idle)} className={select}>
+            {IDLE_CHOICES.map((minutes) => (
+              <option key={minutes} value={String(minutes)}>
+                {describeIdle(minutes)}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1.5 block text-xs text-ink-500">
+            Counted from the last thing you did in this tab, and never while something is
+            playing full screen.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-medium tracking-wide text-ink-300 uppercase">
+            What it shows
+          </span>
+          <select name="source" defaultValue={source} className={select}>
+            {SCREENSAVER_SOURCES.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1.5 block text-xs text-ink-500">
+            {SCREENSAVER_SOURCES.find((option) => option.id === source)?.blurb ??
+              SCREENSAVER_SOURCES[0].blurb}
+          </span>
+        </label>
+
+        <Field
+          label="Weather for"
+          name="place"
+          defaultValue={place ?? ""}
+          placeholder="Utrecht"
+          hint={
+            <>
+              Optional. The name is looked up once, here, and only the coordinates are
+              kept — the forecast comes from{" "}
+              <a
+                href="https://open-meteo.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-flare-400 underline underline-offset-2"
+              >
+                open-meteo.com
+              </a>
+              , which needs no account and is told nothing about you. Leave it empty for no
+              weather at all.
+            </>
+          }
+        />
+
+        <Feedback state={state} />
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-xl bg-flare-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-flare-500 disabled:opacity-60"
+        >
+          {pending ? "Saving…" : "Save changes"}
+        </button>
+      </form>
     </SettingsCard>
   );
 }
@@ -624,7 +885,9 @@ export function PlexSection({
       description={
         connected ? `Connected to ${plexUrl}` : "See which titles are already in your library."
       }
-      icon={<Server size={18} className={connected ? "text-ember-400" : "text-ink-500"} />}
+      icon={<Server size={16} />}
+      active={connected}
+      summary={connected ? plexUrl : "Not set up"}
       aside={
         connected ? (
           <div className="flex items-center gap-2">
@@ -705,7 +968,9 @@ export function SeerrSection({
           ? `Connected to ${seerrUrl}`
           : "Request movies and shows you do not have yet, straight from a title page."
       }
-      icon={<Download size={18} className={connected ? "text-ember-400" : "text-ink-500"} />}
+      icon={<Download size={16} />}
+      active={connected}
+      summary={connected ? seerrUrl : "Not set up"}
       aside={
         connected ? (
           <div className="flex items-center gap-2">

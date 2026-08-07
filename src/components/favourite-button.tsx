@@ -65,7 +65,15 @@ export function FavouriteButton({
             // its own glyph: a 50px box is what the overflow menu next to it
             // uses, and controls of three different heights on one row read as
             // an accident.
-            `grid h-[50px] w-[50px] shrink-0 place-items-center rounded-xl border backdrop-blur-sm transition active:scale-[0.98] ${
+            //
+            // On a phone it takes a word as well. Desktop has room for a row of
+            // labelled pills and two silent squares at the end; a phone does
+            // not, and the square left the row lopsided — a labelled Save at one
+            // end and two glyphs at the other, with the gap between them doing
+            // the talking. Sized to its own content rather than sharing the row
+            // equally, so the watch and save pair beside it keeps enough width
+            // to spell its own labels out.
+            `inline-flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-xl border text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] sm:w-[50px] max-sm:px-3.5 ${
               favourite
                 ? "border-rose-500/70 bg-rose-600/20 text-rose-400 hover:border-rose-400 hover:bg-rose-600/30"
                 : "ios-surface ios-bright border-ink-600/70 bg-ink-900/50 text-ink-300 hover:border-rose-500 hover:bg-ink-800/80 hover:text-rose-400 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
@@ -75,8 +83,13 @@ export function FavouriteButton({
       <Heart
         size={variant === "icon" ? 17 : 18}
         fill={favourite ? "currentColor" : "none"}
-        className={favourite ? "text-rose-400" : undefined}
+        className={`shrink-0 ${favourite ? "text-rose-400" : ""}`}
       />
+      {/* "Love" rather than "Favourite": the noun is the place the heart files
+          things into — /watchlist/favourites — and the button is the act. The
+          long word would also be the only label on the row that had to truncate
+          to fit. Phone only; the desktop square is still deliberately silent. */}
+      {variant === "button" && <span className="truncate sm:hidden">Love</span>}
     </button>
   );
 }

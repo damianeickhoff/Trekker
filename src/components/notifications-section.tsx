@@ -137,12 +137,18 @@ export function NotificationsSection({ publicKey }: { publicKey: string | null }
     <SettingsCard
       title="Notifications"
       description={description}
-      icon={
-        state === "on" ? (
-          <Bell size={18} className="text-flare-400" />
-        ) : (
-          <BellOff size={18} className="text-ink-500" />
-        )
+      icon={state === "on" ? <Bell size={16} /> : <BellOff size={16} />}
+      active={state === "on"}
+      summary={
+        !publicKey
+          ? "Not set up on this instance"
+          : state === "unsupported"
+            ? "This browser cannot receive them"
+            : state === "on"
+              ? "On for this device"
+              : state === "off"
+                ? "Off for this device"
+                : "Checking this device…"
       }
       aside={
         state === "on" ? (

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Check, ChevronRight, Loader2, Tv } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Loader2, Tv } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { setEpisodeWatchedAt, toggleEpisodeWatched } from "@/lib/actions";
@@ -34,10 +34,76 @@ import { WatchedDateMenu } from "./watched-date-menu";
 /** How close to an end the scroll gets before the next season is asked for. */
 const REACH = 600;
 
+/**
+ * A chip on a still. The same plate the old "Not aired" badge wore, pulled out
+ * as a constant now that two of them can sit side by side and any drift between
+ * them would show as one chip looking heavier than its neighbour.
+ */
+const BADGE =
+  "inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/75 backdrop-blur-sm light:border-ink-600 light:bg-white/85 light:text-ink-300";
+
 /** TMDB air dates are plain `YYYY-MM-DD`; comparing them as dates keeps
     today's episode on the right side of the line in every timezone. */
 function hasAired(airDate: string | null) {
   return Boolean(airDate) && airDate! <= new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * When an episode that has not aired is going to.
+ *
+ * "Not aired" was the whole of what this said, which is the one thing the empty
+ * still already made obvious. What a reader wants from a card they cannot press
+ * is when they will be able to — so the badge counts down instead, and falls
+ * back to a date once the count is long enough that the number stops meaning
+ * anything. A show announced with no schedule says so rather than pretending.
+ */
+function airsIn(airDate: string | null) {
+  if (!airDate) return "No date yet";
+
+  const day = 24 * 60 * 60 * 1000;
+  const today = Date.parse(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  const when = Date.parse(`${airDate}T00:00:00Z`);
+  if (Number.isNaN(when)) return "No date yet";
+
+  const days = Math.round((when - today) / day);
+  if (days <= 0) return "Airs today";
+  if (days === 1) return "Airs tomorrow";
+  if (days <= 30) return `Airs in ${days} days`;
+
+  return `Airs ${new Date(when).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(days > 300 ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  })}`;
+}
+
+/**
+ * TMDB's `episode_type`, as the same chip the calendar and "Landing soon" use.
+ *
+ * A season finale is only a *series* finale when there is no season after it and
+ * the show is over — TMDB says "finale" for both, so the last two facts have to
+ * come from the show. Everything else is "standard", which earns no chip: a
+ * label on all twenty-two episodes of a season tells you nothing about any.
+ */
+function milestone(
+  episodeType: string | null,
+  seasonNumber: number,
+  finalSeason: number,
+  showEnded: boolean,
+): { label: string; dot: string } | null {
+  if (episodeType === "premiere") {
+    return seasonNumber === 1
+      ? { label: "Premiere", dot: "bg-fresh-500" }
+      : { label: "Season premiere", dot: "bg-fresh-500" };
+  }
+  if (episodeType === "mid_season") return { label: "Mid-season finale", dot: "bg-ember-400" };
+  if (episodeType === "finale") {
+    return seasonNumber === finalSeason && showEnded
+      ? { label: "Finale", dot: "bg-red-500" }
+      : { label: "Season finale", dot: "bg-ember-400" };
+  }
+  return null;
 }
 
 const keyOf = (e: { seasonNumber: number; episodeNumber: number }) =>
@@ -54,10 +120,13 @@ export function UpNextRail({
   initialEpisodes,
   initialWatched,
   signedIn,
+  showEnded = false,
 }: {
   showId: number;
   showName: string;
   showPoster: string | null;
+  /** Only so the last episode of the last season can say "Finale" and mean it. */
+  showEnded?: boolean;
   /** Every season number with episodes, ascending. */
   seasons: number[];
   /** Season number → how many episodes it has, for counting what is behind. */
@@ -85,6 +154,9 @@ export function UpNextRail({
   const [catchUpFor, setCatchUpFor] = useState<RailEpisode | null>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
+
+  /** Which season a "finale" would have to be in to be the series' own. */
+  const finalSeason = seasons.length > 0 ? Math.max(...seasons) : 0;
 
   /** Everything loaded so far, in show order. */
   const episodes = useMemo(
@@ -530,6 +602,12 @@ export function UpNextRail({
           const seen = watched.has(id);
           const aired = hasAired(episode.airDate);
           const still = img.still(episode.still, "w300");
+          const mark = milestone(
+            episode.episodeType,
+            episode.seasonNumber,
+            finalSeason,
+            showEnded,
+          );
 
           return (
             <div
@@ -607,9 +685,28 @@ export function UpNextRail({
                   </div>
                 )}
 
-                {!aired && (
-                  <span className="absolute top-2 left-2 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/75 backdrop-blur-sm light:border-ink-600 light:bg-white/85 light:text-ink-300">
-                    Not aired
+                {/* What this episode is, and — while it is still ahead — when
+                    it lands. Two chips of the same weight, wrapping, exactly as
+                    "Landing soon" stacks them: they are two halves of one
+                    sentence rather than a label and a note on it.
+
+                    The milestone shows whether or not the episode has aired.
+                    "This is the finale" is as much a reason to pick tonight's
+                    episode as it is a reason to wait for next week's. */}
+                {(mark || !aired) && (
+                  <span className="pointer-events-none absolute inset-x-2 top-2 flex flex-wrap items-center gap-1.5">
+                    {!aired && (
+                      <span className={BADGE}>
+                        <CalendarDays size={10} />
+                        {airsIn(episode.airDate)}
+                      </span>
+                    )}
+                    {mark && (
+                      <span className={BADGE}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${mark.dot}`} />
+                        {mark.label}
+                      </span>
+                    )}
                   </span>
                 )}
               </div>

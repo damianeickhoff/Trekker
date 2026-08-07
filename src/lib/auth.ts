@@ -63,6 +63,11 @@ export const getCurrentUser = cache(async () => {
         accent: true,
         avatarSetAt: true,
         createdAt: true,
+        /** Whether they came in through Plex, which is what makes switching to
+            another profile in the same Home a thing they can do. */
+        plexAccountId: true,
+        /** A managed Plex Home profile, whose email is a placeholder. */
+        plexManaged: true,
       },
     });
   } catch {

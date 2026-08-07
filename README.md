@@ -155,8 +155,13 @@ somewhere the template can pull it from. Start at
   [Lists](#lists).
 - Three months of the year the whole app changes colour and grows a decorative
   backdrop — see [Seasonal dressing](#seasonal-dressing).
-- `/settings` — profile details and picture, light/dark/system theme, your Trakt
-  account, and the Plex and Overseerr connections. Reachable from the avatar menu in the header,
+- `/screensaver` — the whole window, with no header and no tab bar: artwork a
+  title at a time, the clock, the weather and whoever in the house has something
+  playing. Started from the avatar menu, or on its own after however long you
+  choose. See [Screensaver](#screensaver).
+- `/settings` — profile details and picture, light/dark/system theme, the
+  screensaver, your Trakt account, and the Plex and Overseerr connections.
+  Reachable from the avatar menu in the header,
   which also holds a quick theme toggle and sign out.
 - `/profile` — a gradient banner, four headline tiles, a 12-month bar chart,
   the shows-vs-movies split, your trophy cabinet, watching habits, your
@@ -216,6 +221,13 @@ same "top it up as you go" spirit as the watchlist. A first visit with a long
 history will read low on those few until later visits finish the job, and the
 page says so rather than pretending. Without a TMDB key everything that can be
 counted from the database alone still works.
+
+The admin — the first account created, as with the Plex and Overseerr settings —
+can **take a badge back** from any account including their own, under Settings →
+Badges. Only the badge goes; the watch history behind it is untouched, so
+anything still true is earned again on the next evaluation. That is what makes
+it useful for testing an achievement twice, and for undoing one that was awarded
+wrongly.
 
 Best Picture winners are matched by title and year rather than TMDB id — see
 [`best-picture.ts`](src/lib/achievements/best-picture.ts), where the new winner
@@ -334,12 +346,45 @@ refreshed whenever `/achievements` recomputes the board. While that page still
 has titles to look up, the cached counts may only go up — a level that dropped
 because a cache was still filling would look like the app taking something back.
 
+Three things are worth celebrating, and they get three sizes. A **badge** drops
+a card in over the top of the page. A **level** does the same in a different
+colour, with the number where the medal would be. A **rank** — Rookie to Novice,
+Buff to Aficionado — happens five times as rarely and is the only thing in the
+app that takes the middle of the screen: light turning behind the medal, rings
+leaving it, and the old rank crossed out as the new one arrives. All three share
+one queue, so an import that lands a dozen badges shows them one at a time with
+a count of what is still waiting, rather than stacking them into a wall.
+
+A level rise is measured against what the browser was told last time it looked;
+the first sighting of an account only writes the number down, since celebrating
+a level someone reached weeks ago the moment they open the app would be a lie.
+
+The announcement is wherever you happen to be — see
+[`achievement-toaster.tsx`](src/components/achievement-toaster.tsx). It polls
+rather than being handed the news with the page, because the moment a badge is
+earned is usually not a moment you did anything here: an episode scrobbled from
+Plex runs the unlock check in the background, and there may be no navigation for
+hours. The poll only runs while the tab is visible, and which unlocks have been
+announced is kept in the browser rather than on the account — seeing the same
+badge celebrated on your phone and again on your laptop is fine, whereas a
+shared record would mean whichever device polled first swallowed it for the
+others.
+
 `/achievements` shows the sum in public: one row per source, how many of each
 and what each was worth, so a level is never a number the app just decided on.
+The breakdown folds away to just the bar and how much is left to the next level
+(`xpPanelCollapsed` on the account, like the challenge strip's).
 Those rows are **what was earned here**, not a lifetime tally — they are what
 the bar above them is made of, and a breakdown that did not add up to it would
 be worse than none. Whatever came in with an imported history is noted
 underneath as a single figure instead.
+
+The rows carry no bar of their own, deliberately. A bar promises a target and
+none of these have one: there is no number of films you are working towards, so
+a half-full track under "Films watched" invented a goal that does not exist.
+Drawn as a share of the whole it was worse again — earning anything anywhere
+made every other row shrink, so a row went *backwards* on a page about going
+forwards. The share is a fact worth stating, so it is stated in words.
 
 ## Seasonal dressing
 
@@ -403,6 +448,127 @@ deleted without leaving a migration behind: remove
 [`current-season.ts`](src/lib/current-season.ts) return `seasonForDate()`
 unconditionally instead of checking who is asking. The dressing itself carries
 on working.
+
+## Screensaver
+
+A full-screen slideshow at `/screensaver`, for the tablet on the shelf, the
+television the browser is open on, or a desktop that has been left alone. It is
+the one screen in the app that is not a page: no header, no tab bar, no column,
+no margin — the window is the artwork and everything else is drawn on top of it,
+white on black, in both themes. Film stills are somebody else's cinematography
+and nothing else survives being laid over an arbitrary frame of one.
+
+What is on it:
+
+- **A title at a time**, drifting slowly and crossfading, with the film's own
+  title treatment where TMDB has one and typeset lettering where it does not,
+  plus the year, the genres, the length or the season count, the audience score,
+  and the tagline — or the first two lines of the synopsis where there is no
+  tagline. Sixteen seconds each. The incoming picture pulls into focus out of a
+  blur as it crosses, which is the rack focus a title sequence opens on and the
+  single thing that most separates this from a folder of wallpapers on a timer.
+  The text leaves a beat before the picture does, so the two crossfades never
+  run at once. A single sheet of film grain sits over all of it: two frames from
+  two different decades are two different surfaces, and the grain is what makes
+  them read as one thing seen through one lens.
+- **The time and the date**, in whatever convention the browser's locale uses,
+  with a colon that breathes rather than blinks and a minute that rises into
+  place when it turns — the clock is on screen for hours and changes twice an
+  hour in a way anybody notices, so the one moment it does anything is worth
+  building. Drawn only once the browser has it: a clock is the one thing on a
+  screen that cannot arrive wrong and correct itself a moment later.
+- **The weather**, when a place has been set. Optional and off by default.
+- **Whoever is watching something** on the Plex server, with how far through
+  they are drawn around their avatar. This is the part a photo frame cannot do.
+
+### The layers
+
+The look is six layers over the artwork, and the order does not commute:
+
+1. **Two bands of masked blur**, top and bottom, on the same reasoning as a title
+   page's `.hero-veil` — blurring what is actually behind the words holds up over
+   a bright poster and a near-black still alike, where any fixed amount of
+   dimming is a compromise struck against one of them. Masked at both ends so
+   there is no edge anywhere: the picture simply stops being sharp. This has to
+   come first, because a `backdrop-filter` can only sample what is already
+   painted beneath it.
+2. **Two gradient veils**, which darken the now-soft bands. They are deliberately
+   lighter than they would have to be on their own — with the blur carrying
+   legibility they only have to hold contrast rather than manufacture it, and
+   about a fifth of the film comes back.
+3. **A vignette**, closing the corners so a bright edge cannot pull the eye off
+   the clock.
+4. **The film's own colour**, thrown back into the room. The bottom third of each
+   frame is averaged when the run is built — the same `heroColours` sampler the
+   title pages use to decide what colour they continue in — and it becomes a wide
+   glow rising out of the bottom-left corner with a fainter one falling from the
+   opposite one. Screen-blended, so it can only ever add light, which is what
+   makes it read as illumination coming off the picture rather than a coloured
+   sheet laid over it. The sampled colour is capped for brightness first: a snowy
+   establishing shot would otherwise come back near-white and wash the title out.
+   It crossfades on the same schedule as the artwork, so the colour of the room
+   changes with the film.
+5. **Grain**, one static SVG turbulence tile at four percent.
+6. **The text**, which is the only thing not blurred, darkened, tinted or
+   textured.
+
+Where the pictures come from is a setting: trending this week, popular films,
+popular shows, the highest rated ever made, or **your own watchlist** — which
+turns the thing into a quiet reminder of what you meant to get to. Twelve titles
+a run, rebuilt every half hour so a display that is never switched off is not
+still showing Monday's list on Thursday.
+
+It asks for a wake lock while it runs, so the device does not black out the
+screensaver, and it takes the whole screen when it is started by hand — a browser
+only hands that over in response to a press, which is why **Start it now** is a
+button rather than a link.
+
+**Escape closes it**, or a deliberate press on the screen — and nothing else. In
+particular not a moving mouse, which is what a desktop screensaver traditionally
+watches for and is exactly wrong here: this is a thing you put on a screen *to be
+looked at*, often on a machine that is still doing something else, and having it
+collapse because the cursor drifted a centimetre makes it useless as either. A
+press stays despite the same argument applying to it, because there is no Escape
+key on a tablet and that tablet is the device this is for. Input is ignored for
+the first 800 ms, so the press that opened it is never the press that closes it.
+
+Waking lands you back on the page you were reading, which is passed in the `from`
+parameter and validated as a path on this instance.
+
+### Starting on its own
+
+`screensaverIdle` on the account is minutes of nothing at all before it starts,
+and zero — the default — means never. One column rather than a boolean and a
+delay beside it: "start it after ten minutes" and "never start it on its own"
+are one answer to one question, and two columns would let them disagree.
+
+The watcher lives in the layout, so it is running on every page, and it does
+nothing whatsoever until somebody picks a delay. Activity is recorded as a
+timestamp and read on a fifteen-second timer rather than resetting a `setTimeout`
+on every event — `pointermove` fires a hundred times a second and that is real
+work for an answer nobody needed to the second. It does not count idleness while
+the tab is hidden or while anything is fullscreen, so a trailer with two minutes
+left is never interrupted, and a film that ends at the two-hour mark is not
+followed straight into the screensaver from a standing start.
+
+### Weather
+
+[Open-Meteo](https://open-meteo.com), which needs no account, no key and no
+attribution — the right shape for a self-hosted app whose owner should not have
+to sign up to a third service to see a temperature on a shelf. Nothing about the
+user leaves the machine: the request carries a latitude and a longitude and no
+identifier of any kind, and it is only ever made for someone who typed a place
+into their settings.
+
+The name is geocoded once, when it is saved, and only the coordinates are kept —
+so the screensaver never looks anything up while it is running, and a village
+Open-Meteo has never heard of fails on the settings page, which is the only place
+there is anywhere to say so. Celsius, unless `WATCH_REGION` is one of the handful
+of countries that still reports the weather in Fahrenheit; there is no second
+setting for it, because it would be a second question with the same answer.
+
+Leave the field empty for no weather at all, which is what everybody gets until
+they ask.
 
 ## Lists
 

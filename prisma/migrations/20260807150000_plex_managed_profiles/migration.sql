@@ -1,0 +1,13 @@
+-- Managed profiles in a Plex Home.
+--
+-- A Home has one plex.tv login and any number of profiles behind it — a
+-- partner, a brother, the kids — none of which have a login or an email address
+-- of their own. Signing in with Plex could only ever report the owner, so the
+-- whole household landed in the owner's Trekker profile and logged its viewing
+-- there. They get their own accounts now, seated by the profile picker after a
+-- Plex sign-in.
+--
+-- The flag says that this row's `email` is a placeholder, minted only because
+-- the column is required and unique. Nothing shows it, and nothing lets anybody
+-- sign in with it: a managed profile is reached through its Home, or not at all.
+ALTER TABLE "User" ADD COLUMN "plexManaged" BOOLEAN NOT NULL DEFAULT false;

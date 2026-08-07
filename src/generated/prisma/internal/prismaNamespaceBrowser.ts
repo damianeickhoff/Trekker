@@ -92,6 +92,8 @@ export const UserScalarFieldEnum = {
   plexAccountId: 'plexAccountId',
   plexAuthToken: 'plexAuthToken',
   plexUsername: 'plexUsername',
+  plexManaged: 'plexManaged',
+  plexHomeLinkedAt: 'plexHomeLinkedAt',
   providers: 'providers',
   coverBackdrop: 'coverBackdrop',
   coverTitle: 'coverTitle',
@@ -116,6 +118,12 @@ export const UserScalarFieldEnum = {
   levelBaseFranchises: 'levelBaseFranchises',
   levelBaselineAt: 'levelBaselineAt',
   challengesCollapsed: 'challengesCollapsed',
+  xpPanelCollapsed: 'xpPanelCollapsed',
+  screensaverIdle: 'screensaverIdle',
+  screensaverSource: 'screensaverSource',
+  screensaverPlace: 'screensaverPlace',
+  screensaverLat: 'screensaverLat',
+  screensaverLon: 'screensaverLon',
   levelKnownKeys: 'levelKnownKeys'
 } as const
 

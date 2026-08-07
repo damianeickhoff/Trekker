@@ -24,14 +24,37 @@ export async function logPlexScrobble(
 ): Promise<boolean> {
   if (!tmdbConfigured()) return false;
 
-  const connection = await getPlexConnection(userId);
+  /**
+   * The server's own token, not the viewer's.
+   *
+   * All this asks is which TMDB title a library item is matched to, which is a
+   * fact about the item and has nothing to do with who watched it — so there is
+   * nothing to be gained by asking as the viewer, and something to lose. A
+   * managed Plex Home profile holds a token from the Home switch, and every
+   * failure below is silent: a token the server will not accept means no id,
+   * which means this returns false and the viewing is dropped with no record of
+   * why. Asking as the server takes that whole failure mode off the path.
+   *
+   * Watched *state* is per account and is still read as the viewer — see
+   * `syncPlexHistory`. This is not that.
+   */
+  const connection = await getPlexConnection();
   if (!connection) return false;
 
   const key = entry.type === "episode" ? entry.grandparentRatingKey : entry.ratingKey;
   if (!key) return false;
 
   const tmdbId = await getPlexTmdbId(connection, key).catch(() => null);
-  if (!tmdbId) return false;
+  if (!tmdbId) {
+    // Said out loud, because this is the end of the line for a viewing that
+    // Plex has already reported. Silent, it looks exactly like a webhook that
+    // never arrived — which is a very different thing to go looking for.
+    console.warn(
+      `Plex scrobble dropped: library item ${key} is not matched to a TMDB id`,
+      { userId, title: entry.title },
+    );
+    return false;
+  }
 
   if (entry.type === "movie") {
     const detail = await getMovie(tmdbId).catch(() => null);

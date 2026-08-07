@@ -84,7 +84,7 @@ export function ComparisonPanel({
                   <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.title}</span>
                   <span className="shrink-0 font-mono text-xs tabular-nums">
                     <span className="text-flare-400">{row.yours}</span>
-                    <span className="mx-1 text-ink-600">vs</span>
+                    <span className="mx-1 text-ink-500">vs</span>
                     <span className="text-ember-400">{row.theirs}</span>
                   </span>
                 </Link>

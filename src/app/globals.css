@@ -93,7 +93,22 @@
   --color-ink-800: #ececf3;
   --color-ink-700: #dcdce8;
   --color-ink-600: #c2c2d4;
-  --color-ink-500: #9797ab;
+  /*
+   * Not the mirror image of the dark ramp, on purpose.
+   *
+   * A straight inversion put this at a pale silver, and 500 is a text step —
+   * `text-ink-500` is eighty-odd second lines, timestamps and captions, against
+   * one border and no fills. On the dark page a pale grey is quiet; on paper it
+   * was gone, which is what made the notification list read as a column of
+   * blanks with a heading on top. This is the quietest grey that is still text:
+   * about 4.5:1 on white, a clear step below 400 without falling off the page.
+   *
+   * 600 stays pale because it is the opposite kind of token — forty-eight
+   * borders to thirty-odd bits of text, and most of that text is a decorative
+   * glyph in an empty state. Anything at 600 that a reader is meant to *read*
+   * belongs at 500 instead, and has been moved there.
+   */
+  --color-ink-500: #75758f;
   --color-ink-400: #6b6b85;
   --color-ink-300: #4a4a60;
   --color-ink-200: #30303f;
@@ -110,9 +125,59 @@
   --color-fresh-500: #047857;
 }
 
+/**
+ * iOS zooms the page in whenever a focused field's text is under 16px, and never
+ * zooms back out. Every input in the app is smaller than that by design, so the
+ * size is forced back up on touch screens only — desktop keeps the smaller type.
+ *
+ * Deliberately unlayered. This lived in `@layer base`, which is where a rule
+ * like it belongs and also the reason it never fired: every one of these inputs
+ * carries a `text-sm` or `text-xs` from Tailwind's utilities layer, and a later
+ * layer beats an earlier one whatever the selectors say. So the fields stayed at
+ * 14px and iOS kept zooming. Unlayered rules beat every layer, which is the only
+ * place this can sit and still win — the same reasoning as the title-page block
+ * at the foot of this file.
+ */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 @layer base {
   html {
     color-scheme: dark;
+
+    /*
+     * The document does not bounce.
+     *
+     * iOS rubber-bands the whole page past its ends, and while it does, every
+     * `position: fixed` element travels with it — which is what made the tab bar
+     * lift off the bottom of the screen and settle back on a page load, and what
+     * left it stranded mid-screen on a short page like a quiet calendar week.
+     * Nothing in the app wants the overscroll, and the installed app has no
+     * pull-to-refresh for it to break.
+     */
+    overscroll-behavior-y: none;
+
+    /**
+     * Stops the full-bleed hero artwork poking a horizontal scrollbar out.
+     *
+     * It has to be `clip`, not `hidden`: `hidden` makes the element a scroll
+     * container, which breaks `position: sticky` hit testing on mobile Safari —
+     * the header paints but stops taking taps.
+     *
+     * And it sits here rather than on <body>, which is where it used to be.
+     * Either way the clipping ends up on the viewport, but on <body> it also
+     * made the box that the tab bar is a child of a clip container, and WebKit
+     * is not reliable about a fixed child of one of those. On <html> the
+     * clipping is the viewport's own and the bar's parent is an ordinary box.
+     * It must not go on <main>: that would clip the 100vw artwork back to the
+     * content column, which is exactly what it is trying to escape.
+     */
+    overflow-x: clip;
 
     /*
      * Keep the scrollbar's track reserved even when there is nothing to scroll.
@@ -132,20 +197,6 @@
 
   html[data-theme="light"] {
     color-scheme: light;
-  }
-
-  /**
-   * iOS zooms the page in whenever a focused field's text is under 16px, and
-   * never zooms back out. Every input in the app is smaller than that by
-   * design, so the size is forced back up on touch screens only — desktop keeps
-   * the smaller type.
-   */
-  @media (pointer: coarse) {
-    input:not([type="checkbox"]):not([type="radio"]),
-    select,
-    textarea {
-      font-size: 16px;
-    }
   }
 
   body {
@@ -441,18 +492,6 @@
     scrollbar-color: var(--color-ink-700) transparent;
   }
 
-  /**
-   * Stops the full-bleed hero artwork poking a horizontal scrollbar out.
-   *
-   * It has to be `clip`, not `hidden`: `hidden` makes the element a scroll
-   * container, which breaks `position: sticky` hit testing on mobile Safari —
-   * the header paints but stops taking taps. And it has to sit on <body>, not
-   * <main>: clipping on <main> would clip the 100vw artwork back to the
-   * content column, which is exactly what it is trying to escape.
-   */
-  body {
-    overflow-x: clip;
-  }
 }
 
 @utility card {
@@ -1405,8 +1444,13 @@ html[data-theme="light"] .season-snow-far {
     --color-ink-800: #171724;
     --color-ink-700: #232336;
     --color-ink-600: #34344d;
+    /* 500 and 200 were missing from this list, so a phone title page kept the
+       light ramp's values for them while every other step went dark — a pale
+       silver caption and a near-black chip label on artwork. */
+    --color-ink-500: #52526f;
     --color-ink-400: #6f6f8f;
     --color-ink-300: #9a9ab8;
+    --color-ink-200: #c6c6dc;
     --color-ink-100: #e6e6f2;
 
     --color-flare-300: #c4b5fd;
@@ -1724,6 +1768,495 @@ html[data-theme="light"] .season-snow-far {
 }
 
 /*
+ * ---------------------------------------------------------------------------
+ * The screensaver
+ * ---------------------------------------------------------------------------
+ *
+ * Outside every `@layer`, for the same reason the title-page block above is:
+ * these have to beat Tailwind utilities sitting on elements they are correcting
+ * — the header's `sticky`, the main element's `mx-auto max-w-6xl px-4 pt-5`.
+ *
+ * A screensaver is the one screen in the app that is not a page. There is no
+ * header, no tab bar, no column and no margin: the window is the artwork, and
+ * everything drawn on it is drawn on top. It is also dark whatever the reader
+ * has chosen, and unlike the title pages that needs no ramp switch — nothing in
+ * here uses the ink ramp at all. It is white and black over a photograph, which
+ * is the only palette that works on top of somebody else's cinematography.
+ */
+
+body:has(.screensaver) > header,
+body:has(.screensaver) > nav,
+body:has(.screensaver) .season-decor,
+/* A badge unlocking behind a screensaver is still worth having — the toast is
+   what tells you, and it will be there when you come back. It is simply not
+   worth having *over* the artwork, in the app's violet, in a corner nobody is
+   standing next to. */
+body:has(.screensaver) .unlock-layer {
+  display: none;
+}
+
+body:has(.screensaver) > main {
+  max-width: none;
+  padding: 0;
+}
+
+/*
+ * The page underneath must not be scrollable behind a full-screen overlay: on
+ * touch, a flick over a screensaver would otherwise scroll a dashboard nobody
+ * can see.
+ *
+ * And the reserved scrollbar gutter has to go with it. `html` keeps
+ * `scrollbar-gutter: stable` for the reason set out at the top of this file —
+ * so nothing jumps sideways when a dialog locks the page — but a screensaver is
+ * the one screen where that backfires: `position: fixed` is measured against
+ * the viewport *inside* the gutter, so the artwork stopped a scrollbar's width
+ * short of the right edge and left a strip of the page showing down the side of
+ * it. Nothing here can scroll anyway, so there is nothing for the gutter to
+ * keep stable.
+ */
+html:has(.screensaver) {
+  overflow: hidden;
+  scrollbar-gutter: auto;
+}
+
+body:has(.screensaver) {
+  overflow: hidden;
+}
+
+/*
+ * The slow drift across a still photograph.
+ *
+ * The whole illusion of a screensaver being alive rests on this: a picture that
+ * does not move for fourteen seconds reads as a frozen app rather than as a
+ * slideshow. It is deliberately slower and smaller than a Ken Burns pan in a
+ * video editor — a few percent over nineteen seconds, which is under a pixel a
+ * frame and never resolves as movement, only as the sense that something is.
+ *
+ * Two of them, alternating by slide, so a long run does not develop a rhythm.
+ * The scale floor is 1.05 rather than 1: the layer is translated as well as
+ * scaled, and anything at exactly 1 would show the page through the edge it
+ * moved away from.
+ */
+@keyframes ss-pan {
+  from {
+    transform: scale(1.05) translate3d(-1.2%, 0.8%, 0);
+  }
+  to {
+    transform: scale(1.16) translate3d(1.2%, -1%, 0);
+  }
+}
+
+@keyframes ss-pan-out {
+  from {
+    transform: scale(1.16) translate3d(1.4%, -0.7%, 0);
+  }
+  to {
+    transform: scale(1.05) translate3d(-1%, 0.9%, 0);
+  }
+}
+
+.ss-pan {
+  animation: ss-pan 19s cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+.ss-pan-out {
+  animation: ss-pan-out 19s cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+/*
+ * Text arriving and leaving.
+ *
+ * It travels through a blur rather than simply fading, which is what makes it
+ * read as coming into focus in front of the picture instead of being switched
+ * on over it. `--ss-delay` staggers the lines of a title block so they land in
+ * reading order — lettering, then facts, then the sentence about it.
+ *
+ * Leaving is faster than arriving and goes the other way, so the old title is
+ * gone before the new photograph has finished crossing. Two pieces of text
+ * dissolving through each other is the one thing that makes a slideshow look
+ * cheap.
+ */
+@keyframes ss-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+.ss-enter {
+  animation: ss-enter 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--ss-delay, 0ms);
+}
+
+@keyframes ss-leave {
+  from {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+    filter: blur(10px);
+  }
+}
+
+.ss-leave {
+  animation: ss-leave 0.8s cubic-bezier(0.4, 0, 1, 1) both;
+  animation-delay: var(--ss-delay, 0ms);
+}
+
+/* What both of the above become when the reader has asked for less movement. */
+@keyframes ss-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * The minute turning over.
+ *
+ * The clock is on screen for hours at a time and changes twice an hour in a way
+ * anybody would notice — so the one moment it does anything is worth building.
+ * The new figure rises a couple of pixels into place rather than being swapped,
+ * which is the mechanical flip-clock gesture at a scale you feel rather than
+ * watch. Each field carries it separately, so the hour sits still for the
+ * fifty-nine minutes it is not changing.
+ */
+@keyframes ss-tick {
+  from {
+    opacity: 0;
+    transform: translateY(0.14em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ss-tick {
+  display: inline-block;
+  animation: ss-tick 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* The one second-hand in the place: a colon that breathes rather than blinks.
+   A hard blink at 1Hz is a digital alarm clock, and this is not one. */
+@keyframes ss-colon {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.ss-colon {
+  animation: ss-colon 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/*
+ * The rule beside the eyebrow, drawn as the title lands.
+ *
+ * It is the one piece of pure decoration on the screen, and it earns its place
+ * by giving the block a top edge: a title treatment is artwork of whatever
+ * height and shape TMDB happens to hold, so without this the bottom-left corner
+ * begins at a different place on every slide. The rule always begins in the
+ * same one.
+ */
+@keyframes ss-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.ss-rule {
+  transform-origin: left;
+  animation: ss-rule 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--ss-delay, 0ms);
+}
+
+/*
+ * The incoming picture pulls into focus.
+ *
+ * A crossfade alone says "the slide changed". A crossfade that resolves says
+ * "look at this" — it is the rack focus a title sequence opens on, and it is
+ * the single thing that most separates this from a folder of wallpapers on a
+ * timer. It runs slightly shorter than the fade it happens inside, so the
+ * picture is sharp a moment before it is fully opaque rather than after.
+ *
+ * `filter` is a compositable property, so this is work for the GPU rather than
+ * a repaint per frame — which matters, because the layer being blurred is the
+ * whole window and the machine doing it may be a tablet on a shelf.
+ */
+@keyframes ss-focus {
+  from {
+    filter: blur(14px);
+  }
+  to {
+    filter: blur(0);
+  }
+}
+
+.ss-focus {
+  animation: ss-focus 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/*
+ * Grain.
+ *
+ * Two frames of two different films, one shot on 35mm in 1974 and one graded
+ * last year, are two different surfaces — and a slideshow that cuts between
+ * them looks like a slideshow. A single sheet of noise laid over all of them
+ * is what makes them read as one thing seen through one lens. It is at four
+ * percent, which is under the threshold of noticing it and well over the
+ * threshold of noticing its absence.
+ *
+ * One static SVG turbulence tile rather than an animated canvas: a screensaver
+ * runs for days, and nothing here should cost a frame it does not have to.
+ */
+.ss-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+}
+
+/*
+ * The line telling you how to get out again. It says its piece and goes, rather
+ * than sitting on the artwork for the rest of the evening.
+ *
+ * The delay is short because this runs a second time, on demand: moving the
+ * mouse asks the question and this is the answer, so anything more than a beat
+ * between the two reads as the screen not having noticed.
+ */
+@keyframes ss-hint {
+  0% {
+    opacity: 0;
+  }
+  15%,
+  55% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ss-hint {
+  animation: ss-hint 7s ease-in-out 0.3s both;
+}
+
+/*
+ * The curtain going up.
+ *
+ * The route's loading state is a black screen, so without this the first frame
+ * of artwork simply appears, at full strength, the instant it is decoded — which
+ * is the one moment in the whole thing that looked like a web page loading
+ * rather than a screen being handed over. Eight hundred milliseconds out of
+ * black, on top of the focus pull the first picture is already doing, and the
+ * arrival reads as deliberate.
+ */
+@keyframes ss-open {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.screensaver {
+  animation: ss-open 0.8s ease-out both;
+}
+
+/*
+ * The two bands of blur the text sits on.
+ *
+ * The same idea as a title page's `.hero-veil`, and here for the same reason:
+ * blurring what is actually behind the words holds up over a bright poster and
+ * a near-black still alike, where any fixed amount of dimming is a compromise
+ * struck against one of them. It is also the single thing that makes this look
+ * expensive rather than merely dark — depth of field is what a camera does and
+ * a flat gradient is what a web page does.
+ *
+ * Masked at both ends, which is the whole trick. An unmasked band of
+ * backdrop-filter has two hard edges across the artwork and reads as a bug; a
+ * band that arrives out of nothing and leaves the same way is not perceived as
+ * a band at all, only as the picture gradually stopping being sharp. The mask
+ * runs the *opposite* way in each: the top band is sharpest at the very top of
+ * the screen, the bottom band at the very bottom.
+ *
+ * Saturation is pushed as it blurs. Blurring alone averages colours towards
+ * grey, and the point of these is to keep the film's own colour under the text
+ * rather than to replace it with a smudge.
+ */
+.ss-blur-top {
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0 / 0.55) 45%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0 / 0.55) 45%, transparent 100%);
+}
+
+.ss-blur-bottom {
+  -webkit-backdrop-filter: blur(30px) saturate(130%);
+  backdrop-filter: blur(30px) saturate(130%);
+  -webkit-mask-image: linear-gradient(to top, rgb(0 0 0) 0%, rgb(0 0 0 / 0.6) 42%, transparent 100%);
+  mask-image: linear-gradient(to top, rgb(0 0 0) 0%, rgb(0 0 0 / 0.6) 42%, transparent 100%);
+}
+
+/*
+ * The film's own colour, thrown back into the room.
+ *
+ * The bottom third of each frame is averaged when the run is built — the same
+ * sampler the title pages use to decide what colour they continue in — and this
+ * is where that colour goes: a wide, soft glow rising out of the bottom-left
+ * corner under the title, and a fainter one falling from the opposite corner.
+ *
+ * `screen` rather than a plain overlay, because it can only ever add light.
+ * That is what makes it read as illumination coming off the picture instead of
+ * a coloured sheet laid over it, and it is why the blacks at the very bottom of
+ * the screen lift into the film's hue rather than staying flat. The colour is
+ * capped for brightness before it ever gets here — see `toBloom`.
+ *
+ * It is a layer per slide, crossfading on exactly the same schedule as the
+ * artwork, so the colour of the room changes with the film rather than snapping
+ * over at the moment of the cut.
+ */
+.ss-bloom {
+  mix-blend-mode: screen;
+}
+
+/*
+ * The three washes over the artwork.
+ *
+ * Always black, in both themes and on every picture: the text on top is white
+ * because white is the only colour that is legible over an arbitrary frame of
+ * somebody's film, and a white-on-pale-scrim treatment would fail the first
+ * time a snowy establishing shot came round.
+ *
+ * The bottom one is heavier than the top, because that is where the paragraph
+ * is; the top only has to hold four numbers and a temperature. The vignette does
+ * the rest — it is what stops a bright corner of a poster pulling the eye away
+ * from the clock.
+ *
+ * All three are lighter than they were, and the blur above is why. They were
+ * carrying legibility on their own, which meant being heavy enough for the
+ * worst frame the slideshow could produce — a near-white one — on every frame it
+ * ever showed. With the artwork behind the text already softened, they only have
+ * to hold contrast rather than manufacture it, and about a fifth of the film
+ * comes back. That fifth is the difference between artwork on a dark page and a
+ * dark page with a photograph somewhere behind it.
+ */
+.ss-veil-bottom {
+  background-image: linear-gradient(
+    to top,
+    rgb(0 0 0 / 0.82) 0%,
+    rgb(0 0 0 / 0.58) 18%,
+    rgb(0 0 0 / 0.18) 48%,
+    transparent 72%
+  );
+}
+
+.ss-veil-top {
+  background-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.58) 0%,
+    rgb(0 0 0 / 0.2) 22%,
+    transparent 48%
+  );
+}
+
+.ss-vignette {
+  background-image: radial-gradient(
+    125% 105% at 50% 45%,
+    transparent 36%,
+    rgb(0 0 0 / 0.62) 100%
+  );
+}
+
+/*
+ * What is behind the clock when there is no artwork to be behind it — no TMDB
+ * key, or a watchlist with nothing on it.
+ *
+ * The app's own background, pinned to its dark values rather than read from the
+ * ramp: everything else on this screen is white on a photograph, and a
+ * screensaver that turns the page white in the light theme would be a torch in
+ * a dark room at exactly the hour anybody sees it.
+ */
+.ss-empty {
+  background:
+    radial-gradient(120% 80% at 18% 0%, #241a4d 0%, transparent 55%),
+    radial-gradient(90% 60% at 92% 8%, #3b1d3d 0%, transparent 50%),
+    #07070c;
+}
+
+/* A film's own lettering is artwork on transparency, usually white and rarely
+   outlined — the same problem the title page's hero logo has, and the same
+   answer. */
+.ss-logo {
+  filter: drop-shadow(0 2px 10px rgb(0 0 0 / 0.6)) drop-shadow(0 0 30px rgb(0 0 0 / 0.4));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The slideshow still advances — that is the feature, not the decoration —
+     but nothing drifts, and nothing arrives through a blur. */
+  .ss-pan,
+  .ss-pan-out {
+    animation: none;
+    transform: scale(1.05);
+  }
+
+  /* Both of these are movement dressed up as focus, which is exactly what was
+     asked to stop. The picture simply arrives sharp, and the rule is a rule. */
+  .ss-focus {
+    animation: none;
+    filter: none;
+  }
+
+  .ss-rule {
+    animation: none;
+    transform: none;
+  }
+
+  /* Still a change of slide, just one that neither travels nor defocuses. */
+  .ss-enter,
+  .ss-leave {
+    filter: none;
+    transform: none;
+  }
+
+  .ss-enter {
+    animation: ss-fade 0.5s linear both;
+  }
+
+  .ss-leave {
+    animation: ss-fade 0.4s linear reverse both;
+  }
+
+  .ss-colon {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  /* The minute still changes. It just changes. */
+  .ss-tick {
+    animation: none;
+  }
+}
+
+/*
  * The wash behind an episode, built from its own still.
  *
  * The same idea as a title page's hero at the scale of one episode: the page's
@@ -1769,3 +2302,414 @@ html[data-theme="light"] .episode-wash img {
   opacity: 0.55;
 }
 
+
+/* ===========================================================================
+ * The unlock celebration.
+ *
+ * A badge is the one moment in the app worth making a fuss of, so this is the
+ * one place that spends real animation on it. Four things happen at once and
+ * then get out of the way: the card drops in and overshoots slightly, a sheen
+ * sweeps across it, light blooms out from behind the medal, and a hairline
+ * timer drains along the bottom edge.
+ *
+ * All of it is transform and opacity — nothing here triggers layout — and all
+ * of it stops for `prefers-reduced-motion`, where the card simply appears.
+ * ======================================================================== */
+
+.unlock-layer {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  left: 50%;
+  z-index: 60;
+  display: flex;
+  width: min(100% - 1.5rem, 26rem);
+  translate: -50% 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.unlock-toast {
+  position: relative;
+  overflow: hidden;
+  pointer-events: auto;
+  transform-origin: top center;
+  /* The overshoot is the whole character of it: down past the resting point,
+     then settle. A plain ease-out arrival feels like a dialog, not a prize. */
+  animation: unlock-in 0.62s cubic-bezier(0.16, 1.28, 0.42, 1) both;
+}
+
+.unlock-toast[data-leaving="true"] {
+  animation: unlock-out 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* The sheen. A narrow band of light crossing the card once, a beat after it
+   lands — early enough to feel like part of the arrival, late enough to read. */
+.unlock-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.14) 48%,
+    rgb(255 255 255 / 0.22) 50%,
+    rgb(255 255 255 / 0.14) 52%,
+    transparent 65%
+  );
+  translate: -120% 0;
+  animation: unlock-sheen 1.15s cubic-bezier(0.3, 0, 0.2, 1) 0.28s both;
+}
+
+/* Light blooming out from behind the medal, once. */
+.unlock-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    38% 120% at 14% 50%,
+    color-mix(in oklab, var(--color-flare-500) 55%, transparent) 0%,
+    transparent 70%
+  );
+  animation: unlock-bloom 1.5s ease-out both;
+}
+
+/* A ring that expands out of the medal and fades — the "pop". */
+.unlock-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklab, var(--color-flare-400) 70%, transparent);
+  animation: unlock-ring 1.1s cubic-bezier(0.2, 0.7, 0.3, 1) 0.12s both;
+}
+
+.unlock-medal {
+  animation: unlock-medal 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) 0.1s both;
+}
+
+/* How long is left before it goes, drawn rather than guessed at. */
+.unlock-timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform-origin: left center;
+  background: linear-gradient(to right, var(--color-flare-500), var(--color-ember-400));
+  animation: unlock-timer var(--unlock-life, 6s) linear both;
+}
+
+@keyframes unlock-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -140%, 0) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes unlock-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -60%, 0) scale(0.96);
+  }
+}
+
+@keyframes unlock-sheen {
+  to {
+    translate: 120% 0;
+  }
+}
+
+@keyframes unlock-bloom {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes unlock-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+@keyframes unlock-medal {
+  from {
+    transform: scale(0.4) rotate(-25deg);
+  }
+  60% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes unlock-timer {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* It still arrives and still leaves — it just stops performing. */
+  .unlock-toast,
+  .unlock-toast[data-leaving="true"] {
+    animation: unlock-fade 0.2s ease both;
+  }
+
+  .unlock-sheen,
+  .unlock-ring,
+  .unlock-medal {
+    animation: none;
+  }
+
+  .unlock-bloom {
+    animation: none;
+    opacity: 0.35;
+  }
+
+  @keyframes unlock-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ===========================================================================
+ * Levelling up.
+ *
+ * Two sizes, because the two things are not the same. A level is a step and
+ * gets the same strip a badge does, tinted differently. A *rank* — Rookie to
+ * Novice, Buff to Aficionado — happens five times as rarely and is the only
+ * thing in the app that takes the middle of the screen.
+ * ======================================================================== */
+
+/* -- The rank change ------------------------------------------------------ */
+.rankup-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+/* A wash that dims the page without blocking it. Never opaque: this is a
+   celebration, not a modal, and nothing behind it is being taken away. */
+.rankup-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 50% at 50% 50%, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.78));
+  animation: rankup-veil 0.5s ease-out both;
+}
+
+.rankup-card {
+  position: relative;
+  pointer-events: auto;
+  animation: rankup-in 0.85s cubic-bezier(0.16, 1.24, 0.36, 1) both;
+}
+
+.rankup-card[data-leaving="true"] {
+  animation: rankup-out 0.42s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* Light turning behind the medal. A conic gradient masked to a soft disc, so
+   the rays fade out rather than ending on a hard circle. */
+.rankup-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26rem;
+  height: 26rem;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in oklab, var(--color-flare-400) 45%, transparent) 12deg,
+    transparent 24deg,
+    transparent 36deg,
+    color-mix(in oklab, var(--color-ember-400) 35%, transparent) 48deg,
+    transparent 60deg
+  );
+  background-size: 100% 100%;
+  mask-image: radial-gradient(closest-side, #000 20%, transparent 78%);
+  opacity: 0;
+  animation:
+    rankup-rays-in 0.9s ease-out 0.15s both,
+    rankup-spin 18s linear infinite;
+}
+
+/* Two rings leaving the medal, the second a beat behind the first. */
+.rankup-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7rem;
+  height: 7rem;
+  translate: -50% -50%;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklab, var(--color-flare-400) 65%, transparent);
+  animation: rankup-ring 1.5s cubic-bezier(0.16, 0.8, 0.3, 1) 0.2s both;
+}
+
+.rankup-ring-late {
+  animation-delay: 0.45s;
+  border-color: color-mix(in oklab, var(--color-ember-400) 55%, transparent);
+}
+
+.rankup-medal {
+  animation: rankup-medal 1.1s cubic-bezier(0.18, 1.5, 0.4, 1) 0.12s both;
+}
+
+/* The old rank crossing out and the new one arriving. */
+.rankup-from {
+  animation: rankup-from 0.7s ease-out 0.35s both;
+}
+
+.rankup-to {
+  animation: rankup-to 0.75s cubic-bezier(0.16, 1.3, 0.4, 1) 0.5s both;
+}
+
+@keyframes rankup-veil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rankup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82) translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes rankup-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes rankup-rays-in {
+  from {
+    opacity: 0;
+    scale: 0.7;
+  }
+  to {
+    opacity: 0.85;
+    scale: 1;
+  }
+}
+
+@keyframes rankup-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes rankup-ring {
+  from {
+    opacity: 0.85;
+    scale: 0.45;
+  }
+  to {
+    opacity: 0;
+    scale: 2.6;
+  }
+}
+
+@keyframes rankup-medal {
+  from {
+    transform: scale(0.3) rotate(-35deg);
+  }
+  55% {
+    transform: scale(1.16) rotate(8deg);
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rankup-from {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0.35;
+    text-decoration-color: currentColor;
+  }
+}
+
+@keyframes rankup-to {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* -- The level step ------------------------------------------------------- */
+/* Rides the badge strip's arrival, with its own colour and a number where the
+   medal would be. */
+.levelup-number {
+  animation: unlock-medal 0.9s cubic-bezier(0.2, 1.4, 0.4, 1) 0.1s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rankup-card,
+  .rankup-card[data-leaving="true"] {
+    animation: rankup-veil 0.2s ease both;
+  }
+
+  .rankup-rays {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  .rankup-ring,
+  .rankup-medal,
+  .rankup-from,
+  .rankup-to,
+  .levelup-number {
+    animation: none;
+  }
+}

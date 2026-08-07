@@ -80,9 +80,31 @@ export async function syncPlexHistory(userId: string): Promise<PlexHistoryState>
   const user = { id: userId };
   if (!tmdbConfigured()) return { error: "TMDB_API_KEY is not set on the server" };
 
-  // As the viewer, not as the admin: watched state is per Plex account.
-  const connection = await getPlexConnection(user.id);
-  if (!connection) return { error: "No Plex server is connected" };
+  /**
+   * Two connections to the same server, because the three questions below are
+   * not all asked of the same party.
+   *
+   * `connection` is the viewer's own token. Whether an item is *watched* is a
+   * fact about an account, and the library only ever reports it for whoever the
+   * token belongs to — ask as the admin and every profile here sees the admin's
+   * viewing.
+   *
+   * `server` is the admin's. Two of these calls are server-level and a
+   * non-admin token is simply refused for them: the account list, and anyone's
+   * history but your own. That refusal is what broke a Plex Home managed
+   * profile — a partner, a brother, a child. They hold a token from the Home
+   * switch, which is not an admin's, so the account lookup came back empty,
+   * their history was never asked for, and an account with a film watched last
+   * night was told it had no viewing on this server at all.
+   *
+   * Asking each question of the party entitled to answer it is what fixes that,
+   * and it costs nothing: both tokens point at the same machine.
+   */
+  const [connection, server] = await Promise.all([
+    getPlexConnection(user.id),
+    getPlexConnection(),
+  ]);
+  if (!connection || !server) return { error: "No Plex server is connected" };
 
   const identity = await db.user.findUnique({
     where: { id: user.id },
@@ -93,7 +115,7 @@ export async function syncPlexHistory(userId: string): Promise<PlexHistoryState>
     return { error: "Link your Plex account first, so we know which viewing is yours" };
   }
 
-  const accountId = await findPlexAccountId(connection, {
+  const accountId = await findPlexAccountId(server, {
     accountId: identity.plexAccountId,
     username: identity.plexUsername,
   });
@@ -105,7 +127,7 @@ export async function syncPlexHistory(userId: string): Promise<PlexHistoryState>
   const [library, played] = await Promise.all([
     getPlexWatchedLibrary(connection).catch(() => []),
     accountId
-      ? getPlexHistory(connection, accountId, LIMIT).catch(() => [])
+      ? getPlexHistory(server, accountId, LIMIT).catch(() => [])
       : Promise.resolve([]),
   ]);
 
@@ -153,9 +175,16 @@ export async function syncPlexHistory(userId: string): Promise<PlexHistoryState>
   ];
 
   if (history.length === 0) {
+    // Two different findings, and the old wording gave the second one's answer
+    // to both: a profile the server had never heard of was told it had watched
+    // nothing, which sends you looking in the wrong place entirely.
     return accountId
       ? { summary: { movies: 0, episodes: 0, already: 0, skipped: 0, unmatched: [] } }
-      : { error: "That Plex account has no viewing on this server" };
+      : {
+          error: `This server has no account called “${
+            identity.plexUsername ?? identity.plexAccountId
+          }”. Check the Plex username in Settings matches the profile name on the server.`,
+        };
   }
 
   // ---- Resolve library items to TMDB ids ------------------------------------

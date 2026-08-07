@@ -1,4 +1,47 @@
 import Link from "next/link";
+import { Eye } from "lucide-react";
+import { formatWatchedShort } from "@/lib/dates";
+
+/**
+ * "👁 3 Aug ’26 · 2×".
+ *
+ * The one way the app says you have seen something and when. It started on the
+ * episode page and is now on every row of a season as well, which is exactly
+ * why it is a component rather than a class list copied twice: two chips saying
+ * the same thing in two slightly different greens is worse than either.
+ *
+ * The eye is the word. "Watched" in front of the date was the icon said twice,
+ * and it was the longest part of a chip that has to sit inline beside an episode
+ * title — so the glyph carries the meaning and the date gets the room. Screen
+ * readers still hear the word, because an eye is not one.
+ *
+ * The count only appears once it is more than one. "1×" is what the pill
+ * already means.
+ */
+export function WatchedPill({
+  at,
+  plays = 1,
+  /** Sized down for a list row, where the pill sits beside a title rather than
+      on a line of its own. */
+  compact = false,
+}: {
+  at: Date | string;
+  plays?: number;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border border-fresh-500/40 bg-fresh-500/10 font-medium whitespace-nowrap text-fresh-500 ${
+        compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]"
+      }`}
+    >
+      <Eye size={compact ? 11 : 12} className="shrink-0" />
+      <span className="sr-only">Watched </span>
+      {formatWatchedShort(at)}
+      {plays > 1 && <span className="font-mono tabular-nums">· {plays}×</span>}
+    </span>
+  );
+}
 
 export function StatTile({
   label,

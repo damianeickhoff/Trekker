@@ -19,6 +19,19 @@ export async function updateProfile(
 ): Promise<SettingsState> {
   const user = await requireUser();
 
+  const submitted = String(formData.get("email") ?? "").trim().toLowerCase();
+
+  /**
+   * A managed Plex Home profile may leave this blank.
+   *
+   * They have no address of their own — the one on the row is a placeholder
+   * minted to satisfy a unique index — and there is nothing they need one for:
+   * they sign in through the Home, not by email. So an empty field means "leave
+   * the stand-in alone" rather than an error, and filling it in is how such a
+   * profile becomes reachable if they ever want it to be.
+   */
+  const keepPlaceholder = user.plexManaged && submitted.length === 0;
+
   const parsed = z
     .object({
       name: z.string().min(1, "Your name cannot be empty").max(60),
@@ -26,7 +39,7 @@ export async function updateProfile(
     })
     .safeParse({
       name: String(formData.get("name") ?? "").trim(),
-      email: String(formData.get("email") ?? "").trim().toLowerCase(),
+      email: keepPlaceholder ? user.email : submitted,
     });
 
   if (!parsed.success) return { error: parsed.error.issues[0].message };

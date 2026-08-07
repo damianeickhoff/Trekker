@@ -12,6 +12,20 @@ export function formatHours(minutes: number) {
   return `${Math.round(hours).toLocaleString("en-GB")}h`;
 }
 
+/**
+ * How wide to draw a progress bar, as a percentage.
+ *
+ * A bar at 1% is a sliver too thin to see, so anything above zero is floored at
+ * a couple of percent — but *zero has to stay zero*. Flooring it unconditionally
+ * is what left the level bar looking part-filled for someone who had earned
+ * nothing at all, which is worse than no bar: it claims progress that has not
+ * happened.
+ */
+export function barWidth(percent: number, floor = 2) {
+  if (!(percent > 0)) return 0;
+  return Math.min(100, Math.max(floor, percent));
+}
+
 /** "3d 4h" — the fun version for the profile page. */
 export function formatSpan(minutes: number) {
   const days = Math.floor(minutes / (60 * 24));

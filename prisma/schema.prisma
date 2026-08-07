@@ -22,6 +22,16 @@ model User {
   /// Which Plex account is playing, for the "now watching" card. Filled in from
   /// the sign-in flow; settable by hand for accounts that use a password.
   plexUsername  String?
+  /// A managed profile in somebody's Plex Home — a partner, a brother, a child.
+  /// They have no plex.tv login and no email address of their own, so `email`
+  /// on this row is a placeholder that exists only to satisfy the unique index.
+  /// Nothing should show it, and nothing should let them sign in with it.
+  plexManaged   Boolean @default(false)
+  /// When this profile was introduced to the rest of its Plex Home — i.e. when
+  /// friendships were created with the housemates it shares a Plex login with.
+  /// Stamped so it happens exactly once: unfriending someone deletes the row, so
+  /// an introduction that ran on every sign-in would quietly undo it.
+  plexHomeLinkedAt DateTime?
 
   /// Streaming services the user pays for, as TMDB provider ids, comma
   /// separated. Used to warn before requesting something they can already watch.
@@ -87,6 +97,27 @@ model User {
   /// phone and the desktop — it is a preference about the app, not about one
   /// device's screen.
   challengesCollapsed Boolean @default(false)
+
+  /// Whether the experience breakdown on the achievements page is folded down to
+  /// just the bar. On the account for the same reason as the one above.
+  xpPanelCollapsed Boolean @default(false)
+
+  /// The screensaver: minutes of nothing at all before it starts by itself.
+  ///
+  /// Zero is the off switch, and deliberately the same field as the delay rather
+  /// than a boolean beside it — "start it after ten minutes" and "never start it
+  /// on its own" are one answer to one question, and two columns would let them
+  /// disagree. It can always still be started by hand from the account menu.
+  screensaverIdle Int @default(0)
+  /// Which shelf the slideshow draws from — see `SCREENSAVER_SOURCES`.
+  screensaverSource String @default("trending")
+  /// Where to ask about the weather. The place name is resolved to coordinates
+  /// once, when it is chosen, so the screensaver never has to geocode anything
+  /// while it is running; the name is kept only to print under the temperature.
+  /// All three are null when the weather has been left off, which is the default.
+  screensaverPlace String?
+  screensaverLat   Float?
+  screensaverLon   Float?
 
   /// Every achievement id this account has been measured against, comma
   /// separated. What makes a *newly added* achievement that a years-old imported

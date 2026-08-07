@@ -1,7 +1,10 @@
+"use client";
+
 import {
   Award,
   Boxes,
   CheckCheck,
+  ChevronDown,
   Film,
   Gauge,
   PenLine,
@@ -10,8 +13,11 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { useState } from "react";
 import type { LevelState } from "@/lib/achievements";
+import { barWidth } from "@/lib/format";
 import { MAX_LEVEL, formatXp } from "@/lib/levels";
+import { setXpPanelCollapsed } from "@/lib/panel-actions";
 
 const ICONS: Record<string, LucideIcon> = {
   award: Award,
@@ -36,9 +42,33 @@ const ICONS: Record<string, LucideIcon> = {
  * thing and what each was worth, so a level is never a number the app just
  * decided on. Rows worth nothing yet stay in the list — they are the answer to
  * "what else counts?".
+ *
+ * Folded away, what is left is the one line that answers "how am I doing" — how
+ * much is left to the next level, and the bar. The breakdown is the reasoning
+ * behind that line, and reasoning is worth being able to put away. Which state
+ * it is in lives on the account, so it follows you between devices.
  */
-export function LevelPanel({ level }: { level: LevelState }) {
-  const biggest = Math.max(1, ...level.sources.map((source) => source.xp));
+export function LevelPanel({
+  level,
+  collapsed: initiallyCollapsed = false,
+}: {
+  level: LevelState;
+  collapsed?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(initiallyCollapsed);
+
+  // Share of the total, not share of the biggest row. Measured against the
+  // biggest, whichever source happens to lead is drawn full — which reads as
+  // "finished" on a page where every other bar means exactly that. Against the
+  // total the bars add up to one whole, and a full one honestly means "all of
+  // your XP came from this".
+  const earned = Math.max(1, level.sources.reduce((sum, source) => sum + source.xp, 0));
+
+  function toggle() {
+    const next = !collapsed;
+    setCollapsed(next);
+    void setXpPanelCollapsed(next);
+  }
 
   return (
     <section className="mt-8">
@@ -50,42 +80,84 @@ export function LevelPanel({ level }: { level: LevelState }) {
       </h2>
 
       <div className="card p-5">
-        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
-          <p className="text-sm text-ink-300">
-            {level.maxed ? (
-              <>Level {MAX_LEVEL} is the top of the ladder.</>
-            ) : (
-              <>
-                <span className="font-semibold text-ink-100">
-                  {formatXp(level.toNextLevel)}
-                </span>{" "}
-                to level {level.level + 1}
-                {level.next && (
+        {/* The control belongs to the card it opens, not to the heading above
+            it — out there it read as though it might fold the whole section
+            away, heading and all. */}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
+              <p className="text-sm text-ink-300">
+                {level.maxed ? (
+                  <>Level {MAX_LEVEL} is the top of the ladder.</>
+                ) : (
                   <>
-                    , and {level.next.title} at level {level.next.level}
+                    <span className="font-semibold text-ink-100">
+                      {formatXp(level.toNextLevel)}
+                    </span>{" "}
+                    to level {level.level + 1}
+                    {/* Kept when folded: it is the answer to "and then what",
+                        which is half the reason to look at this at all. */}
+                    {level.next && (
+                      <>
+                        , and {level.next.title} at level {level.next.level}
+                      </>
+                    )}
+                    .
                   </>
                 )}
-                .
-              </>
-            )}
-          </p>
-          <p className="font-mono text-xs text-ink-400 tabular-nums">
-            {level.intoLevel.toLocaleString("en-GB")} /{" "}
-            {level.levelSpan.toLocaleString("en-GB")} this level
-          </p>
+              </p>
+              <p className="font-mono text-xs text-ink-400 tabular-nums">
+                {level.intoLevel.toLocaleString("en-GB")} /{" "}
+                {level.levelSpan.toLocaleString("en-GB")} this level
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            aria-label={
+              collapsed ? "Show where the XP came from" : "Hide where the XP came from"
+            }
+            className="-mt-1 -mr-1 grid h-8 w-8 shrink-0 touch-manipulation place-items-center rounded-lg text-ink-400 transition hover:bg-ink-800/70 hover:text-ink-100"
+          >
+            <ChevronDown
+              size={17}
+              className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`}
+            />
+          </button>
         </div>
 
         <div className="mt-2.5 h-2.5 overflow-hidden rounded-full bg-ink-800">
           <div
             className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-            style={{ width: `${Math.max(2, level.percent)}%` }}
+            style={{ width: `${barWidth(level.percent)}%` }}
           />
         </div>
 
+        {/*
+          The open and close is a grid row going from `0fr` to `1fr` rather than
+          a height being animated, because nothing here knows how tall the
+          breakdown is — it depends on how many sources have anything in them —
+          and `height: auto` cannot be transitioned. The row fraction can, and
+          the child clipping its own overflow is what turns that into a wipe.
+
+          The content stays mounted throughout: rendering it only when open
+          would mean there was nothing to slide on the way in and nothing left
+          to slide on the way out.
+        */}
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+            collapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
+          }`}
+          aria-hidden={collapsed}
+        >
+        <div className="min-h-0 overflow-hidden">
         <ul className="mt-5 divide-y divide-ink-800">
           {level.sources.map((source) => {
             const Icon = ICONS[source.icon] ?? Zap;
-            const share = (source.xp / biggest) * 100;
+            const share = (source.xp / earned) * 100;
 
             return (
               <li key={source.key} className="flex items-center gap-3 py-2.5">
@@ -99,6 +171,15 @@ export function LevelPanel({ level }: { level: LevelState }) {
                   <Icon size={15} />
                 </span>
 
+                {/*
+                  No bar on these rows. A bar promises a target, and none of
+                  these have one — there is no number of films you are working
+                  towards, so a half-full track under "Films watched" invented a
+                  goal that does not exist. Drawn as a share of the whole it was
+                  worse again: earning anything anywhere made every other row
+                  shrink, so a row went *backwards* on a page about going
+                  forwards. The share is a fact worth stating, so it is stated.
+                */}
                 <div className="min-w-0 flex-1">
                   <p
                     className={`truncate text-sm ${
@@ -107,21 +188,14 @@ export function LevelPanel({ level }: { level: LevelState }) {
                   >
                     {source.label}
                   </p>
-                  <div className="mt-1 h-1 overflow-hidden rounded-full bg-ink-800">
-                    <div
-                      className="h-full rounded-full bg-flare-500/70"
-                      style={{ width: `${share}%` }}
-                    />
-                  </div>
+                  <p className="truncate font-mono text-[10px] text-ink-500 tabular-nums">
+                    {source.detail}
+                    {source.xp > 0 && ` · ${Math.round(share)}% of your XP`}
+                  </p>
                 </div>
 
-                <span className="shrink-0 text-right">
-                  <span className="block font-mono text-sm font-semibold tabular-nums">
-                    {source.xp.toLocaleString("en-GB")}
-                  </span>
-                  <span className="block font-mono text-[10px] text-ink-500 tabular-nums">
-                    {source.detail}
-                  </span>
+                <span className="shrink-0 font-mono text-sm font-semibold tabular-nums">
+                  {source.xp.toLocaleString("en-GB")}
                 </span>
               </li>
             );
@@ -152,6 +226,8 @@ export function LevelPanel({ level }: { level: LevelState }) {
             count from your next visit.
           </p>
         )}
+        </div>
+        </div>
       </div>
     </section>
   );

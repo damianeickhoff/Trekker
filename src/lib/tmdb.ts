@@ -438,6 +438,11 @@ export type Episode = {
   still_path: string | null;
   air_date: string | null;
   vote_average: number;
+  /**
+   * "standard", "premiere", "finale" or "mid_season". Optional because TMDB
+   * only started filling it in recently and an old season may still have none.
+   */
+  episode_type?: string | null;
 };
 
 /**
@@ -682,6 +687,90 @@ export async function getRuntime(mediaType: MediaType, id: number): Promise<numb
   ];
 
   return candidates.find((minutes) => typeof minutes === "number" && minutes > 0) ?? null;
+}
+
+/**
+ * What a full-screen slide needs on top of what a list row already carries.
+ *
+ * The same trick as `getTitleFacts` below, for the same reason: the screensaver
+ * asks about a dozen titles at a time and wants the title treatment, the
+ * tagline and the genres — three small fields out of a detail payload that also
+ * contains every credit, every review and every trailer. `images` is appended
+ * because the lettering is the whole point of the slide; `include_image_language`
+ * is what makes TMDB return any of it, for the reason `DETAIL_PARAMS` explains.
+ *
+ * Cached for a day rather than the week the other lean calls use — a slideshow
+ * built from "trending" turns over faster than that, and a stale logo for a
+ * title that has since dropped off the list is a wasted request either way.
+ */
+export type SlideFacts = {
+  title: string;
+  logo: TitleLogo | null;
+  tagline: string | null;
+  genres: string[];
+  /** Minutes: the film's length, or one episode of a show. */
+  runtime: number | null;
+  /** Shows only. Null for a film, so the caller need not ask what it is. */
+  seasons: number | null;
+  /**
+   * The four fields a list row would already have carried. Repeated here because
+   * one caller — a slideshow built from the watchlist — starts from a database
+   * row rather than from a TMDB list, and a watchlist row knows what you meant
+   * to watch, not what it looks like.
+   */
+  backdrop: string | null;
+  year: string | null;
+  score: number;
+  overview: string;
+};
+
+export async function getSlideFacts(
+  mediaType: MediaType,
+  id: number,
+): Promise<SlideFacts | null> {
+  type Lean = Appended & {
+    title?: string;
+    name?: string;
+    tagline?: string;
+    overview?: string;
+    backdrop_path?: string | null;
+    vote_average?: number;
+    release_date?: string;
+    first_air_date?: string;
+    genres?: { id: number; name: string }[];
+    runtime?: number | null;
+    episode_run_time?: number[];
+    number_of_seasons?: number;
+  };
+
+  const data = await tmdb<Lean>(
+    `/${mediaType}/${id}`,
+    { append_to_response: "images", include_image_language: "null,en" },
+    60 * 60 * 24,
+  ).catch(() => null);
+
+  if (!data) return null;
+
+  const runtime = mediaType === "movie" ? data.runtime : data.episode_run_time?.[0];
+  const date = data.release_date || data.first_air_date || "";
+
+  return {
+    title: data.title || data.name || "Untitled",
+    logo: pickLogo(data.images),
+    tagline: data.tagline?.trim() || null,
+    // Two is as many as fits on one line beside a year and a length, and the
+    // first two TMDB lists are the two it considers primary.
+    genres: (data.genres ?? []).slice(0, 2).map((genre) => genre.name),
+    runtime: runtime && runtime > 0 ? runtime : null,
+    seasons:
+      mediaType === "tv" && data.number_of_seasons && data.number_of_seasons > 0
+        ? data.number_of_seasons
+        : null,
+    backdrop: data.backdrop_path ?? null,
+    year: date ? date.slice(0, 4) : null,
+    score: Math.round((data.vote_average ?? 0) * 10),
+    overview: data.overview ?? "",
+  };
 }
 
 /**

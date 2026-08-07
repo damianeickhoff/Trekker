@@ -106,7 +106,7 @@ export function CalendarWeek({
         {children}
       </div>
 
-      <p className="mt-3 text-center text-xs text-ink-600 sm:hidden">Swipe to change week</p>
+      <p className="mt-3 text-center text-xs text-ink-500 sm:hidden">Swipe to change week</p>
     </>
   );
 }

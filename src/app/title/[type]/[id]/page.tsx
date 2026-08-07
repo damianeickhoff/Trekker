@@ -2,10 +2,9 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, CircleSlash, Eye, Star } from "lucide-react";
+import { ChevronRight, CircleSlash, Star } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formatWatched } from "@/lib/dates";
 import { getRatingContext } from "@/lib/rating-context";
 import { getRequestMarks } from "@/lib/request-marks";
 import { getFriendReviews } from "@/lib/reviews";
@@ -26,6 +25,7 @@ import {
 import { CardRail } from "@/components/media-card";
 import { BackButton } from "@/components/back-button";
 import { avatarUrl } from "@/lib/avatar";
+import { displayEmail } from "@/lib/plex-seat";
 import { getNotifications } from "@/lib/notification-centre";
 import { heroColours, type HeroColours } from "@/lib/palette";
 import { getSeasonEpisodes } from "@/lib/up-next-rail";
@@ -46,7 +46,7 @@ import { Synopsis } from "@/components/synopsis";
 import { TrackButtons } from "@/components/track-buttons";
 import { FavouriteButton } from "@/components/favourite-button";
 import { getSaveState, type SaveState } from "@/lib/lists";
-import { SetupNotice, Skeleton, SkeletonRail } from "@/components/ui";
+import { SetupNotice, Skeleton, SkeletonRail, WatchedPill } from "@/components/ui";
 import { TitleMenu } from "@/components/title-menu";
 import { TitleReviews } from "@/components/title-reviews";
 import { TitleTrailer } from "@/components/title-trailer";
@@ -192,9 +192,10 @@ async function TitleChrome({ user }: { user: NonNullable<SessionUser> }) {
       <NotificationBell items={items} />
       <UserMenu
         name={user.name}
-        email={user.email}
+        email={displayEmail(user.email)}
         avatarUrl={avatarUrl(user)}
         seasonSetting={null}
+        canSwitchProfile={Boolean(user.plexAccountId)}
       />
     </div>
   );
@@ -390,7 +391,7 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         poster={movie.poster_path}
         logo={pickLogo(movie.images)}
         colours={colours}
-        watchedOn={state.watchedAt ? formatWatched(state.watchedAt) : null}
+        watchedOn={state.watchedAt}
         plays={state.plays}
         backdrop={movie.backdrop_path}
         meta={[
@@ -841,7 +842,7 @@ async function UpNext({
   watched,
   signedIn,
 }: {
-  show: { name: string; poster_path: string | null };
+  show: { name: string; poster_path: string | null; status?: string | null };
   showId: number;
   /** Season numbers with episodes, ascending. */
   seasons: number[];
@@ -867,6 +868,9 @@ async function UpNext({
       initialEpisodes={episodes}
       initialWatched={watched.map((w) => `${w.seasonNumber}-${w.episodeNumber}`)}
       signedIn={signedIn}
+      // TMDB only flips a show to Ended once it is actually over, so this is
+      // what separates a season finale from a series one.
+      showEnded={show.status === "Ended" || show.status === "Canceled"}
     />
   );
 }
@@ -927,7 +931,13 @@ function Hero({
   colours: HeroColours | null;
   /** Year · genres · length · votes · status, in that order, blanks dropped. */
   meta: (string | null | undefined)[];
-  watchedOn?: string | null;
+  /**
+   * The raw date rather than a formatted one. It used to arrive pre-printed,
+   * which is what let this drift away from the chip an episode wears — the
+   * wording, the year, the way a rewatch is counted were all decided here
+   * instead of in the one component that draws it.
+   */
+  watchedOn?: Date | string | null;
   plays?: number;
   /** The primary pair: watch and watchlist. */
   actions: React.ReactNode;
@@ -1079,12 +1089,8 @@ function Hero({
                     left to the column's own `text-align`, so it follows the
                     rest of the hero — centred on a phone, left on desktop. */}
                 {watchedOn && (
-                  <p className="ios-dim mt-2.5 text-xs text-ink-400">
-                    <span className="inline-flex items-center gap-1.5">
-                      <Eye size={13} className="shrink-0" />
-                      Watched {watchedOn}
-                      {plays && plays > 1 ? ` · ${plays} times` : ""}
-                    </span>
+                  <p className="mt-2.5">
+                    <WatchedPill at={watchedOn} plays={plays} />
                   </p>
                 )}
               </div>

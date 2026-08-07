@@ -119,7 +119,7 @@ export function HistoryFeed({
             Loading more
           </p>
         ) : (
-          <p className="text-center text-xs text-ink-600">That is everything.</p>
+          <p className="text-center text-xs text-ink-500">That is everything.</p>
         )}
       </div>
     </TimelinePanel>

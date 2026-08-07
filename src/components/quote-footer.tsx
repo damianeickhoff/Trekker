@@ -12,7 +12,7 @@ export function QuoteFooter() {
     <footer className="mt-12 mb-2 flex flex-col items-center gap-1.5 text-center">
       <Quote size={14} className="text-ink-700" />
       <p className="max-w-md text-sm text-ink-400 italic">&ldquo;{quote.line}&rdquo;</p>
-      <p className="text-[11px] tracking-wider text-ink-600 uppercase">{quote.source}</p>
+      <p className="text-[11px] tracking-wider text-ink-500 uppercase">{quote.source}</p>
     </footer>
   );
 }

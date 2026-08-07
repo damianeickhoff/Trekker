@@ -12,7 +12,15 @@ import { NotificationBell } from "./notification-bell";
 import { SearchOverlay } from "./search-overlay";
 import { UserMenu } from "./user-menu";
 
-type NavUser = { id: string; name: string; email: string; avatarUrl: string | null } | null;
+type NavUser = {
+  id: string;
+  name: string;
+  /** What to show under the name — not always a real address. See `UserMenu`. */
+  email: string;
+  avatarUrl: string | null;
+  /** Came in through Plex, so there may be a Home to hand the device back to. */
+  canSwitchProfile?: boolean;
+} | null;
 
 const SEASON_ICON = { scifi: Rocket, horror: Ghost, holiday: Gift } as const;
 
@@ -150,12 +158,15 @@ export function Nav({
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            {/* Desktop only. On a phone the tab bar carries its own search
+                circle, and two ways to open the same panel a thumb's width
+                apart is one of them doing nothing. */}
             <button
               type="button"
               onClick={() => setSearchAnchor("top")}
               aria-label="Search"
               title="Search (press /)"
-              className="relative z-10 grid h-11 w-11 touch-manipulation place-items-center rounded-lg text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="relative z-10 hidden h-11 w-11 touch-manipulation place-items-center rounded-lg text-ink-300 transition hover:bg-ink-800 hover:text-ink-100 md:grid"
             >
               <Search size={19} />
             </button>
@@ -166,6 +177,7 @@ export function Nav({
                 email={user.email}
                 avatarUrl={user.avatarUrl}
                 seasonSetting={seasonSetting}
+                canSwitchProfile={user.canSwitchProfile}
               />
             ) : (
               <Link
@@ -190,13 +202,20 @@ export function Nav({
 
         Raised above the search overlay while that is open, so the bar the field
         opened from stays visible underneath it rather than being dimmed out.
+
+        It sits low. The bottom inset on a phone with a home indicator is 34px,
+        and a floating capsule held that far off the edge reads as hovering in
+        the middle of nowhere rather than as the bottom of the app — so most of
+        that inset is given back, leaving a gap the indicator can still be seen
+        through. Everything else here is a size down from where it started, for
+        the same reason: the shorter the bar, the more of the page is page.
       */}
       <nav
-        className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-center justify-center gap-2 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden ${
+        className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-center justify-center gap-1.5 px-4 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))] md:hidden ${
           searchOpen ? "z-[101]" : "z-40"
         }`}
       >
-        <div className={`${FLOATING_SURFACE} pointer-events-auto grid flex-1 grid-cols-4 gap-1 p-1.5`}>
+        <div className={`${FLOATING_SURFACE} pointer-events-auto grid flex-1 grid-cols-4 gap-1 p-1`}>
           {TABS.map(({ href, label, icon: Icon }) => {
             const active = isActive(tabPath(pathname, origin), href);
             return (
@@ -213,11 +232,11 @@ export function Nav({
                 // said by the pill behind the glyph and by its weight, the way
                 // iOS does it. A violet glyph in a violet-tinted app was one
                 // accent too many.
-                className={`flex h-11 touch-manipulation items-center justify-center rounded-full text-white transition light:text-ink-100 ${
+                className={`flex h-10 touch-manipulation items-center justify-center rounded-full text-white transition light:text-ink-100 ${
                   active ? "bg-white/10 ring-1 ring-white/10 ring-inset light:bg-black/8 light:ring-black/5" : ""
                 }`}
               >
-                <Icon size={21} strokeWidth={active ? 2.3 : 1.9} />
+                <Icon size={20} strokeWidth={active ? 2.3 : 1.9} />
               </Link>
             );
           })}
@@ -231,11 +250,11 @@ export function Nav({
           // A ring rather than a lighter fill for the open state: this element
           // *is* the glass, and a second background utility on it would race
           // `FLOATING_SURFACE`'s own with no way to say which should win.
-          className={`${FLOATING_SURFACE} pointer-events-auto grid h-14 w-14 shrink-0 place-items-center text-white transition light:text-ink-100 ${
+          className={`${FLOATING_SURFACE} pointer-events-auto grid h-12 w-12 shrink-0 place-items-center text-white transition light:text-ink-100 ${
             searchOpen ? "ring-1 ring-white/20 ring-inset light:ring-black/10" : ""
           }`}
         >
-          <Search size={21} strokeWidth={1.9} />
+          <Search size={20} strokeWidth={1.9} />
         </button>
       </nav>
 

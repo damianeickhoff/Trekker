@@ -1,13 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSession, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { HANDOFF_COOKIE, startHandoff } from "@/lib/plex-handoff";
 import { callbackOrigin, claimPin, getAccount, PIN_COOKIE, PlexAuthError } from "@/lib/plex-auth";
+import { getHomeUsers } from "@/lib/plex-home";
 
 /**
  * Step two: Plex has sent the browser back, so the PIN should now be claimable
  * for a token. The token identifies a plex.tv account, which is matched to a
  * Trekker account — linked by plex id, then by email, and created if neither
  * exists.
+ *
+ * Unless that account owns a Plex Home with more than one profile in it, in
+ * which case there is a second question to ask before anybody is signed in —
+ * see the fork below, and `lib/plex-home`.
  */
 
 // Plex usually writes the token before it forwards, but not always.
@@ -60,6 +66,38 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.redirect(new URL("/settings", base));
     response.cookies.delete(PIN_COOKIE);
+    return response;
+  }
+
+  /**
+   * The fork this whole flow was missing.
+   *
+   * Everyone in a Plex Home signs in with the owner's plex.tv account, because
+   * a managed profile has no login of its own — so plex.tv answers "this is the
+   * owner" for the partner, the brother and the kids alike, and every one of
+   * them used to land in the owner's Trekker profile and log their viewing
+   * into it.
+   *
+   * So when the account that just signed in owns a Home with somebody else in
+   * it, do not seat anybody yet: hand the browser to the picker, and let it say
+   * which of the household this is. The token is left on the server — see
+   * `plex-handoff` — and the cookie carries nothing but a handle to it.
+   *
+   * A Home of one, or no Home at all, or plex.tv having a bad day, all come
+   * back as "nothing to choose between" and fall straight through to what this
+   * route always did.
+   */
+  const home = await getHomeUsers(token);
+  if (home.length > 1) {
+    const response = NextResponse.redirect(new URL("/login/profile", base));
+    response.cookies.delete(PIN_COOKIE);
+    response.cookies.set(HANDOFF_COOKIE, startHandoff(token, home), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: base.startsWith("https://"),
+      path: "/",
+      maxAge: 10 * 60,
+    });
     return response;
   }
 

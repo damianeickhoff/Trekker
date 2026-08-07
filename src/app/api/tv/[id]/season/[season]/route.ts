@@ -62,6 +62,10 @@ export async function GET(
       airDate: e.air_date,
       still: e.still_path,
       score: Math.round((e.vote_average ?? 0) * 10),
+      // What the episode is in the run — premiere, finale, mid-season — so a
+      // season the row fetches itself is badged the same as the one that
+      // arrived with the page.
+      episodeType: e.episode_type ?? null,
     })),
     watched: watched.map((w) => w.episodeNumber),
     // Keyed by episode so the browser can show when each one was logged. The

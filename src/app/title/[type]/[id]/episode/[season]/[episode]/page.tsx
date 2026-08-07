@@ -1,16 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Eye, Star, Tv } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { formatWatched } from "@/lib/dates";
 import { getEpisodeDetail, getTv, img, tmdbConfigured } from "@/lib/tmdb";
 import { BackButton } from "@/components/back-button";
 import { EpisodeControls } from "@/components/episode-controls";
 import { EpisodePager } from "@/components/episode-pager";
 import { Rail } from "@/components/rail";
-import { SetupNotice } from "@/components/ui";
+import { SetupNotice, WatchedPill } from "@/components/ui";
 
 type Params = { type: string; id: string; season: string; episode: string };
 
@@ -208,13 +207,10 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                 )}
 
                 {watched && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-fresh-500/40 bg-fresh-500/10 px-2.5 py-1 text-[11px] font-medium text-fresh-500">
-                    <Eye size={12} />
-                    Watched {formatWatched(watched.lastWatchedAt ?? watched.watchedAt)}
-                    {watched.plays > 1 && (
-                      <span className="font-mono tabular-nums">· {watched.plays}×</span>
-                    )}
-                  </span>
+                  <WatchedPill
+                    at={watched.lastWatchedAt ?? watched.watchedAt}
+                    plays={watched.plays}
+                  />
                 )}
               </div>
             </div>

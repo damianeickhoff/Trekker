@@ -1,106 +1,35 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
+import "server-only";
 import { syncUnlocks } from "./achievements";
 import { absorbImport } from "./achievements/xp";
-import { requireUser } from "./auth";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
+import type { ImportSummary, Report } from "./import-jobs";
 import { recordNewEpisodePlays, recordPlay, setPlayDate } from "./plays";
-import { getMovie, getTv, tmdbConfigured } from "./tmdb";
-import {
-  defaultTraktClientId,
-  getWatchedMovies,
-  getWatchedShows,
-  TraktError,
-  type TraktMovie,
-  type TraktShow,
-} from "./trakt";
-import { parseTraktExport, TraktExportError } from "./trakt-export";
+import { getMovie, getTv } from "./tmdb";
+import type { TraktMovie, TraktShow } from "./trakt";
 
-export type ImportState = {
-  error?: string;
-  summary?: { movies: number; episodes: number; updated: number; skipped: number };
-};
+/**
+ * The work an import actually does, apart from whatever started it.
+ *
+ * It lives here rather than in `import-actions` because it is no longer called
+ * from a server action: a run takes minutes, and a module marked `"use server"`
+ * can only export things that are safe to hand to the browser. See
+ * `import-jobs` for why the request stopped waiting for this.
+ */
 
 // Bounds so one import cannot spend hours resolving runtimes against TMDB.
 const MAX_MOVIES = 400;
 const MAX_SHOWS = 200;
 // How many TMDB lookups to keep in flight at once.
 const FANOUT = 6;
-// A full Trakt export of a heavy watcher is a couple of megabytes.
-const MAX_EXPORT_BYTES = 64 * 1024 * 1024;
-
-/**
- * Reads the signed-in user's saved Trakt account — there is nothing to fill in
- * at import time, the credentials live in their settings.
- */
-export async function importFromTrakt(): Promise<ImportState> {
-  const user = await requireUser();
-
-  if (!tmdbConfigured()) return { error: "TMDB_API_KEY is not set on the server" };
-
-  const account = await db.user.findUnique({
-    where: { id: user.id },
-    select: { traktUsername: true, traktClientId: true },
-  });
-
-  const username = account?.traktUsername?.trim();
-  const clientId = account?.traktClientId?.trim() || defaultTraktClientId();
-
-  if (!username) return { error: "Save your Trakt username first" };
-  if (!clientId) return { error: "Save a Trakt client id first" };
-
-  let movies, shows;
-  try {
-    [movies, shows] = await Promise.all([
-      getWatchedMovies(username, clientId),
-      getWatchedShows(username, clientId),
-    ]);
-  } catch (error) {
-    if (error instanceof TraktError) return { error: error.message };
-    return { error: "Could not reach Trakt" };
-  }
-
-  return ingest(user.id, movies, shows);
-}
-
-/**
- * The same import from a Trakt data export instead of the API. Every account
- * can request one of those; the API needs a VIP client id.
- */
-export async function importTraktExport(
-  _prev: ImportState,
-  formData: FormData,
-): Promise<ImportState> {
-  const user = await requireUser();
-
-  if (!tmdbConfigured()) return { error: "TMDB_API_KEY is not set on the server" };
-
-  const file = formData.get("export");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose your export file" };
-  if (file.size > MAX_EXPORT_BYTES) return { error: "That file is larger than 64 MB" };
-
-  let history;
-  try {
-    history = parseTraktExport(
-      Buffer.from(await file.arrayBuffer()),
-      file.name,
-    );
-  } catch (error) {
-    if (error instanceof TraktExportError) return { error: error.message };
-    return { error: "Could not read that file" };
-  }
-
-  return ingest(user.id, history.movies, history.shows);
-}
 
 /** Resolves Trakt rows against TMDB and writes what is not already logged. */
-async function ingest(
+export async function ingest(
   userId: string,
   movies: TraktMovie[],
   shows: TraktShow[],
-): Promise<ImportState> {
+  report: Report = () => {},
+): Promise<ImportSummary> {
   const user = { id: userId };
   let skipped = 0;
   /**
@@ -128,6 +57,8 @@ async function ingest(
   const usableMovies = movies.filter((m) => m.movie.ids.tmdb !== null).slice(0, MAX_MOVIES);
   skipped += movies.length - usableMovies.length;
 
+  report({ stage: "Reading what is already logged" });
+
   const existingMovieRows = await db.watchedMovie.findMany({
     where: { userId: user.id },
     select: { id: true, movieId: true, watchedAt: true, lastWatchedAt: true },
@@ -145,17 +76,22 @@ async function ingest(
     );
   }
 
-  const movieDetails = await mapLimit(
-    usableMovies.filter((m) => !existingMovies.has(m.movie.ids.tmdb!)),
-    FANOUT,
-    async (entry) => ({
-      entry,
-      detail: await getMovie(entry.movie.ids.tmdb!).catch(() => null),
-    }),
-  );
+  const newMovies = usableMovies.filter((m) => !existingMovies.has(m.movie.ids.tmdb!));
 
+  report({ stage: "Matching films to TMDB", total: newMovies.length });
+  let matched = 0;
+  const movieDetails = await mapLimit(newMovies, FANOUT, async (entry) => {
+    const detail = await getMovie(entry.movie.ids.tmdb!).catch(() => null);
+    report({ done: ++matched });
+    return { entry, detail };
+  });
+
+  report({ stage: "Logging films", total: movieDetails.length });
   let movieCount = 0;
+  let loggedMovies = 0;
   for (const { entry, detail } of movieDetails) {
+    report({ done: ++loggedMovies });
+
     if (!detail) {
       skipped += 1;
       continue;
@@ -208,12 +144,19 @@ async function ingest(
     existingEpisodeRows.map((e) => [`${e.showId}-${e.seasonNumber}-${e.episodeNumber}`, e]),
   );
 
-  const showDetails = await mapLimit(usableShows, FANOUT, async (entry) => ({
-    entry,
-    detail: await getTv(entry.show.ids.tmdb!).catch(() => null),
-  }));
+  report({ stage: "Matching shows to TMDB", total: usableShows.length });
+  let matchedShows = 0;
+  const showDetails = await mapLimit(usableShows, FANOUT, async (entry) => {
+    const detail = await getTv(entry.show.ids.tmdb!).catch(() => null);
+    report({ done: ++matchedShows });
+    return { entry, detail };
+  });
 
+  report({ stage: "Working out which episodes are new", total: showDetails.length });
+  let walked = 0;
   for (const { entry, detail } of showDetails) {
+    report({ done: ++walked });
+
     if (!detail) {
       skipped += 1;
       continue;
@@ -274,19 +217,32 @@ async function ingest(
   }
 
   // Every row here was checked against what is already on record above, so this
-  // is a straight bulk write rather than a play-by-play reconciliation.
+  // is a straight bulk write rather than a play-by-play reconciliation. It is
+  // one call, so the count can only be reported either side of it.
+  report({ stage: "Writing episodes", total: episodeRows.length });
   await recordNewEpisodePlays(user.id, episodeRows);
+  report({ done: episodeRows.length });
 
   // Date corrections are independent of each other and of the inserts above.
-  if (corrections.length > 0) await Promise.all(corrections);
+  if (corrections.length > 0) {
+    report({ stage: "Correcting watch dates", total: corrections.length });
+    await Promise.all(corrections);
+    report({ done: corrections.length });
+  }
 
   // Everything this import turned up belongs to the history it brought in, not
   // to the level: the plays carry their own source, and the badges it satisfied
   // are marked as carried here.
+  report({ stage: "Catching the badges up" });
   await absorbImport(user.id, await syncUnlocks(user.id, { carried: true }));
 
-  revalidatePath("/", "layout");
-  return {
-    summary: { movies: movieCount, episodes: episodeRows.length, updated, skipped },
-  };
+  /**
+   * No `revalidatePath` here, deliberately. This runs on after the request that
+   * started it has been answered, and cache revalidation belongs to a request
+   * that is still open — there is none to attach it to by the time an import
+   * finishes. The page that is watching the job calls `router.refresh()` when it
+   * sees the run finish, which is the same invalidation asked for by the one
+   * party that is definitely still around.
+   */
+  return { movies: movieCount, episodes: episodeRows.length, updated, skipped };
 }

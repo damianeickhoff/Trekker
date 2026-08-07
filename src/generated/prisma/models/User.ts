@@ -31,6 +31,9 @@ export type UserAvgAggregateOutputType = {
   levelFinishedFranchises: number | null
   levelBaseShows: number | null
   levelBaseFranchises: number | null
+  screensaverIdle: number | null
+  screensaverLat: number | null
+  screensaverLon: number | null
 }
 
 export type UserSumAggregateOutputType = {
@@ -38,6 +41,9 @@ export type UserSumAggregateOutputType = {
   levelFinishedFranchises: number | null
   levelBaseShows: number | null
   levelBaseFranchises: number | null
+  screensaverIdle: number | null
+  screensaverLat: number | null
+  screensaverLon: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -48,6 +54,8 @@ export type UserMinAggregateOutputType = {
   plexAccountId: string | null
   plexAuthToken: string | null
   plexUsername: string | null
+  plexManaged: boolean | null
+  plexHomeLinkedAt: Date | null
   providers: string | null
   coverBackdrop: string | null
   coverTitle: string | null
@@ -72,6 +80,12 @@ export type UserMinAggregateOutputType = {
   levelBaseFranchises: number | null
   levelBaselineAt: Date | null
   challengesCollapsed: boolean | null
+  xpPanelCollapsed: boolean | null
+  screensaverIdle: number | null
+  screensaverSource: string | null
+  screensaverPlace: string | null
+  screensaverLat: number | null
+  screensaverLon: number | null
   levelKnownKeys: string | null
 }
 
@@ -83,6 +97,8 @@ export type UserMaxAggregateOutputType = {
   plexAccountId: string | null
   plexAuthToken: string | null
   plexUsername: string | null
+  plexManaged: boolean | null
+  plexHomeLinkedAt: Date | null
   providers: string | null
   coverBackdrop: string | null
   coverTitle: string | null
@@ -107,6 +123,12 @@ export type UserMaxAggregateOutputType = {
   levelBaseFranchises: number | null
   levelBaselineAt: Date | null
   challengesCollapsed: boolean | null
+  xpPanelCollapsed: boolean | null
+  screensaverIdle: number | null
+  screensaverSource: string | null
+  screensaverPlace: string | null
+  screensaverLat: number | null
+  screensaverLon: number | null
   levelKnownKeys: string | null
 }
 
@@ -118,6 +140,8 @@ export type UserCountAggregateOutputType = {
   plexAccountId: number
   plexAuthToken: number
   plexUsername: number
+  plexManaged: number
+  plexHomeLinkedAt: number
   providers: number
   coverBackdrop: number
   coverTitle: number
@@ -142,6 +166,12 @@ export type UserCountAggregateOutputType = {
   levelBaseFranchises: number
   levelBaselineAt: number
   challengesCollapsed: number
+  xpPanelCollapsed: number
+  screensaverIdle: number
+  screensaverSource: number
+  screensaverPlace: number
+  screensaverLat: number
+  screensaverLon: number
   levelKnownKeys: number
   _all: number
 }
@@ -152,6 +182,9 @@ export type UserAvgAggregateInputType = {
   levelFinishedFranchises?: true
   levelBaseShows?: true
   levelBaseFranchises?: true
+  screensaverIdle?: true
+  screensaverLat?: true
+  screensaverLon?: true
 }
 
 export type UserSumAggregateInputType = {
@@ -159,6 +192,9 @@ export type UserSumAggregateInputType = {
   levelFinishedFranchises?: true
   levelBaseShows?: true
   levelBaseFranchises?: true
+  screensaverIdle?: true
+  screensaverLat?: true
+  screensaverLon?: true
 }
 
 export type UserMinAggregateInputType = {
@@ -169,6 +205,8 @@ export type UserMinAggregateInputType = {
   plexAccountId?: true
   plexAuthToken?: true
   plexUsername?: true
+  plexManaged?: true
+  plexHomeLinkedAt?: true
   providers?: true
   coverBackdrop?: true
   coverTitle?: true
@@ -193,6 +231,12 @@ export type UserMinAggregateInputType = {
   levelBaseFranchises?: true
   levelBaselineAt?: true
   challengesCollapsed?: true
+  xpPanelCollapsed?: true
+  screensaverIdle?: true
+  screensaverSource?: true
+  screensaverPlace?: true
+  screensaverLat?: true
+  screensaverLon?: true
   levelKnownKeys?: true
 }
 
@@ -204,6 +248,8 @@ export type UserMaxAggregateInputType = {
   plexAccountId?: true
   plexAuthToken?: true
   plexUsername?: true
+  plexManaged?: true
+  plexHomeLinkedAt?: true
   providers?: true
   coverBackdrop?: true
   coverTitle?: true
@@ -228,6 +274,12 @@ export type UserMaxAggregateInputType = {
   levelBaseFranchises?: true
   levelBaselineAt?: true
   challengesCollapsed?: true
+  xpPanelCollapsed?: true
+  screensaverIdle?: true
+  screensaverSource?: true
+  screensaverPlace?: true
+  screensaverLat?: true
+  screensaverLon?: true
   levelKnownKeys?: true
 }
 
@@ -239,6 +291,8 @@ export type UserCountAggregateInputType = {
   plexAccountId?: true
   plexAuthToken?: true
   plexUsername?: true
+  plexManaged?: true
+  plexHomeLinkedAt?: true
   providers?: true
   coverBackdrop?: true
   coverTitle?: true
@@ -263,6 +317,12 @@ export type UserCountAggregateInputType = {
   levelBaseFranchises?: true
   levelBaselineAt?: true
   challengesCollapsed?: true
+  xpPanelCollapsed?: true
+  screensaverIdle?: true
+  screensaverSource?: true
+  screensaverPlace?: true
+  screensaverLat?: true
+  screensaverLon?: true
   levelKnownKeys?: true
   _all?: true
 }
@@ -361,6 +421,8 @@ export type UserGroupByOutputType = {
   plexAccountId: string | null
   plexAuthToken: string | null
   plexUsername: string | null
+  plexManaged: boolean
+  plexHomeLinkedAt: Date | null
   providers: string | null
   coverBackdrop: string | null
   coverTitle: string | null
@@ -385,6 +447,12 @@ export type UserGroupByOutputType = {
   levelBaseFranchises: number
   levelBaselineAt: Date | null
   challengesCollapsed: boolean
+  xpPanelCollapsed: boolean
+  screensaverIdle: number
+  screensaverSource: string
+  screensaverPlace: string | null
+  screensaverLat: number | null
+  screensaverLon: number | null
   levelKnownKeys: string | null
   _count: UserCountAggregateOutputType | null
   _avg: UserAvgAggregateOutputType | null
@@ -419,6 +487,8 @@ export type UserWhereInput = {
   plexAccountId?: Prisma.StringNullableFilter<"User"> | string | null
   plexAuthToken?: Prisma.StringNullableFilter<"User"> | string | null
   plexUsername?: Prisma.StringNullableFilter<"User"> | string | null
+  plexManaged?: Prisma.BoolFilter<"User"> | boolean
+  plexHomeLinkedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   providers?: Prisma.StringNullableFilter<"User"> | string | null
   coverBackdrop?: Prisma.StringNullableFilter<"User"> | string | null
   coverTitle?: Prisma.StringNullableFilter<"User"> | string | null
@@ -443,6 +513,12 @@ export type UserWhereInput = {
   levelBaseFranchises?: Prisma.IntFilter<"User"> | number
   levelBaselineAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   challengesCollapsed?: Prisma.BoolFilter<"User"> | boolean
+  xpPanelCollapsed?: Prisma.BoolFilter<"User"> | boolean
+  screensaverIdle?: Prisma.IntFilter<"User"> | number
+  screensaverSource?: Prisma.StringFilter<"User"> | string
+  screensaverPlace?: Prisma.StringNullableFilter<"User"> | string | null
+  screensaverLat?: Prisma.FloatNullableFilter<"User"> | number | null
+  screensaverLon?: Prisma.FloatNullableFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableFilter<"User"> | string | null
   episodes?: Prisma.WatchedEpisodeListRelationFilter
   movies?: Prisma.WatchedMovieListRelationFilter
@@ -470,6 +546,8 @@ export type UserOrderByWithRelationInput = {
   plexAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
   plexAuthToken?: Prisma.SortOrderInput | Prisma.SortOrder
   plexUsername?: Prisma.SortOrderInput | Prisma.SortOrder
+  plexManaged?: Prisma.SortOrder
+  plexHomeLinkedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   providers?: Prisma.SortOrderInput | Prisma.SortOrder
   coverBackdrop?: Prisma.SortOrderInput | Prisma.SortOrder
   coverTitle?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -494,6 +572,12 @@ export type UserOrderByWithRelationInput = {
   levelBaseFranchises?: Prisma.SortOrder
   levelBaselineAt?: Prisma.SortOrderInput | Prisma.SortOrder
   challengesCollapsed?: Prisma.SortOrder
+  xpPanelCollapsed?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverSource?: Prisma.SortOrder
+  screensaverPlace?: Prisma.SortOrderInput | Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrderInput | Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrderInput | Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrderInput | Prisma.SortOrder
   episodes?: Prisma.WatchedEpisodeOrderByRelationAggregateInput
   movies?: Prisma.WatchedMovieOrderByRelationAggregateInput
@@ -524,6 +608,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   plexAuthToken?: Prisma.StringNullableFilter<"User"> | string | null
   plexUsername?: Prisma.StringNullableFilter<"User"> | string | null
+  plexManaged?: Prisma.BoolFilter<"User"> | boolean
+  plexHomeLinkedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   providers?: Prisma.StringNullableFilter<"User"> | string | null
   coverBackdrop?: Prisma.StringNullableFilter<"User"> | string | null
   coverTitle?: Prisma.StringNullableFilter<"User"> | string | null
@@ -548,6 +634,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   levelBaseFranchises?: Prisma.IntFilter<"User"> | number
   levelBaselineAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   challengesCollapsed?: Prisma.BoolFilter<"User"> | boolean
+  xpPanelCollapsed?: Prisma.BoolFilter<"User"> | boolean
+  screensaverIdle?: Prisma.IntFilter<"User"> | number
+  screensaverSource?: Prisma.StringFilter<"User"> | string
+  screensaverPlace?: Prisma.StringNullableFilter<"User"> | string | null
+  screensaverLat?: Prisma.FloatNullableFilter<"User"> | number | null
+  screensaverLon?: Prisma.FloatNullableFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableFilter<"User"> | string | null
   episodes?: Prisma.WatchedEpisodeListRelationFilter
   movies?: Prisma.WatchedMovieListRelationFilter
@@ -575,6 +667,8 @@ export type UserOrderByWithAggregationInput = {
   plexAccountId?: Prisma.SortOrderInput | Prisma.SortOrder
   plexAuthToken?: Prisma.SortOrderInput | Prisma.SortOrder
   plexUsername?: Prisma.SortOrderInput | Prisma.SortOrder
+  plexManaged?: Prisma.SortOrder
+  plexHomeLinkedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   providers?: Prisma.SortOrderInput | Prisma.SortOrder
   coverBackdrop?: Prisma.SortOrderInput | Prisma.SortOrder
   coverTitle?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -599,6 +693,12 @@ export type UserOrderByWithAggregationInput = {
   levelBaseFranchises?: Prisma.SortOrder
   levelBaselineAt?: Prisma.SortOrderInput | Prisma.SortOrder
   challengesCollapsed?: Prisma.SortOrder
+  xpPanelCollapsed?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverSource?: Prisma.SortOrder
+  screensaverPlace?: Prisma.SortOrderInput | Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrderInput | Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrderInput | Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _avg?: Prisma.UserAvgOrderByAggregateInput
@@ -618,6 +718,8 @@ export type UserScalarWhereWithAggregatesInput = {
   plexAccountId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   plexAuthToken?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   plexUsername?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  plexManaged?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  plexHomeLinkedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   providers?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   coverBackdrop?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   coverTitle?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
@@ -642,6 +744,12 @@ export type UserScalarWhereWithAggregatesInput = {
   levelBaseFranchises?: Prisma.IntWithAggregatesFilter<"User"> | number
   levelBaselineAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   challengesCollapsed?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  xpPanelCollapsed?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  screensaverIdle?: Prisma.IntWithAggregatesFilter<"User"> | number
+  screensaverSource?: Prisma.StringWithAggregatesFilter<"User"> | string
+  screensaverPlace?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  screensaverLat?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
+  screensaverLon?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
 }
 
@@ -653,6 +761,8 @@ export type UserCreateInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -677,6 +787,12 @@ export type UserCreateInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -704,6 +820,8 @@ export type UserUncheckedCreateInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -728,6 +846,12 @@ export type UserUncheckedCreateInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -755,6 +879,8 @@ export type UserUpdateInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -779,6 +905,12 @@ export type UserUpdateInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -806,6 +938,8 @@ export type UserUncheckedUpdateInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -830,6 +964,12 @@ export type UserUncheckedUpdateInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -857,6 +997,8 @@ export type UserCreateManyInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -881,6 +1023,12 @@ export type UserCreateManyInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
 }
 
@@ -892,6 +1040,8 @@ export type UserUpdateManyMutationInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -916,6 +1066,12 @@ export type UserUpdateManyMutationInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -927,6 +1083,8 @@ export type UserUncheckedUpdateManyInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -951,6 +1109,12 @@ export type UserUncheckedUpdateManyInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
@@ -962,6 +1126,8 @@ export type UserCountOrderByAggregateInput = {
   plexAccountId?: Prisma.SortOrder
   plexAuthToken?: Prisma.SortOrder
   plexUsername?: Prisma.SortOrder
+  plexManaged?: Prisma.SortOrder
+  plexHomeLinkedAt?: Prisma.SortOrder
   providers?: Prisma.SortOrder
   coverBackdrop?: Prisma.SortOrder
   coverTitle?: Prisma.SortOrder
@@ -986,6 +1152,12 @@ export type UserCountOrderByAggregateInput = {
   levelBaseFranchises?: Prisma.SortOrder
   levelBaselineAt?: Prisma.SortOrder
   challengesCollapsed?: Prisma.SortOrder
+  xpPanelCollapsed?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverSource?: Prisma.SortOrder
+  screensaverPlace?: Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
 }
 
@@ -994,6 +1166,9 @@ export type UserAvgOrderByAggregateInput = {
   levelFinishedFranchises?: Prisma.SortOrder
   levelBaseShows?: Prisma.SortOrder
   levelBaseFranchises?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -1004,6 +1179,8 @@ export type UserMaxOrderByAggregateInput = {
   plexAccountId?: Prisma.SortOrder
   plexAuthToken?: Prisma.SortOrder
   plexUsername?: Prisma.SortOrder
+  plexManaged?: Prisma.SortOrder
+  plexHomeLinkedAt?: Prisma.SortOrder
   providers?: Prisma.SortOrder
   coverBackdrop?: Prisma.SortOrder
   coverTitle?: Prisma.SortOrder
@@ -1028,6 +1205,12 @@ export type UserMaxOrderByAggregateInput = {
   levelBaseFranchises?: Prisma.SortOrder
   levelBaselineAt?: Prisma.SortOrder
   challengesCollapsed?: Prisma.SortOrder
+  xpPanelCollapsed?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverSource?: Prisma.SortOrder
+  screensaverPlace?: Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
 }
 
@@ -1039,6 +1222,8 @@ export type UserMinOrderByAggregateInput = {
   plexAccountId?: Prisma.SortOrder
   plexAuthToken?: Prisma.SortOrder
   plexUsername?: Prisma.SortOrder
+  plexManaged?: Prisma.SortOrder
+  plexHomeLinkedAt?: Prisma.SortOrder
   providers?: Prisma.SortOrder
   coverBackdrop?: Prisma.SortOrder
   coverTitle?: Prisma.SortOrder
@@ -1063,6 +1248,12 @@ export type UserMinOrderByAggregateInput = {
   levelBaseFranchises?: Prisma.SortOrder
   levelBaselineAt?: Prisma.SortOrder
   challengesCollapsed?: Prisma.SortOrder
+  xpPanelCollapsed?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverSource?: Prisma.SortOrder
+  screensaverPlace?: Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
 }
 
@@ -1071,6 +1262,9 @@ export type UserSumOrderByAggregateInput = {
   levelFinishedFranchises?: Prisma.SortOrder
   levelBaseShows?: Prisma.SortOrder
   levelBaseFranchises?: Prisma.SortOrder
+  screensaverIdle?: Prisma.SortOrder
+  screensaverLat?: Prisma.SortOrder
+  screensaverLon?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -1086,12 +1280,16 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
-export type NullableBytesFieldUpdateOperationsInput = {
-  set?: runtime.Bytes | null
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type NullableBytesFieldUpdateOperationsInput = {
+  set?: runtime.Bytes | null
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -1106,8 +1304,12 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
+export type NullableFloatFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type UserCreateNestedOneWithoutDeletedPlaysInput = {
@@ -1342,6 +1544,8 @@ export type UserCreateWithoutDeletedPlaysInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1366,6 +1570,12 @@ export type UserCreateWithoutDeletedPlaysInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -1392,6 +1602,8 @@ export type UserUncheckedCreateWithoutDeletedPlaysInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1416,6 +1628,12 @@ export type UserUncheckedCreateWithoutDeletedPlaysInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -1458,6 +1676,8 @@ export type UserUpdateWithoutDeletedPlaysInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1482,6 +1702,12 @@ export type UserUpdateWithoutDeletedPlaysInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -1508,6 +1734,8 @@ export type UserUncheckedUpdateWithoutDeletedPlaysInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1532,6 +1760,12 @@ export type UserUncheckedUpdateWithoutDeletedPlaysInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -1558,6 +1792,8 @@ export type UserCreateWithoutSentRequestsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1582,6 +1818,12 @@ export type UserCreateWithoutSentRequestsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -1608,6 +1850,8 @@ export type UserUncheckedCreateWithoutSentRequestsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1632,6 +1876,12 @@ export type UserUncheckedCreateWithoutSentRequestsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -1663,6 +1913,8 @@ export type UserCreateWithoutReceivedRequestsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1687,6 +1939,12 @@ export type UserCreateWithoutReceivedRequestsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -1713,6 +1971,8 @@ export type UserUncheckedCreateWithoutReceivedRequestsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -1737,6 +1997,12 @@ export type UserUncheckedCreateWithoutReceivedRequestsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -1779,6 +2045,8 @@ export type UserUpdateWithoutSentRequestsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1803,6 +2071,12 @@ export type UserUpdateWithoutSentRequestsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -1829,6 +2103,8 @@ export type UserUncheckedUpdateWithoutSentRequestsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1853,6 +2129,12 @@ export type UserUncheckedUpdateWithoutSentRequestsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -1890,6 +2172,8 @@ export type UserUpdateWithoutReceivedRequestsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1914,6 +2198,12 @@ export type UserUpdateWithoutReceivedRequestsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -1940,6 +2230,8 @@ export type UserUncheckedUpdateWithoutReceivedRequestsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1964,6 +2256,12 @@ export type UserUncheckedUpdateWithoutReceivedRequestsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -1990,6 +2288,8 @@ export type UserCreateWithoutEpisodesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2014,6 +2314,12 @@ export type UserCreateWithoutEpisodesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -2040,6 +2346,8 @@ export type UserUncheckedCreateWithoutEpisodesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2064,6 +2372,12 @@ export type UserUncheckedCreateWithoutEpisodesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -2106,6 +2420,8 @@ export type UserUpdateWithoutEpisodesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2130,6 +2446,12 @@ export type UserUpdateWithoutEpisodesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -2156,6 +2478,8 @@ export type UserUncheckedUpdateWithoutEpisodesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2180,6 +2504,12 @@ export type UserUncheckedUpdateWithoutEpisodesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -2206,6 +2536,8 @@ export type UserCreateWithoutMoviesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2230,6 +2562,12 @@ export type UserCreateWithoutMoviesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -2256,6 +2594,8 @@ export type UserUncheckedCreateWithoutMoviesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2280,6 +2620,12 @@ export type UserUncheckedCreateWithoutMoviesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -2322,6 +2668,8 @@ export type UserUpdateWithoutMoviesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2346,6 +2694,12 @@ export type UserUpdateWithoutMoviesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -2372,6 +2726,8 @@ export type UserUncheckedUpdateWithoutMoviesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2396,6 +2752,12 @@ export type UserUncheckedUpdateWithoutMoviesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -2422,6 +2784,8 @@ export type UserCreateWithoutPlaysInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2446,6 +2810,12 @@ export type UserCreateWithoutPlaysInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -2472,6 +2842,8 @@ export type UserUncheckedCreateWithoutPlaysInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2496,6 +2868,12 @@ export type UserUncheckedCreateWithoutPlaysInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -2538,6 +2916,8 @@ export type UserUpdateWithoutPlaysInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2562,6 +2942,12 @@ export type UserUpdateWithoutPlaysInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -2588,6 +2974,8 @@ export type UserUncheckedUpdateWithoutPlaysInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2612,6 +3000,12 @@ export type UserUncheckedUpdateWithoutPlaysInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -2638,6 +3032,8 @@ export type UserCreateWithoutReadNoticesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2662,6 +3058,12 @@ export type UserCreateWithoutReadNoticesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -2688,6 +3090,8 @@ export type UserUncheckedCreateWithoutReadNoticesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2712,6 +3116,12 @@ export type UserUncheckedCreateWithoutReadNoticesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -2754,6 +3164,8 @@ export type UserUpdateWithoutReadNoticesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2778,6 +3190,12 @@ export type UserUpdateWithoutReadNoticesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -2804,6 +3222,8 @@ export type UserUncheckedUpdateWithoutReadNoticesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2828,6 +3248,12 @@ export type UserUncheckedUpdateWithoutReadNoticesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -2854,6 +3280,8 @@ export type UserCreateWithoutWatchlistInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2878,6 +3306,12 @@ export type UserCreateWithoutWatchlistInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -2904,6 +3338,8 @@ export type UserUncheckedCreateWithoutWatchlistInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -2928,6 +3364,12 @@ export type UserUncheckedCreateWithoutWatchlistInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -2970,6 +3412,8 @@ export type UserUpdateWithoutWatchlistInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2994,6 +3438,12 @@ export type UserUpdateWithoutWatchlistInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -3020,6 +3470,8 @@ export type UserUncheckedUpdateWithoutWatchlistInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3044,6 +3496,12 @@ export type UserUncheckedUpdateWithoutWatchlistInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -3070,6 +3528,8 @@ export type UserCreateWithoutFavouritesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3094,6 +3554,12 @@ export type UserCreateWithoutFavouritesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -3120,6 +3586,8 @@ export type UserUncheckedCreateWithoutFavouritesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3144,6 +3612,12 @@ export type UserUncheckedCreateWithoutFavouritesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -3186,6 +3660,8 @@ export type UserUpdateWithoutFavouritesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3210,6 +3686,12 @@ export type UserUpdateWithoutFavouritesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -3236,6 +3718,8 @@ export type UserUncheckedUpdateWithoutFavouritesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3260,6 +3744,12 @@ export type UserUncheckedUpdateWithoutFavouritesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -3286,6 +3776,8 @@ export type UserCreateWithoutListsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3310,6 +3802,12 @@ export type UserCreateWithoutListsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -3336,6 +3834,8 @@ export type UserUncheckedCreateWithoutListsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3360,6 +3860,12 @@ export type UserUncheckedCreateWithoutListsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -3402,6 +3908,8 @@ export type UserUpdateWithoutListsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3426,6 +3934,12 @@ export type UserUpdateWithoutListsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -3452,6 +3966,8 @@ export type UserUncheckedUpdateWithoutListsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3476,6 +3992,12 @@ export type UserUncheckedUpdateWithoutListsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -3502,6 +4024,8 @@ export type UserCreateWithoutEpisodeRatingsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3526,6 +4050,12 @@ export type UserCreateWithoutEpisodeRatingsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -3552,6 +4082,8 @@ export type UserUncheckedCreateWithoutEpisodeRatingsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3576,6 +4108,12 @@ export type UserUncheckedCreateWithoutEpisodeRatingsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -3618,6 +4156,8 @@ export type UserUpdateWithoutEpisodeRatingsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3642,6 +4182,12 @@ export type UserUpdateWithoutEpisodeRatingsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -3668,6 +4214,8 @@ export type UserUncheckedUpdateWithoutEpisodeRatingsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3692,6 +4240,12 @@ export type UserUncheckedUpdateWithoutEpisodeRatingsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -3718,6 +4272,8 @@ export type UserCreateWithoutDroppedShowsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3742,6 +4298,12 @@ export type UserCreateWithoutDroppedShowsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -3768,6 +4330,8 @@ export type UserUncheckedCreateWithoutDroppedShowsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3792,6 +4356,12 @@ export type UserUncheckedCreateWithoutDroppedShowsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -3834,6 +4404,8 @@ export type UserUpdateWithoutDroppedShowsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3858,6 +4430,12 @@ export type UserUpdateWithoutDroppedShowsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -3884,6 +4462,8 @@ export type UserUncheckedUpdateWithoutDroppedShowsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -3908,6 +4488,12 @@ export type UserUncheckedUpdateWithoutDroppedShowsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -3934,6 +4520,8 @@ export type UserCreateWithoutPushDevicesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -3958,6 +4546,12 @@ export type UserCreateWithoutPushDevicesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -3984,6 +4578,8 @@ export type UserUncheckedCreateWithoutPushDevicesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4008,6 +4604,12 @@ export type UserUncheckedCreateWithoutPushDevicesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -4050,6 +4652,8 @@ export type UserUpdateWithoutPushDevicesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4074,6 +4678,12 @@ export type UserUpdateWithoutPushDevicesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -4100,6 +4710,8 @@ export type UserUncheckedUpdateWithoutPushDevicesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4124,6 +4736,12 @@ export type UserUncheckedUpdateWithoutPushDevicesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -4150,6 +4768,8 @@ export type UserCreateWithoutAchievementsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4174,6 +4794,12 @@ export type UserCreateWithoutAchievementsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -4200,6 +4826,8 @@ export type UserUncheckedCreateWithoutAchievementsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4224,6 +4852,12 @@ export type UserUncheckedCreateWithoutAchievementsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -4266,6 +4900,8 @@ export type UserUpdateWithoutAchievementsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4290,6 +4926,12 @@ export type UserUpdateWithoutAchievementsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -4316,6 +4958,8 @@ export type UserUncheckedUpdateWithoutAchievementsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4340,6 +4984,12 @@ export type UserUncheckedUpdateWithoutAchievementsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -4366,6 +5016,8 @@ export type UserCreateWithoutChallengesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4390,6 +5042,12 @@ export type UserCreateWithoutChallengesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -4416,6 +5074,8 @@ export type UserUncheckedCreateWithoutChallengesInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4440,6 +5100,12 @@ export type UserUncheckedCreateWithoutChallengesInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -4482,6 +5148,8 @@ export type UserUpdateWithoutChallengesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4506,6 +5174,12 @@ export type UserUpdateWithoutChallengesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -4532,6 +5206,8 @@ export type UserUncheckedUpdateWithoutChallengesInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4556,6 +5232,12 @@ export type UserUncheckedUpdateWithoutChallengesInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -4582,6 +5264,8 @@ export type UserCreateWithoutRatingsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4606,6 +5290,12 @@ export type UserCreateWithoutRatingsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
@@ -4632,6 +5322,8 @@ export type UserUncheckedCreateWithoutRatingsInput = {
   plexAccountId?: string | null
   plexAuthToken?: string | null
   plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
   providers?: string | null
   coverBackdrop?: string | null
   coverTitle?: string | null
@@ -4656,6 +5348,12 @@ export type UserUncheckedCreateWithoutRatingsInput = {
   levelBaseFranchises?: number
   levelBaselineAt?: Date | string | null
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
   levelKnownKeys?: string | null
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
@@ -4698,6 +5396,8 @@ export type UserUpdateWithoutRatingsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4722,6 +5422,12 @@ export type UserUpdateWithoutRatingsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
@@ -4748,6 +5454,8 @@ export type UserUncheckedUpdateWithoutRatingsInput = {
   plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -4772,6 +5480,12 @@ export type UserUncheckedUpdateWithoutRatingsInput = {
   levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
   levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
@@ -4964,6 +5678,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   plexAccountId?: boolean
   plexAuthToken?: boolean
   plexUsername?: boolean
+  plexManaged?: boolean
+  plexHomeLinkedAt?: boolean
   providers?: boolean
   coverBackdrop?: boolean
   coverTitle?: boolean
@@ -4988,6 +5704,12 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   levelBaseFranchises?: boolean
   levelBaselineAt?: boolean
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: boolean
+  screensaverSource?: boolean
+  screensaverPlace?: boolean
+  screensaverLat?: boolean
+  screensaverLon?: boolean
   levelKnownKeys?: boolean
   episodes?: boolean | Prisma.User$episodesArgs<ExtArgs>
   movies?: boolean | Prisma.User$moviesArgs<ExtArgs>
@@ -5016,6 +5738,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   plexAccountId?: boolean
   plexAuthToken?: boolean
   plexUsername?: boolean
+  plexManaged?: boolean
+  plexHomeLinkedAt?: boolean
   providers?: boolean
   coverBackdrop?: boolean
   coverTitle?: boolean
@@ -5040,6 +5764,12 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   levelBaseFranchises?: boolean
   levelBaselineAt?: boolean
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: boolean
+  screensaverSource?: boolean
+  screensaverPlace?: boolean
+  screensaverLat?: boolean
+  screensaverLon?: boolean
   levelKnownKeys?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -5051,6 +5781,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   plexAccountId?: boolean
   plexAuthToken?: boolean
   plexUsername?: boolean
+  plexManaged?: boolean
+  plexHomeLinkedAt?: boolean
   providers?: boolean
   coverBackdrop?: boolean
   coverTitle?: boolean
@@ -5075,6 +5807,12 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   levelBaseFranchises?: boolean
   levelBaselineAt?: boolean
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: boolean
+  screensaverSource?: boolean
+  screensaverPlace?: boolean
+  screensaverLat?: boolean
+  screensaverLon?: boolean
   levelKnownKeys?: boolean
 }, ExtArgs["result"]["user"]>
 
@@ -5086,6 +5824,8 @@ export type UserSelectScalar = {
   plexAccountId?: boolean
   plexAuthToken?: boolean
   plexUsername?: boolean
+  plexManaged?: boolean
+  plexHomeLinkedAt?: boolean
   providers?: boolean
   coverBackdrop?: boolean
   coverTitle?: boolean
@@ -5110,10 +5850,16 @@ export type UserSelectScalar = {
   levelBaseFranchises?: boolean
   levelBaselineAt?: boolean
   challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: boolean
+  screensaverSource?: boolean
+  screensaverPlace?: boolean
+  screensaverLat?: boolean
+  screensaverLon?: boolean
   levelKnownKeys?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "plexAccountId" | "plexAuthToken" | "plexUsername" | "providers" | "coverBackdrop" | "coverTitle" | "accent" | "theme" | "themeResolved" | "avatarData" | "avatarType" | "avatarSetAt" | "createdAt" | "plexUrl" | "plexToken" | "plexMachineId" | "seerrUrl" | "seerrApiKey" | "traktClientId" | "traktUsername" | "levelFinishedShows" | "levelFinishedFranchises" | "levelSyncedAt" | "levelBaseShows" | "levelBaseFranchises" | "levelBaselineAt" | "challengesCollapsed" | "levelKnownKeys", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "plexAccountId" | "plexAuthToken" | "plexUsername" | "plexManaged" | "plexHomeLinkedAt" | "providers" | "coverBackdrop" | "coverTitle" | "accent" | "theme" | "themeResolved" | "avatarData" | "avatarType" | "avatarSetAt" | "createdAt" | "plexUrl" | "plexToken" | "plexMachineId" | "seerrUrl" | "seerrApiKey" | "traktClientId" | "traktUsername" | "levelFinishedShows" | "levelFinishedFranchises" | "levelSyncedAt" | "levelBaseShows" | "levelBaseFranchises" | "levelBaselineAt" | "challengesCollapsed" | "xpPanelCollapsed" | "screensaverIdle" | "screensaverSource" | "screensaverPlace" | "screensaverLat" | "screensaverLon" | "levelKnownKeys", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   episodes?: boolean | Prisma.User$episodesArgs<ExtArgs>
   movies?: boolean | Prisma.User$moviesArgs<ExtArgs>
@@ -5179,6 +5925,20 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      * the sign-in flow; settable by hand for accounts that use a password.
      */
     plexUsername: string | null
+    /**
+     * A managed profile in somebody's Plex Home — a partner, a brother, a child.
+     * They have no plex.tv login and no email address of their own, so `email`
+     * on this row is a placeholder that exists only to satisfy the unique index.
+     * Nothing should show it, and nothing should let them sign in with it.
+     */
+    plexManaged: boolean
+    /**
+     * When this profile was introduced to the rest of its Plex Home — i.e. when
+     * friendships were created with the housemates it shares a Plex login with.
+     * Stamped so it happens exactly once: unfriending someone deletes the row, so
+     * an introduction that ran on every sign-in would quietly undo it.
+     */
+    plexHomeLinkedAt: Date | null
     /**
      * Streaming services the user pays for, as TMDB provider ids, comma
      * separated. Used to warn before requesting something they can already watch.
@@ -5264,6 +6024,33 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      * device's screen.
      */
     challengesCollapsed: boolean
+    /**
+     * Whether the experience breakdown on the achievements page is folded down to
+     * just the bar. On the account for the same reason as the one above.
+     */
+    xpPanelCollapsed: boolean
+    /**
+     * The screensaver: minutes of nothing at all before it starts by itself.
+     * 
+     * Zero is the off switch, and deliberately the same field as the delay rather
+     * than a boolean beside it — "start it after ten minutes" and "never start it
+     * on its own" are one answer to one question, and two columns would let them
+     * disagree. It can always still be started by hand from the account menu.
+     */
+    screensaverIdle: number
+    /**
+     * Which shelf the slideshow draws from — see `SCREENSAVER_SOURCES`.
+     */
+    screensaverSource: string
+    /**
+     * Where to ask about the weather. The place name is resolved to coordinates
+     * once, when it is chosen, so the screensaver never has to geocode anything
+     * while it is running; the name is kept only to print under the temperature.
+     * All three are null when the weather has been left off, which is the default.
+     */
+    screensaverPlace: string | null
+    screensaverLat: number | null
+    screensaverLon: number | null
     /**
      * Every achievement id this account has been measured against, comma
      * separated. What makes a *newly added* achievement that a years-old imported
@@ -5717,6 +6504,8 @@ export interface UserFieldRefs {
   readonly plexAccountId: Prisma.FieldRef<"User", 'String'>
   readonly plexAuthToken: Prisma.FieldRef<"User", 'String'>
   readonly plexUsername: Prisma.FieldRef<"User", 'String'>
+  readonly plexManaged: Prisma.FieldRef<"User", 'Boolean'>
+  readonly plexHomeLinkedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly providers: Prisma.FieldRef<"User", 'String'>
   readonly coverBackdrop: Prisma.FieldRef<"User", 'String'>
   readonly coverTitle: Prisma.FieldRef<"User", 'String'>
@@ -5741,6 +6530,12 @@ export interface UserFieldRefs {
   readonly levelBaseFranchises: Prisma.FieldRef<"User", 'Int'>
   readonly levelBaselineAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly challengesCollapsed: Prisma.FieldRef<"User", 'Boolean'>
+  readonly xpPanelCollapsed: Prisma.FieldRef<"User", 'Boolean'>
+  readonly screensaverIdle: Prisma.FieldRef<"User", 'Int'>
+  readonly screensaverSource: Prisma.FieldRef<"User", 'String'>
+  readonly screensaverPlace: Prisma.FieldRef<"User", 'String'>
+  readonly screensaverLat: Prisma.FieldRef<"User", 'Float'>
+  readonly screensaverLon: Prisma.FieldRef<"User", 'Float'>
   readonly levelKnownKeys: Prisma.FieldRef<"User", 'String'>
 }
     

@@ -96,7 +96,12 @@ export function SaveButton({
         // hollow instead of filled. Solid-plus-outline is what makes one of two
         // equally sized buttons read as the primary one — without it they just
         // compete.
-        className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3.5 max-sm:w-[50px] max-sm:shrink-0 max-sm:px-0 text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] disabled:opacity-60 ${
+        // Full width of whatever it is given, on a phone as well as on desktop.
+        // It used to shrink to a 50px square there, which was fine beside a
+        // watch pill and wrong without one: a show has no watch pill, so the
+        // square sat alone at the left of a full-width row with the heart way
+        // off at the other end and nothing in between.
+        className={`inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] disabled:opacity-60 max-sm:w-auto max-sm:flex-1 max-sm:px-3 ${
           savedCount > 0
             ? "border-flare-500/70 bg-flare-600/20 text-flare-300 hover:border-flare-400 hover:bg-flare-600/35 light:bg-flare-600/15 light:hover:bg-flare-600/25"
             : "ios-surface border-ink-600/70 bg-ink-900/50 text-ink-100 hover:border-flare-500 hover:bg-ink-800/80 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
@@ -109,7 +114,7 @@ export function SaveButton({
         ) : (
           <Bookmark size={16} className="shrink-0" />
         )}
-        <span className="hidden truncate sm:inline">Save</span>
+        <span className="truncate">Save</span>
         {/* Two or more is worth counting; one is already said by the filled icon. */}
         {savedCount > 1 && (
           <span className="shrink-0 font-mono text-xs tabular-nums opacity-70">

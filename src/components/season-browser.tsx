@@ -30,6 +30,7 @@ import { CatchUpDialog } from "./catch-up-dialog";
 import { WatchDial } from "./watch-dial";
 import { Popover } from "./popover";
 import { onEpisodeChange, publishEpisodeChanges } from "@/lib/episode-sync";
+import { WatchedPill } from "./ui";
 import { WatchedDateMenu } from "./watched-date-menu";
 
 type Episode = {
@@ -898,6 +899,12 @@ export function SeasonBrowser({
           {episodes?.map((ep) => {
             const isWatched = watched.has(ep.episodeNumber);
             const aired = hasAired(ep.airDate);
+            // Only where there is a date to show. A row can be watched with no
+            // date behind it — a history that came across from Plex or Trakt
+            // before the play log did — and "Watched Invalid Date" is worse
+            // than the tick on its own.
+            const seenAt = isWatched ? watchedAt[ep.episodeNumber] : undefined;
+            const seenPlays = plays[ep.episodeNumber] ?? 1;
             return (
               // The last row is rounded to match the card it sits in. Relying on
               // the card's `overflow: hidden` alone leaves a hairline of card
@@ -960,10 +967,25 @@ export function SeasonBrowser({
                           {firstSentence(ep.overview)}
                         </span>
                       )}
-                      <span className="mt-1 block font-mono text-[11px] text-ink-100">
-                        {ep.airDate ?? "TBA"}
-                        {ep.runtime ? ` · ${ep.runtime}m` : ""}
-                        {ep.score > 0 ? ` · ${ep.score}%` : ""}
+                      {/*
+                        The chip rides with the air date and the score rather
+                        than with the title. It sat beside the title first,
+                        which put it at the mercy of how long that title
+                        happened to be — anything wordy pushed it onto a line of
+                        its own, and a row whose height depends on the name of
+                        the episode reads as broken. This line is three short
+                        numbers and always has room.
+
+                        The mono face stays on the numbers alone; the pill is
+                        the app's own type, as it is on the episode page.
+                      */}
+                      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                        <span className="font-mono text-ink-100">
+                          {ep.airDate ?? "TBA"}
+                          {ep.runtime ? ` · ${ep.runtime}m` : ""}
+                          {ep.score > 0 ? ` · ${ep.score}%` : ""}
+                        </span>
+                        {seenAt && <WatchedPill at={seenAt} plays={seenPlays} compact />}
                       </span>
                     </Link>
 

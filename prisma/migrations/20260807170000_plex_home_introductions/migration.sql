@@ -1,0 +1,11 @@
+-- When a profile was introduced to the rest of its Plex Home.
+--
+-- Sharing a Plex Home is a real relationship and a verified one, so the people
+-- in it are made friends the first time each of them signs in — which is what
+-- makes "who is watching what right now" work between a household without
+-- anybody sending a request to their own partner.
+--
+-- Exactly once, though, which is what this column is for. Removing a friend
+-- deletes the row, so an introduction that ran on every sign-in would put back
+-- what somebody had just taken away.
+ALTER TABLE "User" ADD COLUMN "plexHomeLinkedAt" DATETIME;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { AchievementState, Badge } from "@/lib/achievements";
 import { BadgeMedal, formatUnlocked, tierLabel } from "./achievement-badge";
+import { barWidth } from "@/lib/format";
 import { useOpenBadge } from "./achievement-wall";
 
 /**
@@ -62,7 +63,7 @@ export function AchievementCard({ item }: { item: AchievementState }) {
               <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-                  style={{ width: `${Math.max(2, item.percent)}%` }}
+                  style={{ width: `${barWidth(item.percent)}%` }}
                 />
               </div>
             )}

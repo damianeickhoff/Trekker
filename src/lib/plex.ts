@@ -153,7 +153,18 @@ export async function findOnPlex(
 
 export type PlexSession = {
   title: string;
-  /** "S01E04 · Episode name" for an episode, the year for a film. */
+  /**
+   * The year the thing in `title` came out — the show's for an episode, not the
+   * episode's own. Null where the library does not know it.
+   */
+  year: string | null;
+  /**
+   * What the server rates it out of 100 — the episode's own score for an
+   * episode, the film's for a film. Null where nothing has rated it, which is
+   * normal for a library built with the legacy agents.
+   */
+  score: number | null;
+  /** "S01E04 · Episode name" for an episode, and nothing at all for a film. */
   subtitle: string;
   mediaType: "movie" | "tv";
   /** Percentage through, 0-100. */
@@ -185,6 +196,10 @@ export type SessionMetadata = PlexMetadata & {
   grandparentThumb?: string;
   art?: string;
   grandparentArt?: string;
+  /** Both out of 10. The audience score is the one the rest of the app shows,
+      so it wins where the library carries both. */
+  rating?: number;
+  audienceRating?: number;
   User?: { id?: string | number; title?: string };
   Player?: { title?: string; state?: string };
 };
@@ -249,13 +264,30 @@ export async function describeSession(
   const isEpisode = session.type === "episode";
   const key = isEpisode ? session.grandparentRatingKey : session.ratingKey;
 
+  // One request, for the thing the card names — the show behind an episode, or
+  // the film itself. It was already being made for the TMDB id.
+  const item = key ? await getPlexItem(connection, key).catch(() => null) : null;
+
+  /**
+   * Off the session rather than off the item above, deliberately: this is the
+   * *episode's* rating where there is one, which is what somebody glancing at
+   * "Soraya is watching S02E05" wants to know. The item's rating would be the
+   * show's, averaged across ten years of it.
+   */
+  const rating = session.audienceRating ?? session.rating ?? null;
+
   return {
     title: isEpisode ? (session.grandparentTitle ?? session.title) : session.title,
+    // A film's own year is on the session; a show's is on the item, since the
+    // session only knows when this episode aired.
+    year: (isEpisode ? item?.year : (session.year ?? item?.year))?.toString() ?? null,
+    score: rating === null ? null : Math.round(rating * 10),
+    // The year used to live here for a film, which left the line saying nothing
+    // else. It reads better beside the title, so a film's second line is now
+    // just who is watching it.
     subtitle: isEpisode
       ? `S${String(session.parentIndex ?? 0).padStart(2, "0")}E${String(session.index ?? 0).padStart(2, "0")} · ${session.title}`
-      : session.year
-        ? String(session.year)
-        : "Movie",
+      : "",
     mediaType: isEpisode ? "tv" : "movie",
     progress: Math.min(100, Math.round((offset / session.duration) * 100)),
     paused: session.Player?.state === "paused",
@@ -265,7 +297,7 @@ export async function describeSession(
     art: imageUrl(connection, session.art ?? session.grandparentArt),
     href: buildDeepLink(connection, session),
     appHref: buildAppLink(connection, session),
-    tmdbId: key ? await getPlexTmdbId(connection, key).catch(() => null) : null,
+    tmdbId: item?.tmdbId ?? null,
   };
 }
 
@@ -454,23 +486,43 @@ export async function getPlexWatchedLibrary(
 }
 
 /**
- * The TMDB id a library item is matched to. Present only where the library uses
- * the modern Plex agents; the legacy ones carry their own scheme, which is why
- * a miss here has to fall back to a title search.
+ * What the library knows about one item: which TMDB title it is matched to, and
+ * what year it came out.
+ *
+ * The TMDB id is present only where the library uses the modern Plex agents; the
+ * legacy ones carry their own scheme, which is why a miss has to fall back to a
+ * title search. The year is here rather than taken off the session because a
+ * session names the *episode*, and the year an episode aired is not the year the
+ * show began — this is asked of whatever the card is actually naming.
  */
+export async function getPlexItem(
+  connection: PlexConnection,
+  ratingKey: string,
+): Promise<{ tmdbId: number | null; year: number | null }> {
+  const data = await plexFetch<{
+    MediaContainer: { Metadata?: { year?: number; Guid?: { id?: string }[] }[] };
+  }>(connection, `/library/metadata/${ratingKey}`, { includeGuids: "1" });
+
+  const item = data?.MediaContainer?.Metadata?.[0];
+
+  let tmdbId: number | null = null;
+  for (const guid of item?.Guid ?? []) {
+    const match = /^tmdb:\/\/(\d+)$/.exec(guid.id ?? "");
+    if (match) {
+      tmdbId = Number(match[1]);
+      break;
+    }
+  }
+
+  return { tmdbId, year: item?.year ?? null };
+}
+
+/** Just the id, for the callers that only ever wanted that. */
 export async function getPlexTmdbId(
   connection: PlexConnection,
   ratingKey: string,
 ): Promise<number | null> {
-  const data = await plexFetch<{
-    MediaContainer: { Metadata?: { Guid?: { id?: string }[] }[] };
-  }>(connection, `/library/metadata/${ratingKey}`, { includeGuids: "1" });
-
-  for (const guid of data?.MediaContainer?.Metadata?.[0]?.Guid ?? []) {
-    const match = /^tmdb:\/\/(\d+)$/.exec(guid.id ?? "");
-    if (match) return Number(match[1]);
-  }
-  return null;
+  return (await getPlexItem(connection, ratingKey)).tmdbId;
 }
 
 /**

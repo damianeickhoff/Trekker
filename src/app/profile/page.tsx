@@ -5,6 +5,7 @@ import { Clock, Film, Sparkles, Trophy, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { getLevel, type LevelState } from "@/lib/achievements";
 import { avatarUrl } from "@/lib/avatar";
+import { displayEmail } from "@/lib/plex-seat";
 import { LevelBar } from "@/components/level-bar";
 import { db } from "@/lib/db";
 import { getFunStats } from "@/lib/fun-stats";
@@ -81,7 +82,7 @@ export default async function ProfilePage({
 
       <ProfileBanner
         name={user.name}
-        email={user.email}
+        email={displayEmail(user.email)}
         avatar={avatar}
         createdAt={user.createdAt}
         totalMinutes={stats.totalMinutes}

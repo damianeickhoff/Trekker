@@ -1,3 +1,4 @@
+import { barWidth } from "@/lib/format";
 import { formatXp, type LevelProgress } from "@/lib/levels";
 
 /**
@@ -60,10 +61,15 @@ export function LevelBar({
         </span>
       </div>
 
+      {/* The floor is there so that one episode into a level shows *something*
+          rather than rounding down to an empty bar. It has to stop short of
+          zero, though: an account that has earned nothing was being drawn with
+          a sliver of progress it had not made, which is the one number on this
+          bar that has to be honest. */}
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-800">
         <div
           className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-          style={{ width: `${Math.max(2, level.percent)}%` }}
+          style={{ width: `${barWidth(level.percent)}%` }}
         />
       </div>
 

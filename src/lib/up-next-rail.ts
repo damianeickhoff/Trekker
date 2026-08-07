@@ -21,6 +21,11 @@ export type RailEpisode = {
   runtime: number | null;
   /** TMDB's audience score, 0–100, or 0 where nobody has voted. */
   score: number;
+  /**
+   * TMDB's `episode_type` — what this episode is in the run, if it is anything.
+   * Null on the vast majority, which are "standard" and earn no badge.
+   */
+  episodeType: string | null;
 };
 
 export async function getSeasonEpisodes(
@@ -38,5 +43,6 @@ export async function getSeasonEpisodes(
     airDate: episode.air_date,
     runtime: episode.runtime,
     score: Math.round((episode.vote_average ?? 0) * 10),
+    episodeType: episode.episode_type ?? null,
   }));
 }

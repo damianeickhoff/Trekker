@@ -1810,6 +1810,8 @@ export const UserScalarFieldEnum = {
   plexAccountId: 'plexAccountId',
   plexAuthToken: 'plexAuthToken',
   plexUsername: 'plexUsername',
+  plexManaged: 'plexManaged',
+  plexHomeLinkedAt: 'plexHomeLinkedAt',
   providers: 'providers',
   coverBackdrop: 'coverBackdrop',
   coverTitle: 'coverTitle',
@@ -1834,6 +1836,12 @@ export const UserScalarFieldEnum = {
   levelBaseFranchises: 'levelBaseFranchises',
   levelBaselineAt: 'levelBaselineAt',
   challengesCollapsed: 'challengesCollapsed',
+  xpPanelCollapsed: 'xpPanelCollapsed',
+  screensaverIdle: 'screensaverIdle',
+  screensaverSource: 'screensaverSource',
+  screensaverPlace: 'screensaverPlace',
+  screensaverLat: 'screensaverLat',
+  screensaverLon: 'screensaverLon',
   levelKnownKeys: 'levelKnownKeys'
 } as const
 
@@ -2112,9 +2120,9 @@ export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
 
 
 /**
- * Reference to a field of type 'Bytes'
+ * Reference to a field of type 'Boolean'
  */
-export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -2126,16 +2134,16 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
- * Reference to a field of type 'Int'
+ * Reference to a field of type 'Bytes'
  */
-export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+export type BytesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Bytes'>
     
 
 
 /**
- * Reference to a field of type 'Boolean'
+ * Reference to a field of type 'Int'
  */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 

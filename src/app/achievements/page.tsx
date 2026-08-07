@@ -3,12 +3,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { byCategory, getAchievementBoard, getLevel } from "@/lib/achievements";
 import { LevelPanel } from "@/components/level-panel";
 import { tmdbConfigured } from "@/lib/tmdb";
 import { AchievementBoard } from "@/components/achievement-board";
 import { AchievementCard } from "@/components/achievements";
 import { AchievementWall } from "@/components/achievement-wall";
+import { barWidth } from "@/lib/format";
 import { SetupNotice } from "@/components/ui";
 
 export const metadata = { title: "Achievements — Trekker" };
@@ -22,6 +24,11 @@ export default async function AchievementsPage() {
   // rather than the previous one's.
   const board = await getAchievementBoard(user.id);
   const level = await getLevel(user.id);
+
+  const panels = await db.user.findUnique({
+    where: { id: user.id },
+    select: { xpPanelCollapsed: true },
+  });
 
   // What is nearly done, ignoring anything not actually started — a wall of
   // "0%" suggestions is no use to anyone.
@@ -60,7 +67,7 @@ export default async function AchievementsPage() {
             <div className="mt-3 h-2 max-w-md overflow-hidden rounded-full bg-ink-800">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400"
-                style={{ width: `${Math.max(1.5, board.percent)}%` }}
+                style={{ width: `${barWidth(board.percent, 1.5)}%` }}
               />
             </div>
           </div>
@@ -86,7 +93,7 @@ export default async function AchievementsPage() {
         </p>
       )}
 
-      <LevelPanel level={level} />
+      <LevelPanel level={level} collapsed={panels?.xpPanelCollapsed ?? false} />
 
       {board.justUnlocked.length > 0 && (
         <section className="mt-6">

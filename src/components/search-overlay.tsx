@@ -178,7 +178,9 @@ export function SearchOverlay({
             // height, and a gap so the two read as separate things.
             // `px-4` matches the tab bar's own gutter exactly, so the panel and
             // the bar line up edge to edge rather than one overhanging the other.
-            "fixed inset-0 z-[100] flex items-end justify-center bg-black/60 px-4 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))+3.5rem+0.75rem)] backdrop-blur-sm"
+            // Kept in step with `Nav`'s own inset, the search circle's height
+            // and a gap: change one and this has to move with it.
+            "fixed inset-0 z-[100] flex items-end justify-center bg-black/60 px-4 pb-[calc(max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))+3rem+0.75rem)] backdrop-blur-sm"
           : "fixed inset-0 z-[100] flex items-start justify-center bg-black/70 p-4 pt-[12vh] backdrop-blur-sm"
       }
       onClick={onClose}

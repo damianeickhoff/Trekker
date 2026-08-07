@@ -108,7 +108,10 @@ export const getNotifications = cache(async function getNotifications(
     // A key no longer in the catalogue has nothing to say about itself.
     if (!achievement) continue;
 
-    const key = `badge:${row.key}`;
+    // The moment is part of the key. Without it a badge that was cleared and
+    // earned again reuses the key of the one you already dismissed, so the
+    // notification for the second unlock never appears.
+    const key = `badge:${row.key}:${row.unlockedAt.getTime()}`;
     if (dismissed.has(key)) continue;
     items.push({
       key,

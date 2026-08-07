@@ -2,10 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Settings, Sparkles, Trophy, User as UserIcon, Users } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  LogOut,
+  MonitorPlay,
+  Settings,
+  Sparkles,
+  Trophy,
+  User as UserIcon,
+  Users,
+  UsersRound,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { logout } from "@/lib/auth-actions";
+import { switchProfile } from "@/lib/plex-profile-actions";
 import type { SeasonSetting } from "@/lib/seasons";
 import { scrollMovedAnchor } from "./anchored";
 import { SeasonSwitcher } from "./season-switcher";
@@ -15,10 +26,19 @@ export function UserMenu({
   email,
   avatarUrl,
   seasonSetting,
+  canSwitchProfile = false,
 }: {
   name: string;
+  /**
+   * The line under the name. Usually the address on the account — but a managed
+   * Plex Home profile has no address of its own, and what is stored for it is a
+   * placeholder nobody should be shown, so the caller substitutes something
+   * true instead.
+   */
   email: string;
   avatarUrl: string | null;
+  /** Signed in through Plex, so there may be a household to hand this back to. */
+  canSwitchProfile?: boolean;
   /**
    * TEMPORARY: what the preview switch should show as chosen, or null to leave
    * it out entirely — which is everyone but the instance's admin.
@@ -29,6 +49,18 @@ export function UserMenu({
   const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  async function startScreensaver() {
+    setOpen(false);
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch {
+      // Refused, or a browser that will not do it here. Worth having anyway.
+    }
+    router.push(`/screensaver?from=${encodeURIComponent(pathname)}`);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -168,7 +200,35 @@ export function UserMenu({
               <Settings size={15} />
               Settings
             </Link>
+            {/* A button rather than a link, and the one thing in this menu that
+                is: the browser only hands over the whole screen in response to
+                a press, so the request has to be made inside this click. The
+                navigation is what the link would have done anyway. */}
+            <button
+              type="button"
+              onClick={startScreensaver}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+            >
+              <MonitorPlay size={15} />
+              Screensaver
+            </button>
           </div>
+
+          {/* Handing the phone, or the shared iPad, to somebody else in the
+              Plex Home. It signs out on the way — see `switchProfile` — because
+              a profile holds no credentials for the rest of the household, so
+              the only way back to the picker is through the front door. */}
+          {canSwitchProfile && (
+            <form action={switchProfile} className="border-t border-ink-800 py-1">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              >
+                <UsersRound size={15} />
+                Switch profile
+              </button>
+            </form>
+          )}
 
           {seasonSetting !== null && (
             <SeasonSwitcher current={seasonSetting} onPicked={() => setOpen(false)} />

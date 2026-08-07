@@ -247,8 +247,13 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
                         >
                           {item.title}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">{item.body}</p>
-                        <p className="mt-0.5 text-[11px] text-ink-600">{ago(item.at)}</p>
+                        {/* Both a step up the ramp from where they were. The
+                            body of a notification is the notification — it is
+                            what tells you who asked to be your friend — so it
+                            does not belong at the same weight as a decorative
+                            glyph in an empty state. */}
+                        <p className="mt-0.5 line-clamp-2 text-xs text-ink-400">{item.body}</p>
+                        <p className="mt-0.5 text-[11px] text-ink-500">{ago(item.at)}</p>
                       </Link>
 
                       {!read && (
