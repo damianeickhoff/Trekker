@@ -28,6 +28,7 @@ export function SeerrButton({
   initialState,
   /** Services the viewer subscribes to that already carry this title. */
   alreadyOn = [],
+  mayRequest = true,
   variant = "button",
 }: {
   mediaType: "movie" | "tv";
@@ -36,6 +37,15 @@ export function SeerrButton({
   title?: string;
   initialState: SeerrState;
   alreadyOn?: string[];
+  /**
+   * Whether this account has access to the Plex server the request would fill.
+   *
+   * Shown rather than hidden when false. A missing row leaves someone wondering
+   * whether the feature exists, whether it is broken, or whether they did
+   * something wrong; a row that says why is shorter than the email that
+   * question turns into.
+   */
+  mayRequest?: boolean;
   /**
    * `menu` renders a row for the overflow menu instead of a standalone button.
    * Requesting is a once-per-title action, so it does not earn a permanent seat
@@ -60,7 +70,8 @@ export function SeerrButton({
    * "partially available", which used to grey the button out and leave no way
    * to ask for the third.
    */
-  const actionable = seasons.length > 0 ? missing.length > 0 : kind === "requestable";
+  const somethingToRequest = seasons.length > 0 ? missing.length > 0 : kind === "requestable";
+  const actionable = somethingToRequest && mayRequest;
 
   function send() {
     setConfirming(false);
@@ -110,13 +121,15 @@ export function SeerrButton({
 
   if (variant === "menu") {
     // A show with something missing says so, however the title as a whole reads.
-    const label =
-      seasons.length > 0 && missing.length > 0 && missing.length < seasons.length
+    const label = !mayRequest
+      ? "Requesting unavailable"
+      : seasons.length > 0 && missing.length > 0 && missing.length < seasons.length
         ? "Request seasons"
         : LABELS[kind];
 
-    const note =
-      seasons.length > 0 && missing.length > 0
+    const note = !mayRequest
+      ? "Only people with access to this Plex server can request titles."
+      : seasons.length > 0 && missing.length > 0
         ? `${missing.length} of ${seasons.length} season${
             seasons.length === 1 ? "" : "s"
           } missing — pick which.`

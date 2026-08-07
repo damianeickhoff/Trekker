@@ -7,6 +7,7 @@ import { db } from "./db";
 import { getCurrentUser, requireUser } from "./auth";
 import { mapLimit } from "./concurrency";
 import { countAiredEpisodes, getSeason, getTv } from "./tmdb";
+import { hasPlexAccess } from "./plex-access";
 import { getSeerrConnection, requestOnSeerr } from "./seerr";
 import {
   clearShow,
@@ -819,6 +820,21 @@ export async function requestTitle(input: {
       seasons: z.array(z.number().int().min(1)).optional(),
     })
     .parse(input);
+
+  /**
+   * The gate, and it lives here rather than only on the button.
+   *
+   * Hiding a control is a courtesy to the person who cannot use it; it is not
+   * access control, because the action behind it is a network endpoint anybody
+   * with an account can call. Requesting spends the owner's disk on the owner's
+   * server, so the check has to be on this side of that call.
+   */
+  if (!(await hasPlexAccess(user.id))) {
+    return {
+      ok: false,
+      error: "Requesting is limited to people with access to this Plex server.",
+    };
+  }
 
   const connection = await getSeerrConnection();
   if (!connection) return { ok: false, error: "No Overseerr instance is connected" };

@@ -1,5 +1,6 @@
 import { expandProviders, getUserProviders } from "@/lib/providers";
 import { watchRegion } from "@/lib/region";
+import { hasPlexAccess } from "@/lib/plex-access";
 import { getSeerrConnection, getSeerrState } from "@/lib/seerr";
 import { getWatchProviders } from "@/lib/tmdb";
 import { SeerrButton } from "./seerr-button";
@@ -36,10 +37,17 @@ export async function SeerrBadge({
     state.kind === "requestable" ||
     (state.seasons?.some((season) => season.kind === "requestable") ?? false);
 
-  const alreadyOn = anythingMissing ? await subscribedProviders(userId, mediaType, tmdbId) : [];
+  const [alreadyOn, mayRequest] = await Promise.all([
+    anythingMissing ? subscribedProviders(userId, mediaType, tmdbId) : Promise.resolve([]),
+    // Whether this account may spend the owner's server on a download. The
+    // action checks it again — hiding a control is not access control — but
+    // knowing here is what lets the row explain itself rather than fail.
+    hasPlexAccess(userId),
+  ]);
 
   return (
     <SeerrButton
+      mayRequest={mayRequest}
       mediaType={mediaType}
       tmdbId={tmdbId}
       title={title}
