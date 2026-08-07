@@ -11,9 +11,18 @@ export function Rail({
   children,
   className = "",
   scrollRef,
+  artHeight,
 }: {
   children: React.ReactNode;
   className?: string;
+  /**
+   * How tall the pictures in this rail are, in CSS length units.
+   *
+   * Given, the edge fade is limited to that band so the captions underneath
+   * stay at full strength — see `.rail-fade-art`. Left out, the fade covers the
+   * whole row, which is right for a rail that is nothing but artwork.
+   */
+  artHeight?: string;
   /**
    * The scrolling element itself, handed back to a caller that needs to drive
    * it — `UpNextRail` brings the next unwatched episode to the left edge, and
@@ -89,9 +98,10 @@ export function Rail({
         // The fade sits on whichever side still has content behind it, so a row
         // that fits shows no fade at all and a scrolled one never hard-cuts an
         // item against the gutter.
+        style={artHeight ? ({ "--rail-art": artHeight } as React.CSSProperties) : undefined}
         className={`rail -mx-4 scroll-pl-4 px-4 sm:-mx-6 sm:scroll-pl-6 sm:px-6 lg:-mx-2 lg:scroll-pl-2 lg:px-2 ${
-          edges.start ? "" : "rail-fade-start"
-        } ${edges.end ? "" : "rail-fade-end"}`}
+          artHeight ? "rail-fade-art" : ""
+        } ${edges.start ? "" : "rail-fade-start"} ${edges.end ? "" : "rail-fade-end"}`}
       >
         {children}
       </div>

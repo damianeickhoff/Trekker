@@ -106,7 +106,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
     <>
       {/* The show's name rather than the episode's: the episode is the page you
           are on, and the thing worth naming is where you will land. */}
-      <BackButton to="back" fallback={`/title/tv/${showId}`} title={show.name} />
+      <BackButton to="href" fallback={`/title/tv/${showId}`} title={show.name} />
 
       <EpisodePager previous={href(neighbours.previous)} next={href(neighbours.next)}>
         {/* The wash behind everything, built from this episode's own still —
@@ -143,6 +143,12 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                 </div>
               )}
             </div>
+
+            {/* On the still rather than under the page: they move the picture,
+                and a control belongs where the thing it moves is. Off to the
+                sides so neither sits over a face. */}
+            <Step href={href(neighbours.previous)} direction="previous" />
+            <Step href={href(neighbours.next)} direction="next" />
           </div>
 
           <header className="mt-5 flex items-start justify-between gap-4">
@@ -248,11 +254,6 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             </section>
           )}
 
-          {/* The same two moves the swipe makes, for anyone not using a finger. */}
-          <nav className="mt-8 flex items-center justify-between gap-3">
-            <Step href={href(neighbours.previous)} direction="previous" />
-            <Step href={href(neighbours.next)} direction="next" />
-          </nav>
         </div>
       </EpisodePager>
     </>
@@ -281,17 +282,27 @@ function formatAirDate(value: string) {
   });
 }
 
+/**
+  * One step along, as a control on the still itself.
+  *
+  * The same two moves the swipe makes, for anyone not using a finger — and on
+  * desktop, where there is no swipe at all, the only way through a season
+  * without going back to the list each time.
+  */
 function Step({ href, direction }: { href: string | null; direction: "previous" | "next" }) {
-  if (!href) return <span />;
+  if (!href) return null;
+
+  const Icon = direction === "previous" ? ChevronLeft : ChevronRight;
 
   return (
     <Link
       href={href}
-      className="ios-surface inline-flex items-center gap-1.5 rounded-xl border border-ink-700 px-3.5 py-2.5 text-sm font-medium transition hover:bg-ink-800 max-sm:border-white/15 max-sm:hover:bg-white/10"
+      aria-label={direction === "previous" ? "Previous episode" : "Next episode"}
+      className={`absolute top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white shadow-lg shadow-black/40 backdrop-blur-md transition hover:bg-black/65 ${
+        direction === "previous" ? "left-3" : "right-3"
+      }`}
     >
-      {direction === "previous" && <ChevronLeft size={16} />}
-      {direction === "previous" ? "Previous" : "Next"}
-      {direction === "next" && <ChevronRight size={16} />}
+      <Icon size={20} />
     </Link>
   );
 }

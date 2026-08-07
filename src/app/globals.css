@@ -548,6 +548,49 @@
   );
 }
 
+/*
+ * A rail that knows how tall its pictures are fades only those.
+ *
+ * The mask is on the scroller, so by default it takes the captions with it —
+ * a title under a poster dissolving sideways reads as text going wrong rather
+ * than as a row continuing. Two mask layers fix it: the fade, sized to the
+ * picture band, and an opaque block over the rest. `add` composites them into
+ * one mask that is soft at the top and solid underneath.
+ */
+.rail-fade-art {
+  --rail-art: 100%;
+  mask-size:
+    100% var(--rail-art),
+    100% calc(100% - var(--rail-art));
+  mask-position:
+    top left,
+    bottom left;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+
+.rail-fade-art.rail-fade-start {
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--rail-fade)),
+    linear-gradient(#000, #000);
+}
+
+.rail-fade-art.rail-fade-end {
+  mask-image: linear-gradient(to left, transparent 0, #000 var(--rail-fade)),
+    linear-gradient(#000, #000);
+}
+
+.rail-fade-art.rail-fade-start.rail-fade-end {
+  mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 var(--rail-fade),
+      #000 calc(100% - var(--rail-fade)),
+      transparent 100%
+    ),
+    linear-gradient(#000, #000);
+}
+
 /* Light mode: artwork against a pale page has far less contrast to lose, so the
    same fade reads as a smear. Keep it to a hint. */
 html[data-theme="light"] .rail {

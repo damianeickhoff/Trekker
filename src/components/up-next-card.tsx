@@ -112,12 +112,12 @@ export function FeaturedUpNext({ item }: { item: UpNext }) {
           className="object-cover"
         />
       )}
-      <div className="scrim-full absolute inset-0" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/5 to-transparent" />
 
       <div className="relative mt-auto flex w-full flex-col gap-4 p-5 sm:p-7">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-flare-400 uppercase">
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-white/70 uppercase">
             Up next
           </p>
           <Link
@@ -127,7 +127,7 @@ export function FeaturedUpNext({ item }: { item: UpNext }) {
             {item.showName}
           </Link>
           <p className="mt-1.5 text-sm text-white/80">
-            <span className="font-mono text-flare-400">
+            <span className="font-mono font-semibold text-white">
               S{String(item.seasonNumber).padStart(2, "0")}E
               {String(item.episodeNumber).padStart(2, "0")}
             </span>{" "}

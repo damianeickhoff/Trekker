@@ -222,11 +222,16 @@ export function UpNextRail({
     if (askWhen) return;
 
     if (!placed.current) {
+      // The first placement is instant: the row should open on the right
+      // episode, not glide to it while the reader watches.
+      placed.current = true;
       owed.current = nextKey;
       bring(nextKey, "auto");
       return;
     }
 
+    // Everything after is a change to something already on screen, so it moves.
+    owed.current = null;
     bring(nextKey, "smooth");
   }, [nextKey, askWhen, bring]);
 
@@ -519,7 +524,7 @@ export function UpNextRail({
         </p>
       </div>
 
-      <Rail scrollRef={strip}>
+      <Rail scrollRef={strip} artHeight="124px">
         {episodes.map((episode) => {
           const id = keyOf(episode);
           const seen = watched.has(id);
@@ -546,7 +551,7 @@ export function UpNextRail({
               */}
               <div
                 className={`relative aspect-video overflow-hidden rounded-xl ${
-                  aired ? "bg-white/10" : "bg-white/5"
+                  aired ? "bg-white/10 light:bg-ink-800" : "bg-white/5 light:bg-ink-700/60"
                 }`}
               >
                 {still ? (
@@ -558,7 +563,7 @@ export function UpNextRail({
                     className={`object-cover transition ${seen ? "opacity-45" : ""}`}
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center text-white/25">
+                  <div className="grid h-full w-full place-items-center text-white/25 light:text-ink-400">
                     <Tv size={22} />
                   </div>
                 )}
@@ -579,8 +584,8 @@ export function UpNextRail({
                     <span
                       className={`absolute right-2 bottom-2 grid h-7 w-7 place-items-center rounded-full border shadow-lg shadow-black/40 backdrop-blur-md transition ${
                         seen
-                          ? "border-white/25 bg-white/85 text-neutral-900"
-                          : "border-white/20 bg-black/50 text-white"
+                          ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
+                          : "border-white/20 bg-black/50 text-white light:border-ink-600 light:bg-white light:text-ink-100"
                       }`}
                     >
                       {seen && <Check size={13} />}
@@ -603,7 +608,7 @@ export function UpNextRail({
                 )}
 
                 {!aired && (
-                  <span className="absolute top-2 left-2 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/75 backdrop-blur-sm">
+                  <span className="absolute top-2 left-2 rounded-full border border-white/15 bg-black/45 px-2 py-0.5 text-[10px] font-medium text-white/75 backdrop-blur-sm light:border-ink-600 light:bg-white/85 light:text-ink-300">
                     Not aired
                   </span>
                 )}

@@ -375,6 +375,8 @@ export function SeasonBrowser({
   // Measured against aired episodes only: a season half-way through its run is
   // "done" when there is nothing left released to watch.
   const airedCount = episodes?.filter((e) => hasAired(e.airDate)).length ?? 0;
+  /** The season the strip is pointing at, for the dial that sits beside it. */
+  const activeSeason = seasons.find((s) => s.seasonNumber === active) ?? null;
   // Resolved from the loaded season rather than held in state, so it follows
   // along if the list reloads underneath an open dialog.
 
@@ -989,8 +991,8 @@ export function SeasonBrowser({
                       title={!aired && !isWatched ? "This episode has not aired yet" : undefined}
                       className={`grid h-7 w-7 place-items-center rounded-full border transition ${
                         isWatched
-                          ? "border-white/25 bg-white/85 text-neutral-900"
-                          : "border-white/20 bg-black/50 text-white hover:bg-black/70"
+                          ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
+                          : "border-white/20 bg-black/50 text-white light:border-ink-600 light:bg-white light:text-ink-100 hover:bg-black/70 light:hover:bg-ink-800"
                       }`}
                     >
                       {isWatched && <Check size={13} />}
@@ -1095,7 +1097,8 @@ export function SeasonBrowser({
         are fetched when it is chosen, and this component has always held exactly
         one season's worth.
       */}
-      <Rail className="hidden sm:block">
+      <div className="hidden items-center gap-3 sm:flex">
+      <Rail className="min-w-0 flex-1">
         {seasons.map((s) => {
           const done = watchedCounts[s.seasonNumber] ?? 0;
           const isActive = s.seasonNumber === active;
@@ -1115,6 +1118,16 @@ export function SeasonBrowser({
               }`}
             >
               {s.name}
+              {s.score > 0 && (
+                <span
+                  className={`ml-2 font-mono text-[11px] font-normal tabular-nums ${scoreTone(
+                    s.score,
+                  )}`}
+                  title="Audience score for this season"
+                >
+                  {s.score}%
+                </span>
+              )}
               <span className="ml-2 font-mono text-xs text-ink-400">
                 {done}/{s.episodeCount}
               </span>
@@ -1122,6 +1135,28 @@ export function SeasonBrowser({
           );
         })}
       </Rail>
+
+      {/* The whole-season control, once, for the season on screen — the same
+          dial the phone puts on every row, where a column has the room for it
+          and a strip does not. */}
+      {signedIn && activeSeason && (
+        <SeasonCheck
+          watched={watchedCounts[activeSeason.seasonNumber] ?? 0}
+          total={activeSeason.episodeCount}
+          full={
+            (watchedCounts[activeSeason.seasonNumber] ?? 0) >= activeSeason.episodeCount &&
+            activeSeason.episodeCount > 0
+          }
+          busy={pending}
+          ready={Boolean(episodes)}
+          onOpen={() => setExpanded(true)}
+          onMarkToday={markSeason}
+          onMarkAired={markSeasonByAirDate}
+          onRewatch={() => setConfirm("rewatch")}
+          onClear={() => setConfirm("clear")}
+        />
+      )}
+      </div>
 
       <div className="flex flex-col gap-2">
         {seasons.map((s) => {

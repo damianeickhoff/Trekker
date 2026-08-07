@@ -38,8 +38,8 @@ export function WatchDial({
     <span
       className={`relative grid h-7 w-7 place-items-center rounded-full border transition-colors duration-300 ${
         complete
-          ? "border-white/25 bg-white/85 text-neutral-900"
-          : "border-white/20 bg-black/50 text-white"
+          ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
+          : "border-white/20 bg-black/50 text-white light:border-ink-600 light:bg-white light:text-ink-100"
       } ${busy ? "opacity-60" : ""}`}
     >
       {/* The wedge fades out as the tick fades in, so a season being completed

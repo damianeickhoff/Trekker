@@ -120,8 +120,8 @@ export function EpisodeControls({
           aria-label={watched ? "Watched — change the date" : "Mark watched"}
           className={`grid h-9 w-9 place-items-center rounded-full border transition active:scale-95 disabled:opacity-40 ${
             watched
-              ? "border-white/25 bg-white/85 text-neutral-900"
-              : "border-white/25 bg-black/30 text-white hover:bg-black/50"
+              ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
+              : "border-white/20 bg-black/50 text-white light:border-ink-600 light:bg-white light:text-ink-100 hover:bg-black/50 light:hover:bg-ink-800"
           }`}
         >
           {watched && <Check size={17} />}
@@ -165,7 +165,7 @@ function Verdict({
           ? liked
             ? "border-fresh-500/60 bg-fresh-500/15 text-fresh-500"
             : "border-red-500/60 bg-red-500/15 text-red-400"
-          : "border-white/20 bg-black/40 text-white/70 hover:text-white"
+          : "border-white/20 bg-black/40 text-white/70 hover:text-white light:border-ink-600 light:bg-white light:text-ink-400 light:hover:text-ink-100"
       }`}
     >
       <Icon size={15} />
