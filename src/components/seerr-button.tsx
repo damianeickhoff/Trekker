@@ -149,7 +149,7 @@ export function SeerrButton({
           type="button"
           disabled={!actionable || pending}
           onClick={begin}
-          className="flex w-full items-start gap-2.5 px-3 py-3 text-left text-sm text-ink-200 transition hover:bg-flare-600/15 disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent"
+          className="flex w-full items-start gap-2.5 px-3 py-3 text-left text-sm text-ink-100 transition hover:bg-flare-600/15 disabled:cursor-default disabled:hover:bg-transparent"
         >
           {pending ? (
             <Loader2 size={15} className="mt-0.5 shrink-0 animate-spin text-ink-500" />
@@ -166,7 +166,7 @@ export function SeerrButton({
 
         {confirming && (
           <div className="border-t border-ink-800 bg-ink-900/60 px-3 py-3">
-            <p className="flex items-start gap-2 text-xs text-ink-200">
+            <p className="flex items-start gap-2 text-xs text-ink-100">
               <TriangleAlert size={14} className="mt-0.5 shrink-0 text-ember-400" />
               <span>
                 You can already watch this on{" "}
@@ -227,7 +227,7 @@ export function SeerrButton({
 
       {confirming && (
         <span className="absolute top-full left-0 z-50 mt-2 w-72 rounded-2xl border border-ink-700/70 bg-ink-850/95 p-3 backdrop-blur-2xl">
-          <span className="flex items-start gap-2 text-sm text-ink-200">
+          <span className="flex items-start gap-2 text-sm text-ink-100">
             <TriangleAlert size={15} className="mt-0.5 shrink-0 text-ember-400" />
             <span>
               You can already watch this on{" "}

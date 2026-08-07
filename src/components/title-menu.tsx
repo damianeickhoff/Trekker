@@ -94,7 +94,7 @@ export function TitleMenu({
         aria-label="More actions"
         className={
           variant === "button"
-            ? "ios-surface grid h-[50px] w-[50px] shrink-0 place-items-center rounded-xl border border-ink-600/70 bg-ink-900/50 text-ink-200 backdrop-blur-sm transition active:scale-[0.98] hover:border-flare-500 hover:bg-ink-800 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
+            ? "ios-surface grid h-[50px] w-[50px] shrink-0 place-items-center rounded-xl border border-ink-600/70 bg-ink-900/50 text-ink-100 backdrop-blur-sm transition active:scale-[0.98] hover:border-flare-500 hover:bg-ink-800 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
             : FLOATING_ICON
         }
       >

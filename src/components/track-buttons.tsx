@@ -154,7 +154,18 @@ export function TrackButtons({
               <Eye size={16} className="shrink-0" />
             )}
             <span className="truncate">
-              {watched ? (watchedAt ? formatWatched(watchedAt) : "Watched") : "Mark watched"}
+              {watched ? (
+                watchedAt ? (
+                  formatWatched(watchedAt)
+                ) : (
+                  "Watched"
+                )
+              ) : (
+                <>
+                  <span className="sm:hidden">Watched</span>
+                  <span className="hidden sm:inline">Mark watched</span>
+                </>
+              )}
             </span>
 
             {/* A "1×" would be noise on everything ever logged; the count only
