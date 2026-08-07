@@ -43,7 +43,7 @@ export function TrackButtons({
   signedIn: boolean;
 }) {
   const [watched, setWatched] = useState(initialWatched);
-  const [watchedAt, setWatchedAt] = useState<Date | null>(
+  const [, setWatchedAt] = useState<Date | null>(
     initialWatchedAt ? new Date(initialWatchedAt) : null,
   );
   const [plays, setPlays] = useState(initialPlays);
@@ -85,15 +85,15 @@ export function TrackButtons({
     //
     // The heart is deliberately not here: it lives with the trailer and the
     // overflow menu, which is where the icon-only controls belong.
-    <div className="grid w-full auto-cols-fr grid-flow-col gap-2.5 sm:w-auto">
+    <div className="flex w-full gap-2.5 sm:grid sm:w-auto sm:auto-cols-fr sm:grid-flow-col">
       {item.mediaType === "movie" && !released && !watched && (
-        <span className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium text-ink-400">
+        <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium text-ink-400 sm:flex-none">
           <Clock size={16} />
           Not released yet
         </span>
       )}
       {item.mediaType === "movie" && (released || watched) && (
-        <div className="relative">
+        <div className="relative min-w-0 flex-1 sm:flex-none">
           <button
             disabled={pending}
             onClick={() => {
@@ -122,6 +122,9 @@ export function TrackButtons({
                 // case that is wrong.
                 setAskWhen(res.watched);
                 if (res.watched) setWatchlistCleared(true);
+                // The date now lives under the synopsis, rendered by the
+                // server, so it only moves when the server is asked again.
+                router.refresh();
               });
             }}
             // Weight rather than decoration: a soft vertical gradient, a
@@ -153,20 +156,7 @@ export function TrackButtons({
             ) : (
               <Eye size={16} className="shrink-0" />
             )}
-            <span className="truncate">
-              {watched ? (
-                watchedAt ? (
-                  formatWatched(watchedAt)
-                ) : (
-                  "Watched"
-                )
-              ) : (
-                <>
-                  <span className="sm:hidden">Watched</span>
-                  <span className="hidden sm:inline">Mark watched</span>
-                </>
-              )}
-            </span>
+            <span className="truncate">{watched ? "Watched" : "Watch"}</span>
 
             {/* A "1×" would be noise on everything ever logged; the count only
                 earns its place once there is more than one. */}

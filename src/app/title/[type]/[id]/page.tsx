@@ -2,9 +2,10 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, CircleSlash, Star } from "lucide-react";
+import { ChevronRight, CircleSlash, Eye, Star } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { formatWatched } from "@/lib/dates";
 import { getRatingContext } from "@/lib/rating-context";
 import { getRequestMarks } from "@/lib/request-marks";
 import { getFriendReviews } from "@/lib/reviews";
@@ -384,6 +385,8 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         poster={movie.poster_path}
         logo={pickLogo(movie.images)}
         colours={colours}
+        watchedOn={state.watchedAt ? formatWatched(state.watchedAt) : null}
+        plays={state.plays}
         backdrop={movie.backdrop_path}
         meta={[
           movie.release_date?.slice(0, 4),
@@ -891,6 +894,9 @@ function Hero({
   backdrop,
   colours,
   meta,
+  /** When this was last watched, in words. Null when it has not been. */
+  watchedOn,
+  plays,
   actions,
   extras,
   scores,
@@ -916,6 +922,8 @@ function Hero({
   colours: HeroColours | null;
   /** Year · genres · length · votes · status, in that order, blanks dropped. */
   meta: (string | null | undefined)[];
+  watchedOn?: string | null;
+  plays?: number;
   /** The primary pair: watch and watchlist. */
   actions: React.ReactNode;
   /**
