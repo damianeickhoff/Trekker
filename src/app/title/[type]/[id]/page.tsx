@@ -764,7 +764,7 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
         </Suspense>
       )}
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 max-sm:pr-3">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 pr-3 sm:pr-4">
         <h2 className="text-lg font-semibold tracking-tight">
           <span className="sm:hidden">All episodes</span>
           <span className="hidden sm:inline">Episodes</span>

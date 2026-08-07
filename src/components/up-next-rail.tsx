@@ -524,7 +524,7 @@ export function UpNextRail({
         </p>
       </div>
 
-      <Rail scrollRef={strip} artHeight="124px">
+      <Rail scrollRef={strip} artHeight="128px">
         {episodes.map((episode) => {
           const id = keyOf(episode);
           const seen = watched.has(id);

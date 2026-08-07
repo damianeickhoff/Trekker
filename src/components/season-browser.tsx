@@ -375,8 +375,6 @@ export function SeasonBrowser({
   // Measured against aired episodes only: a season half-way through its run is
   // "done" when there is nothing left released to watch.
   const airedCount = episodes?.filter((e) => hasAired(e.airDate)).length ?? 0;
-  /** The season the strip is pointing at, for the dial that sits beside it. */
-  const activeSeason = seasons.find((s) => s.seasonNumber === active) ?? null;
   // Resolved from the loaded season rather than held in state, so it follows
   // along if the list reloads underneath an open dialog.
 
@@ -1136,26 +1134,6 @@ export function SeasonBrowser({
         })}
       </Rail>
 
-      {/* The whole-season control, once, for the season on screen — the same
-          dial the phone puts on every row, where a column has the room for it
-          and a strip does not. */}
-      {signedIn && activeSeason && (
-        <SeasonCheck
-          watched={watchedCounts[activeSeason.seasonNumber] ?? 0}
-          total={activeSeason.episodeCount}
-          full={
-            (watchedCounts[activeSeason.seasonNumber] ?? 0) >= activeSeason.episodeCount &&
-            activeSeason.episodeCount > 0
-          }
-          busy={pending}
-          ready={Boolean(episodes)}
-          onOpen={() => setExpanded(true)}
-          onMarkToday={markSeason}
-          onMarkAired={markSeasonByAirDate}
-          onRewatch={() => setConfirm("rewatch")}
-          onClear={() => setConfirm("clear")}
-        />
-      )}
       </div>
 
       <div className="flex flex-col gap-2">

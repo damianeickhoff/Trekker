@@ -1,0 +1,34 @@
+# A single-container deployment of Trekker.
+#
+# The database is a file, so it needs a volume — without one it lives inside the
+# container and disappears with it. Everything else is configuration; see
+# .env.example for what each key does and which are optional.
+
+services:
+  trekker:
+    build: .
+    image: trekker
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # The two that are genuinely required.
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET to a long random string}
+      TMDB_API_KEY: ${TMDB_API_KEY:?set TMDB_API_KEY}
+      # Inside the container this is the mounted volume, not the repo.
+      DATABASE_URL: file:/data/trekker.db
+      # Optional; unset is fine for all of these.
+      OMDB_API_KEY: ${OMDB_API_KEY:-}
+      WATCH_REGION: ${WATCH_REGION:-US}
+      PLEX_CLIENT_ID: ${PLEX_CLIENT_ID:-}
+      TRAKT_CLIENT_ID: ${TRAKT_CLIENT_ID:-}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+      PLEX_WEBHOOK_SECRET: ${PLEX_WEBHOOK_SECRET:-}
+    volumes:
+      - trekker-data:/data
+
+volumes:
+  trekker-data:

@@ -1,0 +1,41 @@
+# Everything the image builds for itself, or must never contain.
+#
+# The database and the env file are the two that matter: baking a dev database
+# into an image ships somebody's watch history to whoever pulls it, and baking
+# .env ships the keys with it. Both are mounted in at run time instead.
+
+node_modules
+.next
+out
+build
+
+.env
+.env.*
+!.env.example
+
+*.db
+*.db-journal
+*.bak
+*.db.*
+
+.git
+.gitignore
+.github
+
+.claude
+.vscode
+.idea
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+*.tsbuildinfo
+coverage
+.DS_Store
+
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md

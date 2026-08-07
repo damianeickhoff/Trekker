@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Traces the server and its dependencies into `.next/standalone`, so the
+   * runtime image can be the built output plus a Node runtime — no
+   * `node_modules`, no source, no build tools. Without this a container has to
+   * carry the whole dependency tree to run one server.
+   */
+  output: "standalone",
+
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" },
