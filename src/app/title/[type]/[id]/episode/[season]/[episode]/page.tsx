@@ -135,7 +135,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             <Neighbour side="left" show={Boolean(neighbours.previous)} />
             <Neighbour side="right" show={Boolean(neighbours.next)} />
 
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-ink-800 shadow-2xl shadow-black/30">
+            <div className="episode-still relative aspect-video overflow-hidden rounded-2xl bg-ink-800 shadow-2xl shadow-black/30 light:shadow-black/10">
               {still ? (
                 <Image src={still} alt="" fill priority sizes="100vw" className="object-cover" />
               ) : (

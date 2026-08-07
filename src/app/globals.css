@@ -1638,11 +1638,28 @@ html[data-theme="light"] .season-snow-far {
   );
 }
 
+/*
+ * Light mode is a tint, not a scrim.
+ *
+ * Two things were making this page dark on a pale one. The wash let a fifth of
+ * the still through, and a still is usually a dark photograph — a fifth of near
+ * black over white is grey, not white. And the picture underneath was at full
+ * strength, so the wash was fighting it rather than sitting on it.
+ *
+ * So the image is dimmed at source below, and what is left over it is almost
+ * entirely the page's own colour. What survives is a hint of the episode's
+ * palette at the very top, which is all this was ever meant to be.
+ */
 html[data-theme="light"] .episode-wash-fade {
   background-image: linear-gradient(
     to bottom,
-    rgb(247 247 251 / 0.78) 0%,
-    rgb(247 247 251 / 0.9) 45%,
-    rgb(247 247 251 / 0.99) 100%
+    rgb(247 247 251 / 0.9) 0%,
+    rgb(247 247 251 / 0.97) 45%,
+    rgb(247 247 251 / 1) 100%
   );
 }
+
+html[data-theme="light"] .episode-wash img {
+  opacity: 0.55;
+}
+
