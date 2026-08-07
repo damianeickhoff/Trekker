@@ -63,7 +63,7 @@ export function TrackButtons({
     return (
       <button
         onClick={() => router.push("/login")}
-        className="rounded-xl bg-flare-600 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] shadow-flare-600/80 transition active:scale-[0.98] hover:bg-flare-500"
+        className="ios-primary mx-auto rounded-xl bg-flare-600 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] shadow-flare-600/80 transition active:scale-[0.98] hover:bg-flare-500 sm:mx-0"
       >
         Sign in to track this
       </button>

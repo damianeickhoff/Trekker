@@ -52,14 +52,23 @@
   --color-ink-800: #171724;
   --color-ink-700: #232336;
   --color-ink-600: #34344d;
+  --color-ink-500: #52526f;
   --color-ink-400: #6f6f8f;
   --color-ink-300: #9a9ab8;
+  --color-ink-200: #c6c6dc;
   --color-ink-100: #e6e6f2;
 
-  /* 300 is the lightest of the ramp, for icons and text sitting on a tinted
-     flare background. It was in use before it was ever defined, which meant
-     `text-flare-300` generated no class at all and those elements quietly
-     inherited whatever colour was around them. */
+  /*
+   * 200 and 500 were in use for a long time before they were defined — a
+   * hundred-odd `text-ink-200` and `text-ink-500` across the app, every one of
+   * which generated no CSS at all and left the element inheriting whatever
+   * colour happened to be around it. Defining them is what makes those hundred
+   * usages mean what they were always written to mean.
+   *
+   * Same story below: 300 is the lightest of the ramp, for icons and text on a
+   * tinted flare background, and `text-flare-300` was generating nothing for
+   * exactly the same reason.
+   */
   --color-flare-300: #c4b5fd;
   --color-flare-400: #a78bfa;
   --color-flare-500: #8b5cf6;
@@ -84,8 +93,10 @@
   --color-ink-800: #ececf3;
   --color-ink-700: #dcdce8;
   --color-ink-600: #c2c2d4;
+  --color-ink-500: #9797ab;
   --color-ink-400: #6b6b85;
   --color-ink-300: #4a4a60;
+  --color-ink-200: #30303f;
   --color-ink-100: #16161f;
 
   /* Inverted like the ink ramp: the "lightest" violet has to be the darkest
@@ -1288,9 +1299,15 @@ html[data-theme="light"] .season-snow-far {
 /* Dark whatever the reader has chosen, on a phone. The ramp goes back to its
    dark values — the light theme is only an inversion of these — and the `light:`
    variant is already excluded from matching here, up at the top of this file.
-   Desktop is left entirely alone: it follows the theme, as it always did. */
+   Desktop is left entirely alone: it follows the theme, as it always did.
+
+   The `:not(:has(.episode-page))` is not defensive noise. An episode lives under
+   the title route, so it inherited that route's loading skeleton, and that
+   skeleton carries `.title-page` — which through `:has()` turned the ramp dark
+   for a page that is supposed to follow the theme. The episode route has its own
+   skeleton now, and this is the second lock on the same door. */
 @media (max-width: 639px) {
-  html[data-theme="light"]:has(.title-page) {
+  html[data-theme="light"]:has(.title-page):not(:has(.episode-page)) {
     color-scheme: dark;
 
     --color-ink-950: #07070c;

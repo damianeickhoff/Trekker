@@ -50,7 +50,7 @@ export function Synopsis({ text }: { text: string }) {
         id="synopsis-text"
         // Spelled out rather than built from a constant: Tailwind reads the
         // source for class names and never sees an interpolated one.
-        className={`text-sm text-ink-200 ${open ? "" : "line-clamp-4"}`}
+        className={`ios-dim text-sm text-ink-200 ${open ? "" : "line-clamp-4"}`}
       >
         {text}
       </p>

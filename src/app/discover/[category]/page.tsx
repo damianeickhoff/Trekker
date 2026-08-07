@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
 import { CATEGORIES, fetchCategory, isCategory } from "@/lib/catalogue";
 import { currentSeason } from "@/lib/current-season";
-import { getWatchStatuses } from "@/lib/stats";
 import { tmdbConfigured } from "@/lib/tmdb";
 import { CategoryNav } from "@/components/category-nav";
-import { MediaCard } from "@/components/media-card";
+import { PosterGrid } from "@/components/poster-grid";
 import { EmptyState, SetupNotice } from "@/components/ui";
 
 type Props = {
@@ -38,12 +36,10 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const page = Math.min(500, Math.max(1, Number(pageParam) || 1));
 
   const meta = CATEGORIES[category];
-  const [data, user, { season }] = await Promise.all([
+  const [data, { season }] = await Promise.all([
     fetchCategory(category, page).catch(() => null),
-    getCurrentUser(),
     currentSeason(),
   ]);
-  const statuses = user ? await getWatchStatuses(user.id) : undefined;
 
   return (
     <div className="rise">
@@ -65,15 +61,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {data.items.map((item) => (
-              <MediaCard
-                key={`${item.mediaType}-${item.id}`}
-                item={item}
-                status={statuses?.get(`${item.mediaType}-${item.id}`)}
-              />
-            ))}
-          </div>
+          <PosterGrid items={data.items} />
 
           <nav className="mt-10 flex items-center justify-center gap-3">
             <PageLink

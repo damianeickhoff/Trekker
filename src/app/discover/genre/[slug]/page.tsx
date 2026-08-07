@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCurrentUser } from "@/lib/auth";
 import { fetchGenre, findGenre, type GenreFilter } from "@/lib/catalogue";
-import { getWatchStatuses } from "@/lib/stats";
 import { tmdbConfigured } from "@/lib/tmdb";
-import { MediaCard } from "@/components/media-card";
+import { PosterGrid } from "@/components/poster-grid";
 import { EmptyState, SetupNotice } from "@/components/ui";
 
 type Props = {
@@ -43,11 +41,7 @@ export default async function GenrePage({ params, searchParams }: Props) {
   const filter: GenreFilter =
     type === "movie" || type === "tv" ? type : "all";
 
-  const [data, user] = await Promise.all([
-    fetchGenre(slug, filter, page),
-    getCurrentUser(),
-  ]);
-  const statuses = user ? await getWatchStatuses(user.id) : undefined;
+  const data = await fetchGenre(slug, filter, page);
 
   const query = (next: Partial<{ page: number; type: GenreFilter }>) => {
     const search = new URLSearchParams();
@@ -99,15 +93,7 @@ export default async function GenrePage({ params, searchParams }: Props) {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {data.items.map((item) => (
-              <MediaCard
-                key={`${item.mediaType}-${item.id}`}
-                item={item}
-                status={statuses?.get(`${item.mediaType}-${item.id}`)}
-              />
-            ))}
-          </div>
+          <PosterGrid items={data.items} />
 
           <nav className="mt-10 flex items-center justify-center gap-3">
             {page > 1 ? (

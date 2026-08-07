@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -31,9 +32,6 @@ export default async function PersonPage({ params }: Props) {
 
   const person = await getPerson(personId).catch(() => null);
   if (!person) notFound();
-
-  const user = await getCurrentUser();
-  const statuses = user ? await getWatchStatuses(user.id) : undefined;
 
   // One entry per title, best-known first.
   const seen = new Set<string>();
@@ -105,9 +103,33 @@ export default async function PersonPage({ params }: Props) {
         </div>
       </header>
 
+      {/* The credits render at once; the marks on them arrive after. Working
+          out how far along a viewer is with each show means asking TMDB about
+          every show in their library, which has nothing to do with the person
+          whose page this is. */}
+      <Suspense
+        fallback={
+          <>
+            <CreditSection title="Shows" items={shows} />
+            <CreditSection title="Movies" items={movies} />
+          </>
+        }
+      >
+        <MarkedCredits shows={shows} movies={movies} />
+      </Suspense>
+      </div>
+    </>
+  );
+}
+
+async function MarkedCredits({ shows, movies }: { shows: Credit[]; movies: Credit[] }) {
+  const user = await getCurrentUser();
+  const statuses = user ? await getWatchStatuses(user.id) : undefined;
+
+  return (
+    <>
       <CreditSection title="Shows" items={shows} statuses={statuses} />
       <CreditSection title="Movies" items={movies} statuses={statuses} />
-      </div>
     </>
   );
 }

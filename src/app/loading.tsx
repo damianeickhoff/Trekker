@@ -1,14 +1,19 @@
 import { Skeleton, SkeletonRail } from "@/components/ui";
 
 /**
- * The home page's shape, which is also the fallback for any route without one
- * of its own.
+ * The fallback for the twenty-odd routes without a `loading.tsx` of their own —
+ * login, settings, the watchlist, a person, an episode.
  *
- * It used to be a grid of tiles and two rails — a shape no page in the app
- * actually has. A skeleton is a promise about what is arriving, and a wrong one
- * is worse than a vague one: the page visibly rearranges itself the moment the
- * real content lands. This is the greeting, the line under it, the card that
- * carries what you are part-way through, and the rails below.
+ * So it is deliberately the shape those pages have in common and nothing more:
+ * a heading, a line under it, and a block of content. It briefly described the
+ * home page instead — an up-next card and a rail labelled "Loading up next" —
+ * which was accurate for exactly one route and a promise the other twenty could
+ * not keep. A skeleton shaped like a different page is the thing that makes the
+ * real one appear to rearrange itself.
+ *
+ * Home would be better served by a skeleton of its own. That needs the page
+ * moved into a route group so it can carry one without every descendant
+ * inheriting it, which is a routing change rather than a styling one.
  */
 export default function Loading() {
   return (
@@ -16,9 +21,7 @@ export default function Loading() {
       <Skeleton className="h-8 w-48" />
       <Skeleton className="mt-2 h-4 w-64 max-w-full" />
 
-      <Skeleton className="mt-5 h-44 w-full rounded-2xl sm:h-56" />
-
-      <SkeletonRail label="Loading up next" />
+      <Skeleton className="mt-6 h-32 w-full rounded-2xl" />
       <SkeletonRail />
     </div>
   );
