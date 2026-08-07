@@ -26,6 +26,15 @@ export type Stats = {
    */
   series: { label: string; minutes: number }[];
   /**
+   * Whether the final point is a bucket still being filled — today's day,
+   * this month, this year. It is what the chart's marker means: "you are here".
+   *
+   * A finished window has no such point, which is why this can be false. "Last
+   * year" ended in December and nothing more will land in it, so marking one of
+   * its months would be pointing at nothing.
+   */
+  seriesLive: boolean;
+  /**
    * Minutes per day of the week, Monday first. Monday rather than Sunday
    * because a weekend that reads as two columns at the end is the shape people
    * actually think in — `getDay()` puts Sunday at index 0 and splits it.
@@ -91,7 +100,7 @@ export async function getStats(userId: string, range?: Range): Promise<Stats> {
 
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
 
-  const { keyOf, points } = seriesShape(range, span);
+  const { keyOf, points, live } = seriesShape(range, span);
   const buckets = new Map<string, number>(points.map((p) => [p.key, 0]));
 
   for (const play of plays) {
@@ -115,6 +124,7 @@ export async function getStats(userId: string, range?: Range): Promise<Stats> {
   return {
     dailyAverage: Math.round((movieMinutes + tvMinutes) / elapsedDays(range, span)),
     series: points.map((p) => ({ label: p.label, minutes: buckets.get(p.key) ?? 0 })),
+    seriesLive: live,
     movieMinutes,
     tvMinutes,
     totalMinutes: movieMinutes + tvMinutes,
@@ -133,6 +143,15 @@ type Span = { _min: { watchedAt: Date | null }; _max: { watchedAt: Date | null }
  * The buckets the chart will be drawn from, and the function that decides which
  * one a play falls into. Built up front and pre-seeded with zeroes so a quiet
  * month still occupies its place on the axis rather than closing the gap.
+ *
+ * Nothing past today is ever emitted. A quiet month is a real zero and belongs
+ * on the axis; a month that has not happened is not a zero, and drawing it as
+ * one dragged the curve to the floor for the rest of the year and left the
+ * chart claiming a August reader was somewhere in December.
+ *
+ * `live` says whether the last bucket is still being filled, which is what the
+ * marker means. A window that closed in the past — "last year" — has no such
+ * bucket and gets no marker.
  */
 function seriesShape(range: Range | undefined, span: Span) {
   const now = new Date();
@@ -148,7 +167,7 @@ function seriesShape(range: Range | undefined, span: Span) {
         label: d.toLocaleString("en-GB", { month: "short" }),
       });
     }
-    return { keyOf: monthKey, points };
+    return { keyOf: monthKey, points, live: true };
   }
 
   if (range.buckets === "day") {
@@ -162,17 +181,13 @@ function seriesShape(range: Range | undefined, span: Span) {
     ) {
       points.push({ key: dayKey(cursor), label: String(cursor.getDate()) });
     }
-    return { keyOf: dayKey, points };
+    // Open-ended windows run to today, so the last day is today's.
+    return { keyOf: dayKey, points, live: range.to === null };
   }
 
   if (range.buckets === "month") {
     const year = (range.from ?? now).getFullYear();
-    const points = [];
-    for (let m = 0; m < 12; m++) {
-      const d = new Date(year, m, 1);
-      points.push({ key: `${year}-${m}`, label: d.toLocaleString("en-GB", { month: "short" }) });
-    }
-    return { keyOf: monthKey, points };
+    return { keyOf: monthKey, ...monthsOf(year, now) };
   }
 
   // All time. One point per year of history — and if that is a single year,
@@ -181,17 +196,34 @@ function seriesShape(range: Range | undefined, span: Span) {
   const last = span?._max.watchedAt?.getFullYear() ?? now.getFullYear();
 
   if (first === last) {
-    const points = [];
-    for (let m = 0; m < 12; m++) {
-      const d = new Date(first, m, 1);
-      points.push({ key: `${first}-${m}`, label: d.toLocaleString("en-GB", { month: "short" }) });
-    }
-    return { keyOf: monthKey, points };
+    return { keyOf: monthKey, ...monthsOf(first, now) };
   }
 
   const points = [];
   for (let y = first; y <= last; y++) points.push({ key: String(y), label: String(y) });
-  return { keyOf: (date: Date) => String(date.getFullYear()), points };
+
+  return {
+    keyOf: (date: Date) => String(date.getFullYear()),
+    points,
+    live: last === now.getFullYear(),
+  };
+}
+
+/**
+ * A year's months, stopping at the present one when the year is the current
+ * one. A year already over gets all twelve and no marker.
+ */
+function monthsOf(year: number, now: Date) {
+  const current = year === now.getFullYear();
+  const months = current ? now.getMonth() + 1 : 12;
+  const points = [];
+
+  for (let m = 0; m < months; m++) {
+    const d = new Date(year, m, 1);
+    points.push({ key: `${year}-${m}`, label: d.toLocaleString("en-GB", { month: "short" }) });
+  }
+
+  return { points, live: current };
 }
 
 function dayKey(date: Date) {

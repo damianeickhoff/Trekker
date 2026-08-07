@@ -154,7 +154,7 @@ export default async function ProfilePage({
       </div>
 
       <div className="fade-in mt-3" style={fadeDelay(3)}>
-        <MonthlyLine series={stats.series} title={range.label} />
+        <MonthlyLine series={stats.series} title={range.label} live={stats.seriesLive} />
       </div>
 
       {/*
@@ -262,7 +262,9 @@ function ProfileBanner({
 
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-semibold tracking-tight break-words">{name}</h1>
-          <p className="text-sm break-all text-ink-300">{email}</p>
+          <p className="truncate text-sm text-ink-300" title={email}>
+            {email}
+          </p>
           <p className="mt-0.5 text-xs text-ink-400">
             Tracking since{" "}
             {createdAt.toLocaleDateString("en-GB", { month: "long", year: "numeric" })} ·{" "}
@@ -279,7 +281,7 @@ function ProfileBanner({
           <LevelBar level={level} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-sm:order-2 max-sm:w-full">
           <Link
             href="/achievements"
             className="inline-flex items-center gap-2 rounded-xl border border-ink-700 bg-ink-900/50 px-3.5 py-2 text-sm text-ink-200 backdrop-blur-sm transition hover:border-flare-500 hover:bg-ink-800"

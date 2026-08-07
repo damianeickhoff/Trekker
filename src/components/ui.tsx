@@ -15,15 +15,15 @@ export function StatTile({
 }) {
   return (
     <div
-      className={`card p-4 ${
+      className={`card p-3 sm:p-4 ${
         accent ? "bg-gradient-to-br from-flare-600/25 to-transparent" : ""
       }`}
     >
-      <p className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-ink-400 uppercase">
+      <p className="flex items-start gap-1.5 text-[11px] leading-tight font-medium tracking-wide text-ink-400 uppercase sm:tracking-wider">
         {icon}
         {label}
       </p>
-      <p className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+      <p className="mt-1.5 text-lg font-semibold tracking-tight tabular-nums sm:text-3xl">
         {value}
       </p>
       {sub && <p className="mt-0.5 text-xs text-ink-400">{sub}</p>}

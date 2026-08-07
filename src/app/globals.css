@@ -696,6 +696,83 @@ html[data-theme="light"] .rail {
 }
 
 /**
+ * The profile chart arriving.
+ *
+ * The line draws itself left to right, the area rises into place under it, and
+ * the marker lands last — which is the order the chart is read in anyway, so
+ * the animation is the reading rather than decoration on top of it.
+ *
+ * The draw works on `pathLength="1"`, set on the path itself: the curve is
+ * normalised to a length of 1 whatever its real geometry, so a dash of 1 covers
+ * it exactly and no JavaScript has to measure anything.
+ */
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.chart-draw {
+  stroke-dasharray: 1;
+  animation: chart-draw 1.1s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+/* Grows from the axis, so the fill looks like it is being poured in under the
+   line rather than fading in on top of the card. */
+@keyframes chart-area {
+  from {
+    opacity: 0;
+    transform: scaleY(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.chart-area {
+  transform-origin: bottom;
+  animation: chart-area 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/*
+ * Held back until the line has arrived beneath it — a dot sitting on empty
+ * space while the curve is still catching up looks like a bug.
+ *
+ * Split in two because the marker's wrapper carries the translate that centres
+ * it on the curve, and a keyframe touching `transform` there would throw it off
+ * the line. So the wrapper only fades, and the pop lives on the dot inside it.
+ */
+@keyframes chart-mark {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.chart-mark {
+  animation: chart-mark 0.35s linear 0.95s both;
+}
+
+@keyframes chart-dot {
+  from {
+    transform: scale(0.4);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.chart-dot {
+  animation: chart-dot 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.95s both;
+}
+
+/**
  * Indeterminate progress. The work behind it is a single server call whose real
  * position we cannot see, so this deliberately sweeps rather than filling: it
  * says "still going" without inventing a percentage.
@@ -744,6 +821,18 @@ html[data-theme="light"] .rail {
   .rise,
   .fade-in {
     animation: none;
+  }
+
+  /* The chart still arrives, it just arrives already drawn. */
+  .chart-draw,
+  .chart-area,
+  .chart-mark,
+  .chart-dot {
+    animation: none;
+  }
+
+  .chart-draw {
+    stroke-dasharray: none;
   }
 
   /* Flat blocks still read as "not here yet" — the sheen is decoration. */

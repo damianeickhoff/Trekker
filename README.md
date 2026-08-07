@@ -48,6 +48,66 @@ npx prisma migrate dev
 npm run dev
 ```
 
+## Deploying
+
+The deployment story is one container. `docker-compose.yml` is the short version:
+
+```bash
+docker compose up -d
+```
+
+It wants `AUTH_SECRET` and `TMDB_API_KEY` in the environment and will refuse to
+start without them, which is the intended behaviour — an instance with a
+guessable session secret is worse than an instance that did not come up.
+
+Without compose, the same thing by hand:
+
+```bash
+docker run -d --name trekker -p 3000:3000 -v trekker-data:/data -e AUTH_SECRET="$(openssl rand -base64 48)" -e TMDB_API_KEY="your-key" trekker
+```
+
+A few things worth knowing before this is somebody's actual server:
+
+**The volume is the whole application.** Everything — accounts, plays, ratings,
+lists, achievements — is one SQLite file at `/data/trekker.db`. Mount something
+there or it dies with the container. Back that file up and you have backed
+everything up; there is nothing else to collect.
+
+**Migrations run at startup, not at build.** The entrypoint calls
+`prisma migrate deploy` before handing over, so an empty volume becomes a
+working database on first boot and an existing one is brought up to the schema
+the image was built from. On an already-current volume it is a no-op. This is
+deliberate: the database belongs to the deployment, not to the image.
+
+**The container runs as uid 1000.** Everything the server writes to — the
+database, Next's cache — is owned by it, so a bind mount has to be owned by 1000
+too, or the first thing the container does fails. A named Docker volume handles
+this for you; a host path does not.
+
+**There is no scheduler inside the app.** Two jobs expect to be called once a
+day by something outside — `/api/notifications/run` for the "what is on tonight"
+push, and `/api/lists/refresh` to rebuild smart lists before anyone looks at
+them. Both are guarded by `CRON_SECRET` and both are optional; see
+[Notifications](#notifications) and [Lists](#lists) for what you lose without
+them.
+
+**Push notifications need HTTPS.** Service workers refuse to register outside a
+secure context, so a bare LAN address disables the feature regardless of whether
+the VAPID keys are set. Anything terminating TLS in front is enough.
+
+`/api/health` answers `{ ok: true }` once the server is up and the database
+answers, and is what the image's `HEALTHCHECK` polls.
+
+See `.env.example` for every key and which are optional.
+
+### Unraid
+
+`unraid/` has a ready-made Docker template, a User Scripts entry for the daily
+jobs, and a walkthrough covering the parts specific to Unraid — appdata
+ownership, keeping SQLite off the FUSE layer, and getting a locally built image
+somewhere the template can pull it from. Start at
+[`unraid/README.md`](unraid/README.md).
+
 ## What is in here
 
 - `/` — signed-out landing page, or your dashboard: a featured **Up next** hero,

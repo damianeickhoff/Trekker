@@ -43,7 +43,7 @@ export function RangeFilter({ active }: { active: RangeKey }) {
             scroll={false}
             role="tab"
             aria-selected={current}
-            className={`flex-1 rounded-xl px-3 py-2 text-center text-sm whitespace-nowrap transition ${
+            className={`flex-1 rounded-xl px-2 py-2 text-center text-[13px] whitespace-nowrap transition sm:px-3 sm:text-sm ${
               current
                 ? "bg-flare-600 font-semibold text-white shadow-[0_8px_20px_-10px] shadow-flare-600/80"
                 : "text-ink-300 hover:bg-ink-800/70 hover:text-ink-100"

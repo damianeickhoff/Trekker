@@ -263,8 +263,14 @@ export function MostWatchedPanel({ items }: { items: MostWatched[] }) {
     <section className="card p-5">
       <PanelHead eyebrow="On repeat" title="Most watched" />
 
-      {/* Full width, so the hours can sit in a column of their own on the right
-          instead of being crammed onto the same line as the count. */}
+      {/*
+        The hours belong on the caption line, not in a column of their own at
+        the end of the bar. The bar is drawn from `plays`, which is what the
+        ranking is, and a number sitting at the end of a bar reads as that bar's
+        value — so a 279-episode sitcom got a longer bar than a 228-episode
+        drama while showing fewer hours beside it, and the panel looked broken.
+        On the caption line the hours are plainly a second fact about the row.
+      */}
       <ul className="mt-4 divide-y divide-ink-800/70">
         {items.map((item, index) => {
           const poster = img.poster(item.poster, "w185");
@@ -293,6 +299,8 @@ export function MostWatchedPanel({ items }: { items: MostWatched[] }) {
                     {item.mediaType === "tv"
                       ? `${item.plays} episode${item.plays === 1 ? "" : "s"}`
                       : `${item.plays} viewing${item.plays === 1 ? "" : "s"}`}
+                    <span className="text-ink-500"> · </span>
+                    <span className="font-mono tabular-nums">{formatHours(item.minutes)}</span>
                   </span>
                   <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-ink-800">
                     <span
@@ -300,10 +308,6 @@ export function MostWatchedPanel({ items }: { items: MostWatched[] }) {
                       style={{ width: `${Math.max(4, (item.plays / peak) * 100)}%` }}
                     />
                   </span>
-                </span>
-
-                <span className="shrink-0 font-mono text-sm text-ink-300 tabular-nums">
-                  {formatHours(item.minutes)}
                 </span>
               </Link>
             </li>

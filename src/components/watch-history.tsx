@@ -144,9 +144,24 @@ function PlayRow({ play, position }: { play: HistoryPlay; position: number }) {
           <span className="mt-0.5 line-clamp-1 block text-sm font-semibold text-ink-100">
             {play.title}
           </span>
-          <span className="line-clamp-1 block text-xs text-ink-400">
+          {/* A film has no season and episode to say, so on a phone the runtime
+              stands in. On desktop it has its own column and saying it twice
+              would only be noise. */}
+          <span className={`line-clamp-1 block text-xs text-ink-400 ${play.detail ? "" : "sm:hidden"}`}>
             {play.detail ?? `${play.runtime} min`}
           </span>
+        </span>
+
+        {/*
+          A wide row put the title against the left edge and the arrow against
+          the right with half a screen of nothing between them. The runtime is
+          the one fact that belongs at the far end — it is the row's measure —
+          and on an episode it was not shown anywhere at all, because the third
+          line spends itself on the episode number and name. It stays off a
+          phone, where there is no gap to fill and no room to fill it.
+        */}
+        <span className="ios-dim hidden shrink-0 font-mono text-xs text-ink-500 sm:block">
+          {play.runtime} min
         </span>
 
         <ArrowRight

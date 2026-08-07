@@ -9,7 +9,6 @@ import {
   setMovieWatchedAt,
   toggleMovieWatched,
 } from "@/lib/actions";
-import { formatWatched } from "@/lib/dates";
 import type { SaveState } from "@/lib/lists";
 import { SaveButton } from "./save-button";
 import { WatchedDateMenu } from "./watched-date-menu";

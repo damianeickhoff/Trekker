@@ -30,7 +30,15 @@ RUN apk add --no-cache python3 make g++ libc6-compat
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
-# `--ignore-scripts` above skips `postinstall`, which generates the Prisma
+# `--ignore-scripts` above is aimed at Prisma's `postinstall` (see below), but it
+# is not selective — it also skips better-sqlite3's own install script, which is
+# the thing that compiles the native binding. Without this rebuild the package
+# arrives as JavaScript with no addon behind it: the image builds, the server
+# starts, and every query then fails with "Could not locate the bindings file".
+# This is the step the toolchain above exists for.
+RUN npm rebuild better-sqlite3
+
+# `--ignore-scripts` also skips `postinstall`, which generates the Prisma
 # client — it needs the schema, which is not copied yet, and would invalidate
 # this layer on every schema edit if it were.
 COPY prisma ./prisma
@@ -121,6 +129,17 @@ RUN chmod +x ./docker-entrypoint.sh
 USER node
 EXPOSE 3000
 VOLUME ["/data"]
+
+# `wget` is busybox's, already in the base image — no curl to install for this.
+#
+# The start period covers the migrations, which run before the server binds and
+# take a few seconds on a first, empty volume; without the grace the container
+# would be declared unhealthy for doing exactly what it is supposed to on its
+# first start. Restarting on failure is deliberately left to the orchestrator —
+# Docker marks a container unhealthy but will not act on it, and on Unraid the
+# Docker tab surfaces that state directly.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null 2>&1 || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

@@ -1,0 +1,194 @@
+<?xml version="1.0"?>
+<!--
+  Unraid Docker template for Trekker.
+
+  Drop this at /boot/config/plugins/dockerMan/templates-user/my-Trekker.xml and
+  it appears under Docker -> Add Container -> Template -> User templates, with
+  every setting below editable in the Unraid GUI.
+
+  Two things to know before applying it:
+
+  - Repository points at a registry. Unraid pulls before it creates, so a purely
+    local `docker build -t trekker` image will not do; see unraid/README.md for
+    the two ways round that.
+  - The container runs as uid 1000, not as nobody:users. The host path below has
+    to be owned by 1000:1000 or the first thing the container does — create the
+    database — fails with EACCES. One chown, also in unraid/README.md.
+-->
+<Container version="2">
+  <Name>Trekker</Name>
+  <Repository>ghcr.io/damianeickhoff/trekker:latest</Repository>
+  <Registry>https://github.com/damianeickhoff/Trekker/pkgs/container/trekker</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/damianeickhoff/Trekker/issues</Support>
+  <Project>https://github.com/damianeickhoff/Trekker</Project>
+  <Overview>
+    A TV show and movie tracker: log the episodes and films you have watched, keep a
+    watchlist, rate and review, discover what is popular, and see exactly how many
+    hours you have spent watching.
+
+    Data lives in one SQLite file under the mounted data path. Back that up and you
+    have backed up everything.
+
+    Requires a free TMDB API key. Optional integrations: Plex (sign-in, history
+    sync, webhook), Trakt import, OMDb scores, and web push notifications.
+  </Overview>
+  <Category>MediaApp:Video Tools:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL/>
+  <!-- Only resolves while the repo is public; harmless if it 404s. -->
+  <Icon>https://raw.githubusercontent.com/damianeickhoff/Trekker/main/public/icon.svg</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <Config
+    Name="WebUI Port"
+    Target="3000"
+    Default="3000"
+    Mode="tcp"
+    Description="Host port for the web interface. Point your reverse proxy here."
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">3000</Config>
+
+  <Config
+    Name="Data"
+    Target="/data"
+    Default="/mnt/user/appdata/trekker"
+    Mode="rw"
+    Description="Holds trekker.db, the whole database. MUST be owned by uid 1000 — run: mkdir -p /mnt/user/appdata/trekker &amp;&amp; chown -R 1000:1000 /mnt/user/appdata/trekker"
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/trekker</Config>
+
+  <Config
+    Name="AUTH_SECRET"
+    Target="AUTH_SECRET"
+    Default=""
+    Mode=""
+    Description="REQUIRED. Signs session cookies. A long random string — generate with: openssl rand -base64 48. Changing it signs everyone out."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"/>
+
+  <Config
+    Name="TMDB_API_KEY"
+    Target="TMDB_API_KEY"
+    Default=""
+    Mode=""
+    Description="REQUIRED. Free key from https://www.themoviedb.org/settings/api — either a v3 API key or a v4 read access token."
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="true"/>
+
+  <Config
+    Name="WATCH_REGION"
+    Target="WATCH_REGION"
+    Default="US"
+    Mode=""
+    Description="ISO 3166-1 country code deciding whose streaming availability shows under 'Where to watch'."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="false">US</Config>
+
+  <Config
+    Name="CRON_SECRET"
+    Target="CRON_SECRET"
+    Default=""
+    Mode=""
+    Description="Guards the two daily jobs (/api/notifications/run and /api/lists/refresh). Needed if you set up the User Scripts entry; without it those endpoints return 503. Generate with: openssl rand -hex 32"
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="OMDB_API_KEY"
+    Target="OMDB_API_KEY"
+    Default=""
+    Mode=""
+    Description="Optional. Free key from https://www.omdbapi.com/apikey.aspx — adds Rotten Tomatoes, Metacritic and IMDb scores to title pages."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="NEXT_PUBLIC_VAPID_PUBLIC_KEY"
+    Target="NEXT_PUBLIC_VAPID_PUBLIC_KEY"
+    Default=""
+    Mode=""
+    Description="Optional. Enables push notifications. Generate the pair with: npx web-push generate-vapid-keys. Push only works over HTTPS, so this needs the reverse proxy in front."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="VAPID_PRIVATE_KEY"
+    Target="VAPID_PRIVATE_KEY"
+    Default=""
+    Mode=""
+    Description="Optional. The private half of the VAPID pair above."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="VAPID_SUBJECT"
+    Target="VAPID_SUBJECT"
+    Default=""
+    Mode=""
+    Description="Optional. Contact URL the push services see, e.g. mailto:you@example.com"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="PLEX_WEBHOOK_SECRET"
+    Target="PLEX_WEBHOOK_SECRET"
+    Default=""
+    Mode=""
+    Description="Optional, Plex Pass only. Logs a play the moment Plex scrobbles it. Point Plex at https://your-trekker/api/plex/webhook?key=&lt;this&gt;. URL-safe characters only — generate with: openssl rand -base64 32 | tr '+/' '-_'"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="true"/>
+
+  <Config
+    Name="PLEX_CLIENT_ID"
+    Target="PLEX_CLIENT_ID"
+    Default=""
+    Mode=""
+    Description="Optional. Identifies this install to plex.tv for 'Continue with Plex'. Derived from AUTH_SECRET when unset, which is fine for a single deployment."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+
+  <Config
+    Name="TRAKT_CLIENT_ID"
+    Target="TRAKT_CLIENT_ID"
+    Default=""
+    Mode=""
+    Description="Optional fallback. Trakt is configured per user under Settings -> Trakt; setting this means users enter only their username. Create an app at https://trakt.tv/oauth/applications."
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false"/>
+</Container>

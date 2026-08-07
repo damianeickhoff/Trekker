@@ -262,7 +262,12 @@ function TitleExtras({
           isCover={isCover}
           show={show}
           request={
-            <Suspense fallback={null}>
+            /* Keyed because this node is built on the server and handed to a
+               client component. Crossing that boundary turns `TitleMenu`'s
+               children into a real runtime array rather than the static list
+               the compiler saw, and React validates keys on arrays — so the
+               menu warned about a child it never mapped over. */
+            <Suspense key="request" fallback={null}>
               <SeerrBadge
                 userId={user.id}
                 mediaType={mediaType}
@@ -1062,11 +1067,26 @@ function Hero({
                   the text centred in it — so a two-line synopsis is not left
                   stranded against the row above. */}
               <div
-                className={`flex min-h-0 flex-1 items-center py-4 ${
+                className={`flex min-h-0 flex-1 flex-col justify-center py-4 ${
                   overviewDesktopOnly ? "max-sm:hidden" : ""
                 }`}
               >
                 {overview && <Synopsis text={overview} />}
+
+                {/* Under the synopsis rather than on the watch button, which now
+                    says what tapping it does. Only films reach this: a show's
+                    date is per episode and belongs to the episode. Alignment is
+                    left to the column's own `text-align`, so it follows the
+                    rest of the hero — centred on a phone, left on desktop. */}
+                {watchedOn && (
+                  <p className="ios-dim mt-2.5 text-xs text-ink-400">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Eye size={13} className="shrink-0" />
+                      Watched {watchedOn}
+                      {plays && plays > 1 ? ` · ${plays} times` : ""}
+                    </span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
