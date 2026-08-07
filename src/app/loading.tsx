@@ -1,16 +1,24 @@
-import { SkeletonRail, SkeletonTiles } from "@/components/ui";
+import { Skeleton, SkeletonRail } from "@/components/ui";
 
 /**
- * The fallback for any route without one of its own. Deliberately generic —
- * a header, some tiles, a couple of rails — because it stands in for pages of
- * several different shapes and a wrong-shaped skeleton is worse than a vague
- * one: it promises a layout that never arrives.
+ * The home page's shape, which is also the fallback for any route without one
+ * of its own.
+ *
+ * It used to be a grid of tiles and two rails — a shape no page in the app
+ * actually has. A skeleton is a promise about what is arriving, and a wrong one
+ * is worse than a vague one: the page visibly rearranges itself the moment the
+ * real content lands. This is the greeting, the line under it, the card that
+ * carries what you are part-way through, and the rails below.
  */
 export default function Loading() {
   return (
     <div className="rise">
-      <SkeletonTiles />
-      <SkeletonRail />
+      <Skeleton className="h-8 w-48" />
+      <Skeleton className="mt-2 h-4 w-64 max-w-full" />
+
+      <Skeleton className="mt-5 h-44 w-full rounded-2xl sm:h-56" />
+
+      <SkeletonRail label="Loading up next" />
       <SkeletonRail />
     </div>
   );
