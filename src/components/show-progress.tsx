@@ -179,7 +179,7 @@ function Verdict({
     >
       <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{heading}</h2>
 
-      <div className="mt-2 max-w-2xl space-y-1.5 text-sm leading-relaxed text-ink-300">
+      <div className="ios-dim mt-2 max-w-2xl space-y-1.5 text-sm leading-relaxed text-ink-300">
         {lines.map((line) => (
           <p key={line}>{line}</p>
         ))}

@@ -8,12 +8,12 @@
 # deployment has to carry and an attacker gets to use. The runtime stage is the
 # built server, its traced dependencies, and nothing else.
 #
-# Debian rather than Alpine on purpose. Both `better-sqlite3` and `sharp` ship
-# prebuilt binaries for glibc and would otherwise be compiled from source on
-# musl, which turns a two-minute build into a long one and needs the toolchain
-# in the final image to stay reproducible.
+# Alpine, for the size: the Debian base was 247MB of the image against Alpine's
+# ~60MB, for a runtime that needs a Node binary and libc and nothing else.
+# `sharp` ships a musl build and `better-sqlite3` compiles against musl in the
+# deps stage, so the toolchain stays out of the final layer either way.
 
-FROM node:22-bookworm-slim AS base
+FROM node:22-alpine AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
@@ -23,9 +23,9 @@ WORKDIR /app
 # not reinstall anything.
 FROM base AS deps
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+# better-sqlite3 has no musl prebuild, so it is compiled here — in a stage that
+# is thrown away, which is the whole reason for splitting them.
+RUN apk add --no-cache python3 make g++ libc6-compat
 
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
@@ -52,12 +52,21 @@ RUN npx prisma generate
 # out of the runtime image instead of the whole production dependency set.
 FROM base AS migrator
 WORKDIR /opt/prisma
-# ~257MB of the image, and most of it is Prisma Studio — React, a graph layout
-# engine, a sync library — for a browser UI this container cannot open. They are
-# regular dependencies of `prisma`, not optional ones, so `--omit=optional`
-# does not shift them and neither does anything else short of pruning by hand.
-# Left whole: a migration tool that half works is worth more than the megabytes.
 RUN npm install --no-save --no-audit --no-fund prisma@7.9.1
+
+# Most of what that pulls in is Prisma Studio: a browser UI a container has no
+# way to serve. Its bundle is 29MB, the esbuild metafiles beside it another 5MB,
+# and the React/graph-layout/sync packages it draws on ~65MB more.
+#
+# Those go; the packages holding them do not. The CLI resolves
+# `@prisma/studio-core/data/bff` and `@prisma/dev/internal/state` on its way to
+# `migrate deploy`, and removing either stops it dead — which is not a guess:
+# both were tried, and both broke the container on the first run.
+#
+# ~100MB in total, and the CLI is still ~155MB of this image for a tool that
+# runs once at startup. Moving it out entirely means a second image and a
+# compose dependency; see the note in docker-compose.yml.
+RUN rm -rf       node_modules/@prisma/studio-core/dist/ui       node_modules/@prisma/studio-core/dist/metafile-cjs.json       node_modules/@prisma/studio-core/dist/metafile-esm.json       node_modules/@electric-sql       node_modules/elkjs       node_modules/react-dom
 
 
 # --- build -------------------------------------------------------------------
@@ -93,6 +102,11 @@ RUN mkdir -p /data && chown -R node:node /data
 COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
+
+# sharp ships prebuilt libvips for every platform it supports, and Next traces
+# all of them in. This image is musl on x64, so the glibc build and the
+# WebAssembly fallback are 27MB of binaries that can never be loaded.
+RUN rm -rf       ./node_modules/@img/sharp-libvips-linux-x64       ./node_modules/@img/sharp-linux-x64       ./node_modules/@img/sharp-wasm32
 
 # Migrations run at startup, so the schema and a working CLI have to be here.
 # The CLI lives outside /app so its `node_modules` cannot shadow the traced ones

@@ -3,6 +3,14 @@
 # The database is a file, so it needs a volume — without one it lives inside the
 # container and disappears with it. Everything else is configuration; see
 # .env.example for what each key does and which are optional.
+#
+# On size: the image is ~578MB, and ~155MB of that is the Prisma CLI, which runs
+# once at startup to apply migrations and is then dead weight. Splitting it into
+# a second image and a one-shot `migrate` service — with
+# `depends_on: { migrate: { condition: service_completed_successfully } }` —
+# would take the runtime image to roughly 420MB. It is not done here because it
+# turns `docker run` into `docker compose up` for anyone self-hosting this, and
+# that seemed the worse trade for 155MB.
 
 services:
   trekker:
