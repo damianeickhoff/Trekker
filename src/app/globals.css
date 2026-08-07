@@ -1632,17 +1632,17 @@ html[data-theme="light"] .season-snow-far {
 .episode-wash-fade {
   background-image: linear-gradient(
     to bottom,
-    rgb(7 7 12 / 0.5) 0%,
-    rgb(7 7 12 / 0.62) 45%,
-    rgb(7 7 12 / 0.78) 100%
+    rgb(7 7 12 / 0.55) 0%,
+    rgb(7 7 12 / 0.76) 45%,
+    rgb(7 7 12 / 0.95) 100%
   );
 }
 
 html[data-theme="light"] .episode-wash-fade {
   background-image: linear-gradient(
     to bottom,
-    rgb(247 247 251 / 0.68) 0%,
-    rgb(247 247 251 / 0.82) 45%,
-    rgb(247 247 251 / 0.95) 100%
+    rgb(247 247 251 / 0.78) 0%,
+    rgb(247 247 251 / 0.9) 45%,
+    rgb(247 247 251 / 0.99) 100%
   );
 }

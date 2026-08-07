@@ -517,6 +517,12 @@ export type EpisodeDetail = {
   still: string | null;
   score: number;
   votes: number;
+  /**
+   * TMDB's own label for where this sits in the run: "premiere", "finale",
+   * "mid_season" or "standard". Worth showing because it is the one fact about
+   * an episode that changes how you feel about watching it tonight.
+   */
+  episodeType: string | null;
   /** Series regulars in this episode, then whoever guest starred in it. */
   cast: EpisodePerson[];
   guests: EpisodePerson[];
@@ -540,6 +546,7 @@ export async function getEpisodeDetail(
   type Raw = Episode & {
     vote_count?: number;
     crew?: { id: number; name: string; job: string }[];
+    episode_type?: string | null;
     guest_stars?: { id: number; name: string; character: string; profile_path: string | null }[];
     credits?: {
       cast?: { id: number; name: string; character: string; profile_path: string | null }[];
@@ -580,6 +587,7 @@ export async function getEpisodeDetail(
     still: data.still_path,
     score: Math.round((data.vote_average ?? 0) * 10),
     votes: data.vote_count ?? 0,
+    episodeType: data.episode_type ?? null,
     cast: (data.credits?.cast ?? []).slice(0, 12).map(person),
     guests: (data.credits?.guest_stars ?? data.guest_stars ?? []).slice(0, 12).map(person),
     directors: crew.filter((c) => c.job === "Director").map((c) => c.name),

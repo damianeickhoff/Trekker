@@ -1,9 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Star, Tv } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Star, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { formatWatched } from "@/lib/dates";
 import { getEpisodeDetail, getTv, img, tmdbConfigured } from "@/lib/tmdb";
 import { BackButton } from "@/components/back-button";
 import { EpisodeControls } from "@/components/episode-controls";
@@ -78,7 +79,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
               episodeNumber,
             },
           },
-          select: { id: true },
+          select: { watchedAt: true, lastWatchedAt: true, plays: true },
         }),
         db.episodeRating.findUnique({
           where: {
@@ -116,12 +117,12 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             aria-hidden
             className="episode-wash pointer-events-none absolute -top-24 left-1/2 -z-10 h-[520px] w-screen -translate-x-1/2 -translate-y-4 overflow-hidden"
           >
-            <Image src={still} alt="" fill priority sizes="100vw" className="scale-125 object-cover blur-3xl saturate-150" />
+            <Image src={still} alt="" fill priority sizes="100vw" className="scale-125 object-cover blur-3xl saturate-125" />
             <div className="episode-wash-fade absolute inset-0" />
           </div>
         )}
 
-        <div className="rise relative">
+        <div className="rise relative lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
           {/*
             The card, with the episodes either side of it showing at the edges.
 
@@ -134,11 +135,11 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             <Neighbour side="left" show={Boolean(neighbours.previous)} />
             <Neighbour side="right" show={Boolean(neighbours.next)} />
 
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-white/5 shadow-2xl shadow-black/40">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-ink-800 shadow-2xl shadow-black/30">
               {still ? (
                 <Image src={still} alt="" fill priority sizes="100vw" className="object-cover" />
               ) : (
-                <div className="grid h-full w-full place-items-center text-white/25">
+                <div className="grid h-full w-full place-items-center text-ink-600">
                   <Tv size={28} />
                 </div>
               )}
@@ -151,11 +152,11 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             <Step href={href(neighbours.next)} direction="next" />
           </div>
 
-          <header className="mt-5 flex items-start justify-between gap-4">
+          <header className="mt-5 flex items-start justify-between gap-4 lg:mt-0">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{detail.name}</h1>
 
-              <p className="ios-dim mt-1.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-300">
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-300">
                 <span>
                   S{seasonNumber} E{episodeNumber}
                 </span>
@@ -177,10 +178,44 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                     <span className="inline-flex items-center gap-1">
                       <Star size={13} className="text-ember-400" fill="currentColor" />
                       {(detail.score / 10).toFixed(1)}
+                      {detail.votes > 0 && (
+                        <span className="text-ink-400">
+                          ({detail.votes.toLocaleString("en-GB")})
+                        </span>
+                      )}
                     </span>
                   </>
                 )}
               </p>
+
+              {/* Where it sits in the run, and what you have done about it.
+                  Both are reasons to open an episode rather than decoration:
+                  "is this the finale" changes whether tonight is the night, and
+                  "did I already see this" is the question the page exists to
+                  answer. */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {milestone(detail.episodeType) && (
+                  <span className="rounded-full border border-ember-500/40 bg-ember-500/10 px-2.5 py-1 text-[11px] font-semibold text-ember-400">
+                    {milestone(detail.episodeType)}
+                  </span>
+                )}
+
+                {!aired && (
+                  <span className="rounded-full border border-ink-700 px-2.5 py-1 text-[11px] font-medium text-ink-400">
+                    Not aired yet
+                  </span>
+                )}
+
+                {watched && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-fresh-500/40 bg-fresh-500/10 px-2.5 py-1 text-[11px] font-medium text-fresh-500">
+                    <Eye size={12} />
+                    Watched {formatWatched(watched.lastWatchedAt ?? watched.watchedAt)}
+                    {watched.plays > 1 && (
+                      <span className="font-mono tabular-nums">· {watched.plays}×</span>
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
 
             <EpisodeControls
@@ -200,13 +235,13 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
           </header>
 
           {detail.overview && (
-            <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-100">
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-ink-100 lg:col-span-2">
               {detail.overview}
             </p>
           )}
 
           {people.length > 0 && (
-            <section className="mt-8">
+            <section className="mt-8 lg:col-span-2">
               {/* The heading is the way to the full list, crew included — the
                   rail shows the faces, the page answers "who else". */}
               <Link
@@ -224,7 +259,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                     href={`/person/${person.id}`}
                     className="rail-item w-[124px]"
                   >
-                    <span className="relative block aspect-2/3 overflow-hidden rounded-xl bg-white/10">
+                    <span className="relative block aspect-2/3 overflow-hidden rounded-xl bg-ink-800">
                       {img.profile(person.profile) ? (
                         <Image
                           src={img.profile(person.profile)!}
@@ -234,7 +269,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                           className="object-cover"
                         />
                       ) : (
-                        <span className="grid h-full w-full place-items-center text-white/25">
+                        <span className="grid h-full w-full place-items-center text-ink-600">
                           <Tv size={20} />
                         </span>
                       )}
@@ -244,7 +279,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                       {person.name}
                     </span>
                     {person.character && (
-                      <span className="ios-dim block truncate text-xs text-ink-400">
+                      <span className="block truncate text-xs text-ink-400">
                         {person.character}
                       </span>
                     )}
@@ -267,11 +302,24 @@ function Neighbour({ side, show }: { side: "left" | "right"; show: boolean }) {
   return (
     <span
       aria-hidden
-      className={`pointer-events-none absolute top-4 bottom-4 w-6 rounded-2xl bg-white/10 ${
+      className={`pointer-events-none absolute top-4 bottom-4 w-6 rounded-2xl bg-ink-800 ${
         side === "left" ? "-left-4" : "-right-4"
       }`}
     />
   );
+}
+
+/**
+ * TMDB's `episode_type`, said out loud.
+ *
+ * "standard" is every other episode, so it earns no badge — a label on all
+ * twenty-two of a season's episodes tells you nothing about any of them.
+ */
+function milestone(type: string | null) {
+  if (type === "premiere") return "Season premiere";
+  if (type === "finale") return "Season finale";
+  if (type === "mid_season") return "Mid-season finale";
+  return null;
 }
 
 function formatAirDate(value: string) {
@@ -298,7 +346,7 @@ function Step({ href, direction }: { href: string | null; direction: "previous" 
     <Link
       href={href}
       aria-label={direction === "previous" ? "Previous episode" : "Next episode"}
-      className={`absolute top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white shadow-lg shadow-black/40 backdrop-blur-md transition hover:bg-black/65 ${
+      className={`absolute top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-black/45 text-white shadow-lg shadow-black/40 backdrop-blur-md transition hover:bg-black/65 light:border-black/10 ${
         direction === "previous" ? "left-3" : "right-3"
       }`}
     >
