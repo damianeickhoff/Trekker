@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { fetchGenre, findGenre, type GenreFilter } from "@/lib/catalogue";
 import { tmdbConfigured } from "@/lib/tmdb";
+import { Pager } from "@/components/pager";
 import { PosterGrid } from "@/components/poster-grid";
 import { EmptyState, SetupNotice } from "@/components/ui";
 
@@ -95,37 +96,12 @@ export default async function GenrePage({ params, searchParams }: Props) {
         <>
           <PosterGrid items={data.items} />
 
-          <nav className="mt-10 flex items-center justify-center gap-3">
-            {page > 1 ? (
-              <Link
-                href={query({ page: page - 1 })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-ink-700 px-4 py-2 text-sm text-ink-100 transition hover:border-flare-500 hover:bg-ink-800"
-              >
-                <ChevronLeft size={15} /> Previous
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-ink-800 px-4 py-2 text-sm text-ink-600">
-                <ChevronLeft size={15} /> Previous
-              </span>
-            )}
-
-            <span className="font-mono text-sm text-ink-400 tabular-nums">
-              {page} / {data.totalPages}
-            </span>
-
-            {page < data.totalPages ? (
-              <Link
-                href={query({ page: page + 1 })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-ink-700 px-4 py-2 text-sm text-ink-100 transition hover:border-flare-500 hover:bg-ink-800"
-              >
-                Next <ChevronRight size={15} />
-              </Link>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-ink-800 px-4 py-2 text-sm text-ink-600">
-                Next <ChevronRight size={15} />
-              </span>
-            )}
-          </nav>
+          <Pager
+            page={page}
+            totalPages={data.totalPages}
+            basePath={`/discover/genre/${slug}`}
+            params={filter === "all" ? undefined : { type: filter }}
+          />
         </>
       )}
     </div>
