@@ -92,16 +92,36 @@ export function SaveButton({
         aria-haspopup={hasChoice ? "dialog" : undefined}
         aria-pressed={hasChoice ? undefined : savedCount > 0}
         aria-expanded={hasChoice ? open : undefined}
+        // Said here rather than left to the visible word, because on a narrow
+        // row there is no visible word — and a button whose only name was the
+        // label it just dropped is a button screen readers can no longer name.
+        // The count goes in too: it is on screen beside the label and it is the
+        // difference between "on one list" and "on four".
+        aria-label={
+          hasChoice
+            ? `Save${savedCount > 0 ? ` — on ${savedCount} list${savedCount === 1 ? "" : "s"}` : ""}`
+            : savedCount > 0
+              ? "Remove from watchlist"
+              : "Add to watchlist"
+        }
+        title="Save"
         // The quiet half of the pair beside "Mark watched": the same pill,
         // hollow instead of filled. Solid-plus-outline is what makes one of two
         // equally sized buttons read as the primary one — without it they just
         // compete.
-        // Full width of whatever it is given, on a phone as well as on desktop.
-        // It used to shrink to a 50px square there, which was fine beside a
-        // watch pill and wrong without one: a show has no watch pill, so the
-        // square sat alone at the left of a full-width row with the heart way
-        // off at the other end and nothing in between.
-        className={`inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] disabled:opacity-60 max-sm:w-auto max-sm:flex-1 max-sm:px-3 ${
+        // Full width of whatever it is given, on a phone as well as on desktop —
+        // it used to shrink to a 50px square there unconditionally, which was
+        // fine beside a watch pill and wrong without one: a show has no watch
+        // pill, so the square sat alone at the left of a full-width row with the
+        // heart way off at the other end and nothing in between.
+        //
+        // It becomes that square again, but on the row's width rather than the
+        // screen's, and one step after the heart has given its own word up. See
+        // `favourite-button.tsx` for the pair of thresholds and the title page
+        // for the container they measure. Beyond this the row stops changing:
+        // what is left is the watch label, which is the thing worth keeping, and
+        // three squares.
+        className={`@max-[24rem]:w-[50px] @max-[24rem]:flex-none @max-[24rem]:px-0 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-xl border px-4 py-3.5 text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] disabled:opacity-60 max-sm:w-auto max-sm:flex-1 max-sm:px-3 ${
           savedCount > 0
             ? "border-flare-500/70 bg-flare-600/20 text-flare-300 hover:border-flare-400 hover:bg-flare-600/35 light:bg-flare-600/15 light:hover:bg-flare-600/25"
             : "ios-surface border-ink-600/70 bg-ink-900/50 text-ink-100 hover:border-flare-500 hover:bg-ink-800/80 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
@@ -114,10 +134,15 @@ export function SaveButton({
         ) : (
           <Bookmark size={16} className="shrink-0" />
         )}
-        <span className="truncate">Save</span>
+        {/* Hidden below the threshold, so the square is a square rather than a
+            square with a word squeezed into it — and `truncate` above it for the
+            band in between, where this is the row's flexible part and a
+            threshold set a little too low should cost a clipped "Sav…" here
+            rather than a word spilling out of its own button. */}
+        <span className="truncate @max-[24rem]:hidden">Save</span>
         {/* Two or more is worth counting; one is already said by the filled icon. */}
         {savedCount > 1 && (
-          <span className="shrink-0 font-mono text-xs tabular-nums opacity-70">
+          <span className="shrink-0 font-mono text-xs tabular-nums opacity-70 @max-[24rem]:hidden">
             · {savedCount}
           </span>
         )}
