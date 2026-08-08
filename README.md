@@ -959,8 +959,6 @@ private.
 - The header search opens a quick-search dialog (or press `/`) with live
   results; enter opens the top match, or the full results page if there is none.
 - Vocabulary is deliberately just "movies" and "shows" throughout the UI.
-- Watch time is logged at the moment you tick something; there is no way to
-  backdate an entry yet, so treat the monthly chart as "when you logged it".
 - Avatars are stored in the database and served by `/api/avatar/[id]` with a
   version stamp in the URL, so they work without writing into the statically
   served `public` folder. Uploads are cropped to a 512×512 square in the browser

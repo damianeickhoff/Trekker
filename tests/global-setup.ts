@@ -36,6 +36,17 @@ export default function setup() {
   });
 
   return () => {
-    fs.rmSync(TMP, { recursive: true, force: true });
+    /**
+     * Best-effort. On Windows a worker's better-sqlite3 handle can still be
+     * open when teardown runs, and unlinking an open file there is EBUSY —
+     * which was turning a green run into a stack trace. Retry briefly, then
+     * let it go: setup starts by removing this directory anyway, so anything
+     * left behind is gone before the next run touches it.
+     */
+    try {
+      fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch {
+      // Leftovers are cleaned up by the next run's setup.
+    }
   };
 }
