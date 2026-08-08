@@ -33,7 +33,7 @@ export function NumberedRail({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-4">
+    <section className="mt-2">
       <SectionHead title={title} description={description} href={href} />
       <Rail>
         {items.map((item, index) => (
@@ -134,7 +134,7 @@ export function BillboardRail({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-4">
+    <section className="mt-2">
       <SectionHead title={title} description={description} href={href} />
       <Rail>
         {items.slice(0, 12).map((item) => {
@@ -196,7 +196,7 @@ export function SectionBand({
 }) {
   return (
     <section
-      className={`mt-10 rounded-3xl border border-ink-800/80 bg-gradient-to-br px-4 py-6 sm:px-6 ${
+      className={`mt-5 rounded-3xl border border-ink-800/80 bg-gradient-to-br px-4 py-6 sm:px-6 ${
         tone === "warm"
           ? "from-ember-500/12 via-ink-900/40 to-transparent"
           : "from-flare-600/12 via-ink-900/40 to-transparent"
@@ -219,7 +219,7 @@ function SectionHead({
   href?: string;
 }) {
   return (
-    <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
+    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3">
       <div>
         <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         {description && <p className="mt-0.5 text-sm text-ink-400">{description}</p>}

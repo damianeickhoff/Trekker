@@ -60,8 +60,8 @@ export function ListRail({
   const Icon = LIST_ICONS[list.kind];
 
   return (
-    <section className="mt-4 first:mt-3">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <section className="mt-2 first:mt-1">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
             <Icon size={17} className={`shrink-0 ${LIST_TINTS[list.kind]}`} />

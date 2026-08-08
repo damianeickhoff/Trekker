@@ -636,10 +636,22 @@
   overflow-y: hidden;
   /* Momentum scrolling on iOS. */
   -webkit-overflow-scrolling: touch;
-  /* Vertical breathing room: `overflow-x: auto` also clips vertically, which
-     would otherwise cut the top off hover rings and scaled artwork. */
-  padding-top: 0.375rem;
-  padding-bottom: 0.625rem;
+  /**
+   * A cushion against the vertical clipping `overflow-y: hidden` brings with
+   * it — but a thin one.
+   *
+   * This used to be 6px above and 10px below, to keep hover rings and scaled
+   * artwork from being cut off. Neither actually reaches the rail's edge any
+   * more: every hover scale in a rail is on an `<img>` inside its own
+   * `overflow-hidden` box, so it is clipped there long before it gets here, and
+   * no rail item carries an outward shadow. What the padding was really doing
+   * was contributing 16px to the gap between one row and the next.
+   *
+   * Not zero, because `overflow-y: hidden` is unforgiving: a child that sticks
+   * out by a pixel is silently sheared rather than shown.
+   */
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
   scrollbar-width: none;
 }
 

@@ -275,7 +275,7 @@ export function CardRail({
   href,
   watchedIds,
   requests,
-  className = "mt-4",
+  className = "mt-2",
 }: {
   title: string;
   /** One line under the heading, for rows whose point is not self-evident. */
@@ -293,7 +293,7 @@ export function CardRail({
 
   return (
     <section className={className}>
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3">
+      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
           {description && <p className="mt-0.5 text-sm text-ink-400">{description}</p>}
