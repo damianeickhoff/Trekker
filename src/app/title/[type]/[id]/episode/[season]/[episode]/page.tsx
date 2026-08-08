@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, Star, Tv } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Star, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getEpisodeDetail, getTv, img, tmdbConfigured } from "@/lib/tmdb";
@@ -114,7 +114,16 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
         {still && (
           <div
             aria-hidden
-            className="episode-wash pointer-events-none absolute -top-24 left-1/2 -z-10 h-[520px] w-screen -translate-x-1/2 -translate-y-4 overflow-hidden"
+            /*
+              Lower and taller than it was, on a phone especially.
+              `blur-3xl` spreads the picture about 60px in every direction, so
+              the visible top of the wash always sits higher than the box that
+              holds it — which means the box has to start lower than where you
+              want the colour to appear, not level with it. The extra height is
+              what carries the hold down past the still; see `.episode-wash` in
+              globals.css for where the fade actually falls.
+            */
+            className="episode-wash pointer-events-none absolute -top-10 left-1/2 -z-10 h-[820px] w-screen -translate-x-1/2 overflow-hidden sm:-top-16 sm:h-[720px]"
           >
             <Image src={still} alt="" fill priority sizes="100vw" className="scale-125 object-cover blur-3xl saturate-125" />
             <div className="episode-wash-fade absolute inset-0" />
@@ -156,44 +165,42 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{detail.name}</h1>
 
-              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-sm text-ink-300">
-                <span>
-                  S{seasonNumber} E{episodeNumber}
-                </span>
-                {detail.airDate && (
-                  <>
-                    <span className="opacity-50">·</span>
-                    <span>{formatAirDate(detail.airDate)}</span>
-                  </>
-                )}
-                {detail.runtime && (
-                  <>
-                    <span className="opacity-50">·</span>
-                    <span>{detail.runtime} min</span>
-                  </>
-                )}
-                {detail.score > 0 && (
-                  <>
-                    <span className="opacity-50">·</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Star size={13} className="text-ember-400" fill="currentColor" />
-                      {(detail.score / 10).toFixed(1)}
-                      {detail.votes > 0 && (
-                        <span className="text-ink-400">
-                          ({detail.votes.toLocaleString("en-GB")})
-                        </span>
-                      )}
-                    </span>
-                  </>
-                )}
-              </p>
+              {/*
+                One row of chips rather than a line of dot-separated text above a
+                row of chips.
 
-              {/* Where it sits in the run, and what you have done about it.
-                  Both are reasons to open an episode rather than decoration:
-                  "is this the finale" changes whether tonight is the night, and
-                  "did I already see this" is the question the page exists to
-                  answer. */}
+                The facts and the marks were two different treatments stacked on
+                top of each other, and the app only has one: a bordered pill, as
+                the episode dialog and the season header use. Read as a single
+                row they are what they always were — everything worth knowing
+                about this episode before you decide to watch it.
+
+                Where it sits in the run, and what you have done about it, are
+                reasons to open an episode rather than decoration: "is this the
+                finale" changes whether tonight is the night, and "did I already
+                see this" is the question the page exists to answer.
+              */}
               <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Fact>
+                  S{seasonNumber} E{episodeNumber}
+                </Fact>
+
+                {detail.airDate && (
+                  <Fact icon={CalendarDays}>{formatAirDate(detail.airDate)}</Fact>
+                )}
+
+                {detail.runtime ? <Fact icon={Clock}>{detail.runtime} min</Fact> : null}
+
+                {detail.score > 0 && (
+                  <Fact icon={Star} tone="text-ember-400 light:text-ember-500" filled>
+                    {(detail.score / 10).toFixed(1)}
+                    {detail.votes > 0 && (
+                      <span className="ios-dim ml-1 text-ink-400">
+                        ({detail.votes.toLocaleString("en-GB")})
+                      </span>
+                    )}
+                  </Fact>
+                )}
                 {milestone(detail.episodeType) && (
                   <span className="rounded-full border border-ember-500/40 bg-ember-500/10 px-2.5 py-1 text-[11px] font-semibold text-ember-400">
                     {milestone(detail.episodeType)}
@@ -390,4 +397,33 @@ function surrounding(
           ? { season: after.season_number, episode: 1 }
           : null,
   };
+}
+
+/**
+ * One fact about the episode, as a pill.
+ *
+ * The same shape the episode dialog and the season header use — a bordered
+ * capsule at 11px — so a fact reads the same wherever the app states one.
+ */
+function Fact({
+  icon: Icon,
+  tone = "text-ink-200",
+  filled = false,
+  children,
+}: {
+  icon?: typeof Clock;
+  /** Colour for the icon and value, where the fact carries one. */
+  tone?: string;
+  /** Solid glyph, for the star. */
+  filled?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border border-ink-600/70 bg-ink-900/70 px-2.5 py-1 text-[11px] max-sm:border-white/15 max-sm:bg-white/10 light:border-ink-600 light:bg-white/80 ${tone}`}
+    >
+      {Icon && <Icon size={12} fill={filled ? "currentColor" : "none"} />}
+      {children}
+    </span>
+  );
 }

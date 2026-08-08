@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
   Calendar,
+  CloudDownload,
   ChevronDown,
   Clapperboard,
   EyeOff,
@@ -21,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { img } from "@/lib/images";
+import { AutoRequestPanel } from "./auto-request-panel";
 import {
   createList,
   previewSmartList,
@@ -92,6 +94,7 @@ export function SmartListEditor({
   initialFilters,
   /** Set when editing; absent when making a new one. */
   listId,
+  autoRequest,
   providers,
   certifications,
   region,
@@ -99,6 +102,18 @@ export function SmartListEditor({
   initialName: string;
   initialFilters: SmartFilters;
   listId?: string;
+  /**
+   * The list's auto-request settings, or null on a list that does not exist
+   * yet. Absent rather than disabled in that case: there is nothing to schedule
+   * against an unsaved question, and the save button is right there.
+   */
+  autoRequest?: {
+    enabled: boolean;
+    scope: "missing" | "all";
+    cap: number;
+    lastRunAt: string | null;
+    seerrConnected: boolean;
+  } | null;
   providers: Provider[];
   certifications: string[];
   region: string;
@@ -433,22 +448,40 @@ export function SmartListEditor({
           </div>
         </Section>
 
+        {/*
+          Shown as unavailable rather than hidden when the list is shows only.
+
+          TMDB's television discover has no cast parameter at all — and worse,
+          accepts one and ignores it — so this filter genuinely cannot narrow a
+          shows-only list. Removing the section outright would leave somebody
+          hunting for a control they had seen a minute earlier on a different
+          list; saying why costs one line and answers the question.
+        */}
         <Section
           icon={Users}
           label="Who is in it"
           summary={
-            filters.cast.length > 0
-              ? filters.cast.map((person) => person.name).join(", ")
-              : "Anyone"
+            filters.kind === "tv"
+              ? "Not available for shows"
+              : filters.cast.length > 0
+                ? filters.cast.map((person) => person.name).join(", ")
+                : "Anyone"
           }
-          count={filters.cast.length}
-          active={filters.cast.length > 0}
+          count={filters.kind === "tv" ? undefined : filters.cast.length}
+          active={filters.kind !== "tv" && filters.cast.length > 0}
         >
-          <CastFilter
-            picked={filters.cast}
-            onChange={(cast) => patch({ cast })}
-            blocksTv={castDroppedTv}
-          />
+          {filters.kind === "tv" ? (
+            <p className="mt-2.5 rounded-lg border border-ink-700 bg-ink-900/50 px-2.5 py-2 text-[11px] text-ink-400">
+              TMDB cannot search television by cast, so this only applies to films. Switch the
+              list to films, or to films and shows, to use it.
+            </p>
+          ) : (
+            <CastFilter
+              picked={filters.cast}
+              onChange={(cast) => patch({ cast })}
+              blocksTv={castDroppedTv}
+            />
+          )}
         </Section>
 
         {(statuses.length > 0 || showCertifications) && (
@@ -629,6 +662,41 @@ export function SmartListEditor({
             />
           </div>
         </Section>
+
+        {/*
+          A section like every other one, rather than a card bolted underneath.
+          It is a standing decision about this list, which is what all of these
+          are — and folded away with its state on the header it costs nothing
+          until somebody wants it.
+
+          Last in the run on purpose: everything above says what the list is
+          asking for, and this is the only one about what to do with the answer.
+        */}
+        {listId && autoRequest && (
+          <Section
+            icon={CloudDownload}
+            label="Request these automatically"
+            summary={
+              !autoRequest.seerrConnected
+                ? "Needs Overseerr"
+                : autoRequest.enabled
+                  ? `On · up to ${autoRequest.cap} a run · ${
+                      autoRequest.scope === "all" ? "everything" : "only what I cannot stream"
+                    }`
+                  : "Off"
+            }
+            active={autoRequest.enabled && autoRequest.seerrConnected}
+          >
+            <AutoRequestPanel
+              listId={listId}
+              initialEnabled={autoRequest.enabled}
+              initialScope={autoRequest.scope}
+              initialCap={autoRequest.cap}
+              lastRunAt={autoRequest.lastRunAt}
+              seerrConnected={autoRequest.seerrConnected}
+            />
+          </Section>
+        )}
 
         {error && <p className="text-sm text-red-400">{error}</p>}
 

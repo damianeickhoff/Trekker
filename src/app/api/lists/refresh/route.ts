@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { autoRequestAll } from "@/lib/auto-request";
 import { isStale, refreshSmartList } from "@/lib/lists";
 import { tmdbConfigured } from "@/lib/tmdb";
 
@@ -62,9 +63,23 @@ async function run(req: Request) {
     });
   }
 
+  /**
+   * Auto-requesting runs here and nowhere else.
+   *
+   * A smart list also rebuilds itself when a stale one is opened, and hanging
+   * this off that path would mean *viewing* a list could file twenty requests —
+   * which is not a thing a page load should be able to do. Tying it to the
+   * nightly job keeps it to once a day, on a schedule somebody chose.
+   *
+   * After the rebuild, so a run asks for what the list says today rather than
+   * what it said yesterday.
+   */
+  const auto = await autoRequestAll().catch(() => ({ lists: 0, requested: 0, errors: 1 }));
+
   return NextResponse.json({
     checked: lists.length,
     refreshed: results.filter((r) => r.ok).length,
     results,
+    autoRequest: auto,
   });
 }

@@ -413,6 +413,22 @@ model MediaList {
   /// which is also what a freshly edited list is set back to.
   refreshedAt DateTime?
 
+  /// Ask Overseerr for what turns up on this list, without being told to.
+  ///
+  /// Off by default and deliberately opt-in per list: a standing question that
+  /// files requests on its own is the one feature here that spends somebody
+  /// else's disk, and "top rated films of all time" would ask for four hundred
+  /// of them.
+  autoRequest Boolean @default(false)
+  /// "missing" — skip anything already streaming on a service the user pays for.
+  /// "all"     — ask for everything the list answers with.
+  autoRequestScope String @default("missing")
+  /// How many titles one run may ask for. Capped again in code, because a
+  /// number in a database is not a promise.
+  autoRequestCap Int @default(5)
+  /// When a run last filed anything, for the panel to report.
+  autoRequestedAt DateTime?
+
   items MediaListItem[]
 
   @@index([userId, createdAt])

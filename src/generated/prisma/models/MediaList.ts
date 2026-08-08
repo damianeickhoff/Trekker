@@ -25,8 +25,18 @@ export type MediaListModel = runtime.Types.Result.DefaultSelection<Prisma.$Media
 
 export type AggregateMediaList = {
   _count: MediaListCountAggregateOutputType | null
+  _avg: MediaListAvgAggregateOutputType | null
+  _sum: MediaListSumAggregateOutputType | null
   _min: MediaListMinAggregateOutputType | null
   _max: MediaListMaxAggregateOutputType | null
+}
+
+export type MediaListAvgAggregateOutputType = {
+  autoRequestCap: number | null
+}
+
+export type MediaListSumAggregateOutputType = {
+  autoRequestCap: number | null
 }
 
 export type MediaListMinAggregateOutputType = {
@@ -38,6 +48,10 @@ export type MediaListMinAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   refreshedAt: Date | null
+  autoRequest: boolean | null
+  autoRequestScope: string | null
+  autoRequestCap: number | null
+  autoRequestedAt: Date | null
 }
 
 export type MediaListMaxAggregateOutputType = {
@@ -49,6 +63,10 @@ export type MediaListMaxAggregateOutputType = {
   createdAt: Date | null
   updatedAt: Date | null
   refreshedAt: Date | null
+  autoRequest: boolean | null
+  autoRequestScope: string | null
+  autoRequestCap: number | null
+  autoRequestedAt: Date | null
 }
 
 export type MediaListCountAggregateOutputType = {
@@ -60,9 +78,21 @@ export type MediaListCountAggregateOutputType = {
   createdAt: number
   updatedAt: number
   refreshedAt: number
+  autoRequest: number
+  autoRequestScope: number
+  autoRequestCap: number
+  autoRequestedAt: number
   _all: number
 }
 
+
+export type MediaListAvgAggregateInputType = {
+  autoRequestCap?: true
+}
+
+export type MediaListSumAggregateInputType = {
+  autoRequestCap?: true
+}
 
 export type MediaListMinAggregateInputType = {
   id?: true
@@ -73,6 +103,10 @@ export type MediaListMinAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   refreshedAt?: true
+  autoRequest?: true
+  autoRequestScope?: true
+  autoRequestCap?: true
+  autoRequestedAt?: true
 }
 
 export type MediaListMaxAggregateInputType = {
@@ -84,6 +118,10 @@ export type MediaListMaxAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   refreshedAt?: true
+  autoRequest?: true
+  autoRequestScope?: true
+  autoRequestCap?: true
+  autoRequestedAt?: true
 }
 
 export type MediaListCountAggregateInputType = {
@@ -95,6 +133,10 @@ export type MediaListCountAggregateInputType = {
   createdAt?: true
   updatedAt?: true
   refreshedAt?: true
+  autoRequest?: true
+  autoRequestScope?: true
+  autoRequestCap?: true
+  autoRequestedAt?: true
   _all?: true
 }
 
@@ -136,6 +178,18 @@ export type MediaListAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: MediaListAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: MediaListSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: MediaListMinAggregateInputType
@@ -166,6 +220,8 @@ export type MediaListGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   _count?: MediaListCountAggregateInputType | true
+  _avg?: MediaListAvgAggregateInputType
+  _sum?: MediaListSumAggregateInputType
   _min?: MediaListMinAggregateInputType
   _max?: MediaListMaxAggregateInputType
 }
@@ -179,7 +235,13 @@ export type MediaListGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   refreshedAt: Date | null
+  autoRequest: boolean
+  autoRequestScope: string
+  autoRequestCap: number
+  autoRequestedAt: Date | null
   _count: MediaListCountAggregateOutputType | null
+  _avg: MediaListAvgAggregateOutputType | null
+  _sum: MediaListSumAggregateOutputType | null
   _min: MediaListMinAggregateOutputType | null
   _max: MediaListMaxAggregateOutputType | null
 }
@@ -211,6 +273,10 @@ export type MediaListWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   refreshedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
+  autoRequest?: Prisma.BoolFilter<"MediaList"> | boolean
+  autoRequestScope?: Prisma.StringFilter<"MediaList"> | string
+  autoRequestCap?: Prisma.IntFilter<"MediaList"> | number
+  autoRequestedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   items?: Prisma.MediaListItemListRelationFilter
 }
@@ -224,6 +290,10 @@ export type MediaListOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  autoRequest?: Prisma.SortOrder
+  autoRequestScope?: Prisma.SortOrder
+  autoRequestCap?: Prisma.SortOrder
+  autoRequestedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
   items?: Prisma.MediaListItemOrderByRelationAggregateInput
 }
@@ -240,6 +310,10 @@ export type MediaListWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   refreshedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
+  autoRequest?: Prisma.BoolFilter<"MediaList"> | boolean
+  autoRequestScope?: Prisma.StringFilter<"MediaList"> | string
+  autoRequestCap?: Prisma.IntFilter<"MediaList"> | number
+  autoRequestedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   items?: Prisma.MediaListItemListRelationFilter
 }, "id">
@@ -253,9 +327,15 @@ export type MediaListOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  autoRequest?: Prisma.SortOrder
+  autoRequestScope?: Prisma.SortOrder
+  autoRequestCap?: Prisma.SortOrder
+  autoRequestedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.MediaListCountOrderByAggregateInput
+  _avg?: Prisma.MediaListAvgOrderByAggregateInput
   _max?: Prisma.MediaListMaxOrderByAggregateInput
   _min?: Prisma.MediaListMinOrderByAggregateInput
+  _sum?: Prisma.MediaListSumOrderByAggregateInput
 }
 
 export type MediaListScalarWhereWithAggregatesInput = {
@@ -270,6 +350,10 @@ export type MediaListScalarWhereWithAggregatesInput = {
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"MediaList"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"MediaList"> | Date | string
   refreshedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"MediaList"> | Date | string | null
+  autoRequest?: Prisma.BoolWithAggregatesFilter<"MediaList"> | boolean
+  autoRequestScope?: Prisma.StringWithAggregatesFilter<"MediaList"> | string
+  autoRequestCap?: Prisma.IntWithAggregatesFilter<"MediaList"> | number
+  autoRequestedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"MediaList"> | Date | string | null
 }
 
 export type MediaListCreateInput = {
@@ -280,6 +364,10 @@ export type MediaListCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
   user: Prisma.UserCreateNestedOneWithoutListsInput
   items?: Prisma.MediaListItemCreateNestedManyWithoutListInput
 }
@@ -293,6 +381,10 @@ export type MediaListUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
   items?: Prisma.MediaListItemUncheckedCreateNestedManyWithoutListInput
 }
 
@@ -304,6 +396,10 @@ export type MediaListUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutListsNestedInput
   items?: Prisma.MediaListItemUpdateManyWithoutListNestedInput
 }
@@ -317,6 +413,10 @@ export type MediaListUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   items?: Prisma.MediaListItemUncheckedUpdateManyWithoutListNestedInput
 }
 
@@ -329,6 +429,10 @@ export type MediaListCreateManyInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
 }
 
 export type MediaListUpdateManyMutationInput = {
@@ -339,6 +443,10 @@ export type MediaListUpdateManyMutationInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MediaListUncheckedUpdateManyInput = {
@@ -350,6 +458,10 @@ export type MediaListUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MediaListListRelationFilter = {
@@ -371,6 +483,14 @@ export type MediaListCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshedAt?: Prisma.SortOrder
+  autoRequest?: Prisma.SortOrder
+  autoRequestScope?: Prisma.SortOrder
+  autoRequestCap?: Prisma.SortOrder
+  autoRequestedAt?: Prisma.SortOrder
+}
+
+export type MediaListAvgOrderByAggregateInput = {
+  autoRequestCap?: Prisma.SortOrder
 }
 
 export type MediaListMaxOrderByAggregateInput = {
@@ -382,6 +502,10 @@ export type MediaListMaxOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshedAt?: Prisma.SortOrder
+  autoRequest?: Prisma.SortOrder
+  autoRequestScope?: Prisma.SortOrder
+  autoRequestCap?: Prisma.SortOrder
+  autoRequestedAt?: Prisma.SortOrder
 }
 
 export type MediaListMinOrderByAggregateInput = {
@@ -393,6 +517,14 @@ export type MediaListMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   refreshedAt?: Prisma.SortOrder
+  autoRequest?: Prisma.SortOrder
+  autoRequestScope?: Prisma.SortOrder
+  autoRequestCap?: Prisma.SortOrder
+  autoRequestedAt?: Prisma.SortOrder
+}
+
+export type MediaListSumOrderByAggregateInput = {
+  autoRequestCap?: Prisma.SortOrder
 }
 
 export type MediaListScalarRelationFilter = {
@@ -464,6 +596,10 @@ export type MediaListCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
   items?: Prisma.MediaListItemCreateNestedManyWithoutListInput
 }
 
@@ -475,6 +611,10 @@ export type MediaListUncheckedCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
   items?: Prisma.MediaListItemUncheckedCreateNestedManyWithoutListInput
 }
 
@@ -515,6 +655,10 @@ export type MediaListScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"MediaList"> | Date | string
   refreshedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
+  autoRequest?: Prisma.BoolFilter<"MediaList"> | boolean
+  autoRequestScope?: Prisma.StringFilter<"MediaList"> | string
+  autoRequestCap?: Prisma.IntFilter<"MediaList"> | number
+  autoRequestedAt?: Prisma.DateTimeNullableFilter<"MediaList"> | Date | string | null
 }
 
 export type MediaListCreateWithoutItemsInput = {
@@ -525,6 +669,10 @@ export type MediaListCreateWithoutItemsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
   user: Prisma.UserCreateNestedOneWithoutListsInput
 }
 
@@ -537,6 +685,10 @@ export type MediaListUncheckedCreateWithoutItemsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
 }
 
 export type MediaListCreateOrConnectWithoutItemsInput = {
@@ -563,6 +715,10 @@ export type MediaListUpdateWithoutItemsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutListsNestedInput
 }
 
@@ -575,6 +731,10 @@ export type MediaListUncheckedUpdateWithoutItemsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type MediaListCreateManyUserInput = {
@@ -585,6 +745,10 @@ export type MediaListCreateManyUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   refreshedAt?: Date | string | null
+  autoRequest?: boolean
+  autoRequestScope?: string
+  autoRequestCap?: number
+  autoRequestedAt?: Date | string | null
 }
 
 export type MediaListUpdateWithoutUserInput = {
@@ -595,6 +759,10 @@ export type MediaListUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   items?: Prisma.MediaListItemUpdateManyWithoutListNestedInput
 }
 
@@ -606,6 +774,10 @@ export type MediaListUncheckedUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   items?: Prisma.MediaListItemUncheckedUpdateManyWithoutListNestedInput
 }
 
@@ -617,6 +789,10 @@ export type MediaListUncheckedUpdateManyWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   refreshedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  autoRequest?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  autoRequestScope?: Prisma.StringFieldUpdateOperationsInput | string
+  autoRequestCap?: Prisma.IntFieldUpdateOperationsInput | number
+  autoRequestedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 
@@ -659,6 +835,10 @@ export type MediaListSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   createdAt?: boolean
   updatedAt?: boolean
   refreshedAt?: boolean
+  autoRequest?: boolean
+  autoRequestScope?: boolean
+  autoRequestCap?: boolean
+  autoRequestedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   items?: boolean | Prisma.MediaList$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.MediaListCountOutputTypeDefaultArgs<ExtArgs>
@@ -673,6 +853,10 @@ export type MediaListSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   createdAt?: boolean
   updatedAt?: boolean
   refreshedAt?: boolean
+  autoRequest?: boolean
+  autoRequestScope?: boolean
+  autoRequestCap?: boolean
+  autoRequestedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mediaList"]>
 
@@ -685,6 +869,10 @@ export type MediaListSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   createdAt?: boolean
   updatedAt?: boolean
   refreshedAt?: boolean
+  autoRequest?: boolean
+  autoRequestScope?: boolean
+  autoRequestCap?: boolean
+  autoRequestedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mediaList"]>
 
@@ -697,9 +885,13 @@ export type MediaListSelectScalar = {
   createdAt?: boolean
   updatedAt?: boolean
   refreshedAt?: boolean
+  autoRequest?: boolean
+  autoRequestScope?: boolean
+  autoRequestCap?: boolean
+  autoRequestedAt?: boolean
 }
 
-export type MediaListOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "kind" | "filters" | "createdAt" | "updatedAt" | "refreshedAt", ExtArgs["result"]["mediaList"]>
+export type MediaListOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "kind" | "filters" | "createdAt" | "updatedAt" | "refreshedAt" | "autoRequest" | "autoRequestScope" | "autoRequestCap" | "autoRequestedAt", ExtArgs["result"]["mediaList"]>
 export type MediaListInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   items?: boolean | Prisma.MediaList$itemsArgs<ExtArgs>
@@ -740,6 +932,29 @@ export type $MediaListPayload<ExtArgs extends runtime.Types.Extensions.InternalA
      * which is also what a freshly edited list is set back to.
      */
     refreshedAt: Date | null
+    /**
+     * Ask Overseerr for what turns up on this list, without being told to.
+     * 
+     * Off by default and deliberately opt-in per list: a standing question that
+     * files requests on its own is the one feature here that spends somebody
+     * else's disk, and "top rated films of all time" would ask for four hundred
+     * of them.
+     */
+    autoRequest: boolean
+    /**
+     * "missing" — skip anything already streaming on a service the user pays for.
+     * "all"     — ask for everything the list answers with.
+     */
+    autoRequestScope: string
+    /**
+     * How many titles one run may ask for. Capped again in code, because a
+     * number in a database is not a promise.
+     */
+    autoRequestCap: number
+    /**
+     * When a run last filed anything, for the panel to report.
+     */
+    autoRequestedAt: Date | null
   }, ExtArgs["result"]["mediaList"]>
   composites: {}
 }
@@ -1173,6 +1388,10 @@ export interface MediaListFieldRefs {
   readonly createdAt: Prisma.FieldRef<"MediaList", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"MediaList", 'DateTime'>
   readonly refreshedAt: Prisma.FieldRef<"MediaList", 'DateTime'>
+  readonly autoRequest: Prisma.FieldRef<"MediaList", 'Boolean'>
+  readonly autoRequestScope: Prisma.FieldRef<"MediaList", 'String'>
+  readonly autoRequestCap: Prisma.FieldRef<"MediaList", 'Int'>
+  readonly autoRequestedAt: Prisma.FieldRef<"MediaList", 'DateTime'>
 }
     
 

@@ -74,12 +74,15 @@ export function RecommendRow({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-start gap-2.5 px-3 py-3 text-left text-sm text-ink-200 transition hover:bg-ink-800"
+        className="flex w-full items-start gap-2.5 px-3 py-3 text-left text-sm text-ink-100 transition hover:bg-ink-800"
       >
-        <Send size={15} className="mt-0.5 shrink-0 text-ink-500" />
+        {/* White, label and glyph alike — the row above it is the tinted one,
+            and two accented rows in a row of five stopped either reading as
+            the emphasis. */}
+        <Send size={15} className="mt-0.5 shrink-0 text-ink-100" />
         <span>
           Recommend to a friend
-          <span className="mt-0.5 block text-xs text-ink-500">
+          <span className="ios-dim mt-0.5 block text-xs text-ink-400">
             It turns up in their notifications.
           </span>
         </span>

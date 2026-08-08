@@ -7,6 +7,8 @@ import { KNOWN_PROVIDERS } from "@/lib/providers";
 import { watchRegion } from "@/lib/region";
 import { certificationsFor, parseFilters } from "@/lib/smart-filters";
 import { SmartListEditor } from "@/components/smart-list-editor";
+import { requestCap } from "@/lib/auto-request-limits";
+import { getSeerrConnection } from "@/lib/seerr";
 
 export const metadata = { title: "Edit smart list — Trekker" };
 
@@ -31,6 +33,9 @@ export default async function EditSmartListPage({ params }: { params: Promise<Pa
 
   const region = watchRegion();
 
+  // Whether asking Overseerr for anything is even possible on this instance.
+  const seerrConnected = Boolean(await getSeerrConnection());
+
   return (
     <div className="rise">
       <Link
@@ -50,6 +55,13 @@ export default async function EditSmartListPage({ params }: { params: Promise<Pa
         listId={list.id}
         initialName={list.name}
         initialFilters={parseFilters(list.filters)}
+        autoRequest={{
+          enabled: list.autoRequest,
+          scope: list.autoRequestScope === "all" ? "all" : "missing",
+          cap: requestCap(list.autoRequestCap),
+          lastRunAt: list.autoRequestedAt?.toISOString() ?? null,
+          seerrConnected,
+        }}
         providers={KNOWN_PROVIDERS}
         certifications={certificationsFor(region)}
         region={region}

@@ -25,6 +25,7 @@ import {
   toggleEpisodeWatched,
 } from "@/lib/actions";
 import { Rail } from "./rail";
+import { ScoreBadge } from "./media-card";
 import { type CatchUpWhen } from "./catch-up-menu";
 import { CatchUpDialog } from "./catch-up-dialog";
 import { WatchDial } from "./watch-dial";
@@ -204,43 +205,6 @@ function SeasonMenuRow({
       </span>
     </button>
   );
-}
-
-/**
- * A full stop that does not end a sentence: an initial, or a title like "Dr."
- *
- * Not exhaustive, and cannot be — telling "St. Louis" from "the corner shop on
- * Baker St." needs to understand the sentence. This is the short list of the
- * ones that actually turn up in episode synopses, and being wrong about a rare
- * one costs a synopsis cut a few words early.
- */
-const ABBREVIATION = /(?:mr|mrs|ms|dr|prof|st|jr|sr|vs|etc|no|inc|ltd|approx)$/i;
-
-/**
- * The first sentence of an episode synopsis.
- *
- * The row is there to say which episode this is, and the opening sentence
- * always does that; what follows is usually a subplot nobody is scanning for.
- *
- * Splitting on the first `.` is not enough — "Dr. Bishop returns" would become
- * "Dr." — so each candidate is checked against the word before it, and skipped
- * when that word is a single capital letter or one of the abbreviations above.
- */
-function firstSentence(text: string) {
-  const terminator = /[.!?]+(?=s|$)/g;
-
-  let match: RegExpExecArray | null;
-  while ((match = terminator.exec(text)) !== null) {
-    const before = text.slice(0, match.index);
-    const word = before.match(/[A-Za-z]+$/)?.[0] ?? "";
-
-    if (word.length === 1 && word === word.toUpperCase()) continue;
-    if (ABBREVIATION.test(word)) continue;
-
-    return text.slice(0, match.index + match[0].length);
-  }
-
-  return text;
 }
 
 function scoreTone(score: number) {
@@ -929,7 +893,7 @@ export function SeasonBrowser({
                   <Link
                     href={`/title/tv/${showId}/episode/${active}/${ep.episodeNumber}`}
                     aria-label={`About ${ep.name}`}
-                    className="relative h-[54px] w-24 shrink-0 overflow-hidden rounded-lg bg-ink-800 max-sm:bg-white/10 sm:h-[63px] sm:w-28"
+                    className="relative h-[54px] w-24 shrink-0 overflow-hidden rounded-xl bg-ink-800 ring-1 ring-white/8 ring-inset max-sm:bg-white/10 sm:h-[63px] sm:w-28"
                   >
                     {ep.still ? (
                       <Image
@@ -939,8 +903,10 @@ export function SeasonBrowser({
                         sizes="(min-width: 640px) 112px, 96px"
                         className={`object-cover transition ${
                           // Seen ones step back so the row reads as a list of
-                          // what is left, without needing a second tick.
-                          isWatched ? "opacity-55" : ""
+                          // what is left. The tick below is what says *why* it
+                          // is dimmed — on its own, a faded thumbnail reads as
+                          // an image that failed to load.
+                          isWatched ? "opacity-45" : ""
                         }`}
                       />
                     ) : (
@@ -948,42 +914,65 @@ export function SeasonBrowser({
                         <Tv size={15} />
                       </span>
                     )}
+
+                    {/*
+                      The number goes top right and the score takes the corner it
+                      used to have.
+
+                      No tick here any more: the row already says "watched" twice
+                      over, with the date pill under the title and the filled
+                      circle at the end of the row. A third mark on the artwork
+                      was the same fact said a third time, and it was the one
+                      covering up the picture.
+
+                      The score uses the same overlay badge the posters do, which
+                      is what a rating on artwork looks like everywhere else in
+                      the app — and it takes that number out of the text line
+                      below, where it was the third thing on a row of numbers.
+                    */}
+                    <span className="absolute top-1 right-1 rounded-md bg-black/65 px-1.5 py-0.5 font-mono text-[10px] leading-none font-medium text-white/90 backdrop-blur-sm">
+                      {String(active).padStart(2, "0")}×{String(ep.episodeNumber).padStart(2, "0")}
+                    </span>
+
+                    {ep.score > 0 && (
+                      <ScoreBadge score={ep.score} size="small" className="absolute bottom-1 left-1" />
+                    )}
                   </Link>
 
-                  <div className="min-w-0 flex-1">
+                  {/* Centred against the still rather than sitting on its top
+                      edge. With the synopsis gone the text is two short lines
+                      and the artwork is taller than both, so top-aligned left a
+                      gap under the words and none above them. */}
+                  <div className="flex min-w-0 flex-1 flex-col justify-center">
                     <Link
                       href={`/title/tv/${showId}/episode/${active}/${ep.episodeNumber}`}
                       className="block w-full text-left"
                     >
-                      <span className="block text-sm font-medium">
-                        <span className="mr-2 font-mono text-xs ios-bright text-flare-400">
-                          {String(active).padStart(2, "0")}×
-                          {String(ep.episodeNumber).padStart(2, "0")}
-                        </span>
-                        {ep.name}
-                      </span>
-                      {ep.overview && (
-                        <span className="ios-dim mt-1 line-clamp-1 block text-xs text-ink-400">
-                          {firstSentence(ep.overview)}
-                        </span>
-                      )}
+                      {/* The whole line is the name now — the number moved onto
+                          the artwork, which is where a label on a picture
+                          belongs and frees this line to be read. */}
+                      <span className="block text-sm font-medium">{ep.name}</span>
                       {/*
-                        The chip rides with the air date and the score rather
-                        than with the title. It sat beside the title first,
-                        which put it at the mercy of how long that title
-                        happened to be — anything wordy pushed it onto a line of
-                        its own, and a row whose height depends on the name of
-                        the episode reads as broken. This line is three short
-                        numbers and always has room.
+                        No synopsis here any more.
 
-                        The mono face stays on the numbers alone; the pill is
-                        the app's own type, as it is on the episode page.
+                        Clamped to a line it was a fragment that rarely finished
+                        a thought, and on an episode you have not seen it is a
+                        spoiler you did not ask for — the one row in this list
+                        that could tell you something you were about to find out
+                        for yourself. It is on the episode page and in the
+                        dialog, both a tap away, with room to actually read it.
+
+                        What is left is the row's own facts. The chip rides with
+                        the air date rather than with the title: beside the title
+                        it was at the mercy of how long that title happened to
+                        be, and a row whose height depends on the name of the
+                        episode reads as broken. The score has moved onto the
+                        artwork, which leaves this line two short numbers.
                       */}
                       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
-                        <span className="font-mono text-ink-100">
+                        <span className="ios-dim font-mono text-ink-400">
                           {ep.airDate ?? "TBA"}
                           {ep.runtime ? ` · ${ep.runtime}m` : ""}
-                          {ep.score > 0 ? ` · ${ep.score}%` : ""}
                         </span>
                         {seenAt && <WatchedPill at={seenAt} plays={seenPlays} compact />}
                       </span>

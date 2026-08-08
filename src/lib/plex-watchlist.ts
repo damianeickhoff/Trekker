@@ -216,6 +216,49 @@ type SearchResult = {
 };
 
 /**
+ * A title folded for comparison: case, accents and spacing, and nothing else.
+ *
+ * This used to strip every non-alphanumeric character, which turned `«Lucky»`
+ * into `lucky` and made it indistinguishable from the show actually called
+ * *Lucky*. Pushing one to Plex then matched the other, Plex put the wrong show
+ * on the account's watchlist, and the next inbound sync pulled it back into
+ * Trekker — a title nobody had asked for, reappearing every time it was
+ * deleted.
+ *
+ * Punctuation is part of a title's identity. `[REC]`, `WALL·E` and `Alien³`
+ * are not the same works as `Rec`, `Wall E` and `Alien 3`, and a matcher that
+ * cannot tell them apart is worse than one that occasionally fails to find
+ * something.
+ */
+export function normaliseTitle(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Whether a Plex search result is the title we were looking for.
+ *
+ * The guid is the only certain match and is checked first by the caller; this is
+ * the fallback for results that come back without one. A year is required on
+ * both sides rather than waved through when either is missing — without one this
+ * is a match on nothing but a name, and names are exactly what is not unique.
+ */
+export function plexTitleMatches(
+  candidate: { ratingKey?: string; title?: string; year?: number },
+  entry: { title: string; year: number | null },
+) {
+  if (!candidate.ratingKey) return false;
+  if (normaliseTitle(candidate.title ?? "") !== normaliseTitle(entry.title)) return false;
+
+  if (entry.year === null || typeof candidate.year !== "number") return false;
+  return Math.abs(candidate.year - entry.year) <= 1;
+}
+
+/**
  * Trades a TMDB id for Plex's own rating key, matching on the guid.
  *
  * Reports *why* it failed rather than just that it did — the search is the part
@@ -266,18 +309,7 @@ async function findPlexRatingKey(
   const byGuid = candidates.find((item) => tmdbIdOf(item) === entry.tmdbId);
   if (byGuid?.ratingKey) return { ratingKey: byGuid.ratingKey };
 
-  const clean = (value: string) =>
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, " ")
-      .trim();
-
-  const byTitle = candidates.find(
-    (item) =>
-      item.ratingKey &&
-      clean(item.title ?? "") === clean(entry.title) &&
-      (entry.year === null || !item.year || Math.abs(item.year - entry.year) <= 1),
-  );
+  const byTitle = candidates.find((item) => plexTitleMatches(item, entry));
 
   if (byTitle?.ratingKey) return { ratingKey: byTitle.ratingKey };
 

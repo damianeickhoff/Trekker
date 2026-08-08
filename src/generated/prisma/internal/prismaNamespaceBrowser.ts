@@ -276,7 +276,11 @@ export const MediaListScalarFieldEnum = {
   filters: 'filters',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
-  refreshedAt: 'refreshedAt'
+  refreshedAt: 'refreshedAt',
+  autoRequest: 'autoRequest',
+  autoRequestScope: 'autoRequestScope',
+  autoRequestCap: 'autoRequestCap',
+  autoRequestedAt: 'autoRequestedAt'
 } as const
 
 export type MediaListScalarFieldEnum = (typeof MediaListScalarFieldEnum)[keyof typeof MediaListScalarFieldEnum]

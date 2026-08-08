@@ -79,6 +79,7 @@ export function ScoreBadge({
   score,
   className = "",
   variant = "overlay",
+  size = "default",
 }: {
   score: number;
   className?: string;
@@ -88,6 +89,16 @@ export function ScoreBadge({
    * reads as one set rather than two competing styles.
    */
   variant?: "overlay" | "outline";
+  /**
+   * `small` for artwork that is itself small — the 96px episode still, where the
+   * full-size chip covered a quarter of the picture.
+   *
+   * A prop rather than a class the caller passes: `h-5` and `h-6` are the same
+   * kind of utility, so which one wins is decided by stylesheet order rather
+   * than by which was written last. Choosing inside is the only version that
+   * reliably does what it says.
+   */
+  size?: "default" | "small";
 }) {
   // Nothing rated yet: show nothing rather than an empty placeholder.
   if (!score) return null;
@@ -115,7 +126,9 @@ export function ScoreBadge({
 
   return (
     <span
-      className={`inline-flex h-6 items-center gap-1.5 px-2.5 text-[10px] font-bold tabular-nums text-white ${OVERLAY_SHAPE} ${plate} ${className}`}
+      className={`inline-flex items-center gap-1.5 font-bold tabular-nums text-white ${
+        size === "small" ? "h-[17px] px-1.5 text-[9px]" : "h-6 px-2.5 text-[10px]"
+      } ${OVERLAY_SHAPE} ${plate} ${className}`}
       title="Average audience score"
     >
       {score}%

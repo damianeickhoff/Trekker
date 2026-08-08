@@ -6,6 +6,7 @@ import { requireUser } from "./auth";
 import { db } from "./db";
 import { refreshSmartList, SMART_LIST_MAX, SMART_LIST_STEP } from "./lists";
 import { DEFAULT_FILTERS, parseFilters } from "./smart-filters";
+import { autoRequestForList, requestCap } from "./auto-request";
 import { castBlocksTv, genresWithoutTv, getViewerState, runSmartList } from "./smart-lists";
 import { searchCast, type CastSearchResult, type NormalisedItem } from "./tmdb";
 
@@ -421,4 +422,73 @@ export async function searchPeople(query: string): Promise<CastSearchResult[]> {
   if (term.length < 2) return [];
 
   return searchCast(term, 8).catch(() => []);
+}
+
+/* ==========================================================================
+ * Auto-requesting
+ * ======================================================================== */
+
+const autoRequestInput = z.object({
+  listId: z.string().min(1),
+  enabled: z.boolean(),
+  scope: z.enum(["missing", "all"]),
+  cap: z.number().int(),
+});
+
+/**
+ * Saves a smart list's auto-request settings.
+ *
+ * Separate from `updateSmartList` on purpose: that one rewrites the filters and
+ * re-runs the whole query, which is a lot to do because somebody moved a
+ * slider. This touches four columns and answers immediately.
+ */
+export async function setAutoRequest(input: unknown) {
+  const user = await requireUser();
+
+  const parsed = autoRequestInput.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "That does not look right" };
+
+  const { listId, enabled, scope, cap } = parsed.data;
+
+  const list = await db.mediaList.findFirst({
+    where: { id: listId, userId: user.id, kind: "smart" },
+    select: { id: true },
+  });
+  if (!list) return { ok: false as const, error: "That list is gone" };
+
+  await db.mediaList.update({
+    where: { id: list.id },
+    data: {
+      autoRequest: enabled,
+      autoRequestScope: scope,
+      // Clamped here as well as in the engine. The browser is not the authority
+      // on how much of somebody's disk this may spend.
+      autoRequestCap: requestCap(cap),
+    },
+  });
+
+  revalidateLists();
+  return { ok: true as const };
+}
+
+/**
+ * Runs a list's auto-request now, from the editor.
+ *
+ * The nightly job is what this feature is *for*, but a setting you cannot try
+ * is a setting nobody trusts — and finding out tomorrow that it asked for the
+ * wrong twenty things is the worst way to learn.
+ */
+export async function runAutoRequestNow(listId: string) {
+  const user = await requireUser();
+
+  const list = await db.mediaList.findFirst({
+    where: { id: listId, userId: user.id, kind: "smart" },
+    select: { id: true },
+  });
+  if (!list) return { ok: false as const, error: "That list is gone" };
+
+  const result = await autoRequestForList(list.id);
+
+  revalidateLists();
+  return { ok: true as const, ...result };
 }

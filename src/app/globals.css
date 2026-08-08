@@ -233,19 +233,32 @@
    * bottom edge; the overlay dims it enough for text. Masking is what removes
    * the visible "line" a colour gradient alone leaves behind.
    */
+  /**
+   * The hero holds a long way down before it dissolves.
+   *
+   * It used to start going at 35% of the box, which on a phone put the fade
+   * level with the poster and title — the artwork was disappearing while you
+   * were still reading over it. Holding to 62% and only reaching half-gone at
+   * 84% moves the whole transition below the title block, so what fades is the
+   * empty space under it rather than the thing you are looking at.
+   *
+   * Paired with the taller box in `title-backdrop.tsx`: the mask is a
+   * percentage, so moving the fade down means either a later stop or a bigger
+   * box, and this uses both.
+   */
   .title-backdrop {
     -webkit-mask-image: linear-gradient(
       to bottom,
       rgb(0 0 0) 0%,
-      rgb(0 0 0) 35%,
-      rgb(0 0 0 / 0.5) 65%,
+      rgb(0 0 0) 62%,
+      rgb(0 0 0 / 0.5) 84%,
       transparent 100%
     );
     mask-image: linear-gradient(
       to bottom,
       rgb(0 0 0) 0%,
-      rgb(0 0 0) 35%,
-      rgb(0 0 0 / 0.5) 65%,
+      rgb(0 0 0) 62%,
+      rgb(0 0 0 / 0.5) 84%,
       transparent 100%
     );
   }
@@ -2418,9 +2431,35 @@ body:has(.screensaver) {
  * colour comes from what it is about, rather than from the app. Masked so it
  * has no bottom edge, and washed so the text on it has something to sit on.
  */
+/**
+ * The wash fades in at the top as well as out at the bottom.
+ *
+ * It used to be fully opaque at its own top edge, and since the wash carries a
+ * near-black overlay while the page behind it is a violet gradient, that edge
+ * was a visible horizontal line across the page — the "border" under the
+ * header, with the page's own colour sitting above it. Nothing was drawing a
+ * border; it was the wash starting abruptly.
+ *
+ * The hold is pushed a long way down as well. The dissolve used to begin at 40%
+ * of the box, which on a phone put it level with the still — so the artwork
+ * started disappearing while you were still looking at it. It now holds to 70%,
+ * which lands the start of the fade just below the still and above the title.
+ */
 .episode-wash {
-  -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 40%, transparent 100%);
-  mask-image: linear-gradient(to bottom, rgb(0 0 0) 0%, rgb(0 0 0) 40%, transparent 100%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0) 14%,
+    rgb(0 0 0) 70%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0) 14%,
+    rgb(0 0 0) 70%,
+    transparent 100%
+  );
 }
 
 .episode-wash-fade {
