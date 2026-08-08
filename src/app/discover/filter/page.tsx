@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { fetchDiscover, parseDiscoverFilters } from "@/lib/catalogue";
 import { expandProviders, getUserProviders } from "@/lib/providers";
@@ -9,6 +7,7 @@ import { getWatchStatuses } from "@/lib/stats";
 import { tmdbConfigured } from "@/lib/tmdb";
 import { MediaCard } from "@/components/media-card";
 import { DiscoverFilterBar } from "@/components/discover-filters";
+import { Pager } from "@/components/pager";
 import { EmptyState, SetupNotice } from "@/components/ui";
 
 export const metadata = { title: "Browse · Trekker" };
@@ -64,17 +63,11 @@ export default async function DiscoverFilterPage({
     user ? getRequestMarks() : Promise.resolve(undefined),
   ]);
 
-  const href = (next: Record<string, string>) => {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-      if (value) query.set(key, value);
-    }
-    for (const [key, value] of Object.entries(next)) {
-      if (value) query.set(key, value);
-      else query.delete(key);
-    }
-    return `/discover/filter?${query.toString()}`;
-  };
+  // Note this is the *unresolved* set, so "mine" stays the word "mine" rather
+  // than being baked into a provider list that would follow a shared link around.
+  const carried = Object.fromEntries(
+    Object.entries(params).filter(([key, value]) => key !== "page" && value),
+  ) as Record<string, string>;
 
   return (
     <div className="rise">
@@ -114,35 +107,14 @@ export default async function DiscoverFilterPage({
             ))}
           </div>
 
-          <nav className="mt-8 flex items-center justify-between gap-3">
-            {page > 1 ? (
-              <Link
-                href={href({ page: String(page - 1) })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-ink-600/70 bg-ink-900/70 px-4 py-2.5 text-sm font-medium text-ink-100 transition hover:bg-ink-800 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </Link>
-            ) : (
-              <span />
-            )}
-
-            <span className="text-xs text-ink-500">
-              Page {page} of {results.totalPages}
-            </span>
-
-            {page < results.totalPages ? (
-              <Link
-                href={href({ page: String(page + 1) })}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-ink-600/70 bg-ink-900/70 px-4 py-2.5 text-sm font-medium text-ink-100 transition hover:bg-ink-800 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
-              >
-                Next
-                <ChevronRight size={16} />
-              </Link>
-            ) : (
-              <span />
-            )}
-          </nav>
+          {/* The filters travel with the page, `page` itself excluded — the
+              pager sets that one, and a stale copy of it here would win. */}
+          <Pager
+            page={page}
+            totalPages={results.totalPages}
+            basePath="/discover/filter"
+            params={carried}
+          />
         </>
       )}
     </div>

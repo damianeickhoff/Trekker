@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { CATEGORIES, fetchCategory, isCategory } from "@/lib/catalogue";
 import { currentSeason } from "@/lib/current-season";
 import { tmdbConfigured } from "@/lib/tmdb";
 import { CategoryNav } from "@/components/category-nav";
+import { Pager } from "@/components/pager";
 import { PosterGrid } from "@/components/poster-grid";
 import { EmptyState, SetupNotice } from "@/components/ui";
 
@@ -63,60 +64,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         <>
           <PosterGrid items={data.items} />
 
-          <nav className="mt-10 flex items-center justify-center gap-3">
-            <PageLink
-              category={category}
-              page={page - 1}
-              disabled={page <= 1}
-              label="Previous"
-            />
-            <span className="font-mono text-sm text-ink-400 tabular-nums">
-              {page} / {data.totalPages}
-            </span>
-            <PageLink
-              category={category}
-              page={page + 1}
-              disabled={page >= data.totalPages}
-              label="Next"
-            />
-          </nav>
+          <Pager
+            page={page}
+            totalPages={data.totalPages}
+            basePath={`/discover/${category}`}
+          />
         </>
       )}
     </div>
-  );
-}
-
-function PageLink({
-  category,
-  page,
-  disabled,
-  label,
-}: {
-  category: string;
-  page: number;
-  disabled: boolean;
-  label: "Previous" | "Next";
-}) {
-  const Icon = label === "Previous" ? ChevronLeft : ChevronRight;
-
-  if (disabled) {
-    return (
-      <span className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-xl border border-ink-800 px-4 py-2 text-sm text-ink-600">
-        {label === "Previous" && <Icon size={15} />}
-        {label}
-        {label === "Next" && <Icon size={15} />}
-      </span>
-    );
-  }
-
-  return (
-    <Link
-      href={`/discover/${category}?page=${page}`}
-      className="inline-flex items-center gap-1.5 rounded-xl border border-ink-700 px-4 py-2 text-sm text-ink-100 transition hover:border-flare-500 hover:bg-ink-800"
-    >
-      {label === "Previous" && <Icon size={15} />}
-      {label}
-      {label === "Next" && <Icon size={15} />}
-    </Link>
   );
 }

@@ -218,8 +218,19 @@ export async function logRewatch(input: {
 
   revalidateTracking(user.id);
   // `created` is false when this landed inside the duplicate window. The count
-  // is the real one either way, which is what the caller must show.
-  return { created: result.created, plays: result.plays, lastWatchedAt: result.lastWatchedAt };
+  // is the real one either way, which is what the caller must show — and the
+  // caller is expected to say so rather than redraw an unchanged number, which
+  // is indistinguishable from the button not working.
+  //
+  // `playId` is what lets the date menu re-date *this* viewing afterwards. Dating
+  // it behind an older one makes that older one the newest, so "the most recent
+  // play" stops meaning this one after the first correction.
+  return {
+    created: result.created,
+    playId: result.playId,
+    plays: result.plays,
+    lastWatchedAt: result.lastWatchedAt,
+  };
 }
 
 /** Removes the most recent viewing, or all of them. */

@@ -36,6 +36,16 @@ async function tmdb<T>(
   const res = await fetch(url, {
     headers: isV4Token ? { Authorization: `Bearer ${key}` } : {},
     next: { revalidate },
+    /**
+     * Every other outbound client here has had one of these from the start;
+     * this one had not, and it is the one on the critical path of most pages.
+     * A socket that opens and then says nothing has no timeout of its own, so
+     * a single stalled request held a render open for as long as the process
+     * lived — a page that never arrives rather than one that arrives short of
+     * a rail. Ten seconds is generous for an API that normally answers in
+     * under one, and every caller already fails soft.
+     */
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) {

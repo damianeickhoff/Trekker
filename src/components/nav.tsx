@@ -6,7 +6,7 @@ import { Bookmark, CalendarDays, Compass, Ghost, Gift, Home, Rocket, Search, Use
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { NotificationItem } from "@/lib/notification-centre";
 import { SEASONS, type Season, type SeasonSetting } from "@/lib/seasons";
-import { useOrigin } from "./origin";
+import { useOriginPath } from "./origin";
 import { FLOATING_SURFACE } from "./back-button";
 import { NotificationBell } from "./notification-bell";
 import { SearchOverlay } from "./search-overlay";
@@ -107,7 +107,10 @@ export function Nav({
 }) {
   const SeasonIcon = season ? SEASON_ICON[season] : null;
   const pathname = usePathname();
-  const origin = useOrigin();
+  // The path of it, not the whole address: a tab is matched by prefix, and the
+  // origin now carries the query string the discover pages keep their page
+  // number in.
+  const origin = useOriginPath();
   // Where the search panel should appear, or null for closed — one piece of
   // state rather than two, so "open" and "which end" cannot disagree.
   const [searchAnchor, setSearchAnchor] = useState<"top" | "bottom" | null>(null);

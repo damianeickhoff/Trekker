@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useSyncExternalStore } from "react";
 
 /**
  * Where the reader was before they started opening titles.
@@ -10,7 +10,9 @@ import { useEffect, useSyncExternalStore } from "react";
  * one show onto another, and another, and "back" one entry at a time walks you
  * out the way you came in — through four title pages you have already read —
  * when what you meant was "take me back to where I was". This remembers that
- * place: the last page that was not a title page.
+ * place: the last page that was not a title page — and, since the query string
+ * is where the discover pages keep which page of results you were reading, the
+ * search along with it. Without it "back to where I was" landed on page one.
  *
  * It also answers a second question the tab bar had no way to answer. On a title
  * page none of the four tabs matches the path, so none of them lit up and the
@@ -57,6 +59,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+/** The whole address to return to, query string and all. */
 export function useOrigin() {
   // The server has no session, so it always renders the fallback — and the
   // client's first paint must agree with it or hydration complains.
@@ -67,8 +70,38 @@ export function useOrigin() {
   );
 }
 
+/**
+ * Just the path of it, for the two callers that are asking "which page is this?"
+ * rather than "where do I go?" — matching a tab, and checking whether the origin
+ * is the page you are already standing on. Both would be thrown by a query
+ * string neither of them cares about.
+ */
+export function useOriginPath() {
+  return useOrigin().split("?")[0];
+}
+
 export function OriginProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {/*
+        The tracker reads the search params, and a component that does so cannot
+        be rendered until the request's URL is known — which in a layout that
+        wraps every page means opting the whole app out of static rendering.
+        Suspended on its own, it is the only thing that waits, and it draws
+        nothing, so there is nothing to wait for on screen either.
+      */}
+      <Suspense fallback={null}>
+        <OriginTracker />
+      </Suspense>
+      {children}
+    </>
+  );
+}
+
+/** Records the route. Renders nothing; see `OriginProvider` for why it is split out. */
+function OriginTracker() {
   const pathname = usePathname();
+  const search = useSearchParams().toString();
 
   useEffect(() => {
     // Whatever an earlier page in this tab left behind, picked up once.
@@ -85,8 +118,8 @@ export function OriginProvider({ children }: { children: React.ReactNode }) {
     // Only non-title pages are origins. Landing on a title page directly — a
     // shared link, a cold start — leaves whatever was there before, or the
     // fallback, which is the best answer available.
-    if (!isTitlePage(pathname)) set(pathname);
-  }, [pathname]);
+    if (!isTitlePage(pathname)) set(search ? `${pathname}?${search}` : pathname);
+  }, [pathname, search]);
 
-  return children;
+  return null;
 }

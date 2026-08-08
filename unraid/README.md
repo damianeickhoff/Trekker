@@ -17,11 +17,38 @@ Two facts drive most of what follows:
 
 ## 1. Getting the image onto the box
 
-### Option A — push to GHCR (recommended)
+### Option A — let CI push to GHCR (recommended)
 
-The template works as designed, and Unraid's own update check starts working:
-it compares the local digest against the registry, so "update available" shows
-up in the Docker tab like any other container.
+`.github/workflows/publish.yml` builds the image and pushes it on every push to
+this repository, so a merge to `main` produces a new
+`ghcr.io/damianeickhoff/trekker:latest` without anyone touching Docker. Nothing
+to configure: it authenticates as the repository's own `GITHUB_TOKEN`.
+
+What each push is tagged with:
+
+| Pushed | Tags |
+| --- | --- |
+| `main` | `latest`, `main`, `sha-<short>` |
+| any other branch | `<branch>` (slashes become dashes), `sha-<short>` |
+| a `v*` tag | that version, `sha-<short>` |
+
+A branch never becomes `latest`, which is what makes it safe to point the
+template at a branch tag to try something before merging it.
+
+The package is private on its first push. Either make it public at
+`https://github.com/users/damianeickhoff/packages/container/trekker/settings`,
+or `docker login ghcr.io` on the Unraid box with a `read:packages` token —
+Unraid persists `/root/.docker/config.json` to the flash drive, so the login
+survives a reboot.
+
+Unraid's own update check works against this: it compares the local digest
+against the registry, so "update available" shows up in the Docker tab like any
+other container.
+
+### Option B — push to GHCR by hand
+
+Same destination, done locally — for when CI is not an option or you want to
+push something that is not committed.
 
 On the machine with the source:
 
@@ -36,13 +63,9 @@ Then log in with a GitHub personal access token that has `write:packages`
 echo "$GHCR_TOKEN" | docker login ghcr.io -u damianeickhoff --password-stdin && docker push ghcr.io/damianeickhoff/trekker:latest
 ```
 
-The package is private on first push. Either make it public at
-`https://github.com/users/damianeickhoff/packages/container/trekker/settings`,
-or `docker login ghcr.io` on the Unraid box too (with a `read:packages` token —
-Unraid persists `/root/.docker/config.json` to the flash drive, so the login
-survives a reboot).
+Visibility and the box's own login are as under Option A.
 
-### Option B — build on Unraid
+### Option C — build on Unraid
 
 Also fine, with one caveat you were right to suspect: Unraid's root filesystem
 is tmpfs and resets on reboot. But **Docker images are not stored there** — they

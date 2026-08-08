@@ -47,6 +47,12 @@ export function TrackButtons({
   );
   const [plays, setPlays] = useState(initialPlays);
   const [askWhen, setAskWhen] = useState(false);
+  /**
+   * The viewing the date menu is talking about, once "Watch again" has added
+   * one. Without it a correction moves whichever play is newest — and dating
+   * this one to last Tuesday is precisely what stops it being that.
+   */
+  const [rewatchId, setRewatchId] = useState<string | null>(null);
   // Marking a film watched prunes it from the watchlist server-side, and the
   // Save menu has to be told so its tick disappears with it.
   const [watchlistCleared, setWatchlistCleared] = useState(false);
@@ -109,6 +115,9 @@ export function TrackButtons({
               // menu, which is where taking it back now lives — the same place
               // episodes have always kept it.
               if (watched) {
+                // A fresh open is a fresh question, about the latest viewing
+                // again rather than about whatever the last visit logged.
+                setRewatchId(null);
                 setAskWhen((v) => !v);
                 return;
               }
@@ -186,31 +195,38 @@ export function TrackButtons({
                 setAskWhen(false);
                 setWatchedAt(date);
                 startTransition(async () => {
-                  const res = await setMovieWatchedAt(item.tmdbId, date.toISOString());
+                  const res = await setMovieWatchedAt(
+                    item.tmdbId,
+                    date.toISOString(),
+                    // Null for an ordinary correction, which means "the latest
+                    // viewing" — the reading the menu has always had.
+                    rewatchId ?? undefined,
+                  );
                   // The picked date is shown straight away, but it is not always
                   // the answer: correcting the latest viewing to something older
                   // than another one leaves that other one as the latest.
                   if (res.lastWatchedAt) setWatchedAt(new Date(res.lastWatchedAt));
                 });
               }}
-              onWatchAgain={() => {
-                setAskWhen(false);
-                startTransition(async () => {
-                  const res = await logRewatch({
-                    mediaType: "movie",
-                    tmdbId: item.tmdbId,
-                    title: item.title,
-                    poster: item.poster,
-                    runtime: item.runtime ?? 0,
-                    score: item.score,
-                  });
-                  // Taken from the answer rather than incremented: a second
-                  // press inside the duplicate window logs nothing, and a
-                  // button that counted anyway would be contradicted by the
-                  // next page load.
-                  setPlays(res.plays);
-                  setWatchedAt(new Date(res.lastWatchedAt));
+              onWatchAgain={async () => {
+                // The menu deliberately stays open: it becomes the "when was
+                // it?" question for the viewing this just added.
+                const res = await logRewatch({
+                  mediaType: "movie",
+                  tmdbId: item.tmdbId,
+                  title: item.title,
+                  poster: item.poster,
+                  runtime: item.runtime ?? 0,
+                  score: item.score,
                 });
+                // Taken from the answer rather than incremented: a second
+                // press inside the duplicate window logs nothing, and a
+                // button that counted anyway would be contradicted by the
+                // next page load.
+                setPlays(res.plays);
+                setWatchedAt(new Date(res.lastWatchedAt));
+                setRewatchId(res.playId);
+                return { created: res.created };
               }}
               unwatchLabel={plays > 1 ? "Remove last watch" : "Unwatch"}
               onUnwatch={() => {

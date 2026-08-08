@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { useOrigin } from "./origin";
+import { useOrigin, useOriginPath } from "./origin";
 
 /**
  * The look every control floating over the hero artwork shares — the way back,
@@ -82,6 +82,7 @@ export function BackButton({
 }) {
   const router = useRouter();
   const origin = useOrigin();
+  const originPath = useOriginPath();
   const pathname = usePathname();
 
   /**
@@ -108,8 +109,13 @@ export function BackButton({
        * Falling through to `fallback` is the honest answer here: a page that is
        * its own origin has no chain to unwind, so what its caller named as the
        * way out is the only place left to go.
+       *
+       * Compared by path, because the origin also carries the query string it
+       * was read at: on `/discover/popular-movies?page=7` the full value differs
+       * from the path, and comparing the two would have this push the page you
+       * are already on rather than fall through to `fallback`.
        */
-      router.push(origin && origin !== pathname ? origin : fallback);
+      router.push(origin && originPath !== pathname ? origin : fallback);
       return;
     }
 
