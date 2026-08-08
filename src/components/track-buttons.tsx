@@ -122,26 +122,52 @@ export function TrackButtons({
                 return;
               }
 
+              /**
+               * Marked before it is confirmed. The episode list has always
+               * worked this way and the film button did not: it waited for the
+               * round trip before anything moved, which on the one control the
+               * whole page is about reads as the press not having registered.
+               *
+               * Safe to assume: the only thing that can refuse is an unreleased
+               * film, and the button is not offered for one — `released` gates
+               * it. The answer is still applied below, so a refusal corrects
+               * itself rather than being believed.
+               */
+              setWatched(true);
+              setWatchedAt(new Date());
+              setPlays(1);
+              // Already logged at the current time; the menu is only there in
+              // case that is wrong.
+              setAskWhen(true);
+              setWatchlistCleared(true);
+
+              const write = toggleMovieWatched({
+                movieId: item.tmdbId,
+                title: item.title,
+                poster: item.poster,
+                runtime: item.runtime ?? 0,
+                score: item.score,
+                releaseDate: item.releaseDate,
+              });
+
               startTransition(async () => {
-                const res = await toggleMovieWatched({
-                  movieId: item.tmdbId,
-                  title: item.title,
-                  poster: item.poster,
-                  runtime: item.runtime ?? 0,
-                  score: item.score,
-                  releaseDate: item.releaseDate,
-                });
+                const res = await write;
                 setWatched(res.watched);
                 setWatchedAt(res.watched ? new Date() : null);
                 setPlays(res.watched ? 1 : 0);
-                // Already logged at the current time; the menu is only there in
-                // case that is wrong.
                 setAskWhen(res.watched);
-                if (res.watched) setWatchlistCleared(true);
-                // The date now lives under the synopsis, rendered by the
-                // server, so it only moves when the server is asked again.
-                router.refresh();
+                setWatchlistCleared(res.watched);
               });
+
+              /**
+               * The date under the synopsis is rendered by the server, so it
+               * only moves when the server is asked again — but deliberately
+               * outside the transition above. Inside it, `pending` stayed true
+               * until a whole title page had been re-rendered, and the button
+               * sat disabled and greyed for the duration of a second round trip
+               * that nothing on screen was waiting for.
+               */
+              void write.then(() => router.refresh());
             }}
             // Weight rather than decoration: a soft vertical gradient, a
             // hairline of light along the inside of the top edge, and a shadow
