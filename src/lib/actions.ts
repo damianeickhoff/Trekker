@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "./db";
@@ -26,9 +27,24 @@ const mediaType = z.enum(["movie", "tv"]);
 /** Anything that changes tracking data touches these views. */
 function revalidateTracking(userId?: string) {
   revalidatePath("/", "layout");
-  // Logging something is the only thing that can earn a badge, so this is the
-  // moment worth looking. Throttled and un-awaited inside.
-  if (userId) scheduleUnlockCheck(userId);
+
+  /**
+   * Logging something is the only thing that can earn a badge, so this is the
+   * moment worth looking — but not before the tick has been answered for.
+   *
+   * It used to be enough that this was left un-awaited. It is not: the sweep
+   * reads the whole play log, every watched row and every rating, then measures
+   * the entire achievement catalogue over them, and `better-sqlite3` is a
+   * *synchronous* driver. A promise nobody waits on still runs its queries on
+   * this thread, blocking the response it was fired from — and every other
+   * request in flight — for the whole sweep. Throttled to once every two
+   * minutes, which is exactly the shape of "usually instant, occasionally it
+   * hangs".
+   *
+   * `after` is the difference between not awaiting it and it not being in the
+   * way: the callback runs once the response has been sent.
+   */
+  if (userId) after(() => scheduleUnlockCheck(userId));
 }
 
 /**
@@ -356,7 +372,14 @@ export async function toggleEpisodeWatched(input: {
       runtime: episode.runtime || 42,
       watchedAt: watchedAtFrom(input.watchedAt),
     });
-    await pruneShowIfComplete(user.id, showId);
+    /**
+     * Tidying the watchlist is not something the tick is waiting on, and this
+     * is the one write path with an outbound call on it: working out whether a
+     * show is over means asking TMDB, which on a cold cache is the slowest
+     * thing that can happen to a single episode being ticked. It still runs on
+     * every mark — just after the answer has gone back.
+     */
+    after(() => pruneShowIfComplete(user.id, showId));
   }
 
   revalidateTracking(user.id);
