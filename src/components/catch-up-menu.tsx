@@ -159,7 +159,7 @@ function Choice({
       <Icon size={14} className="mt-0.5 shrink-0 text-ink-600" />
       <span>
         {label}
-        <span className="mt-0.5 block text-xs text-ink-500">{note}</span>
+        <span className="ios-dim mt-0.5 block text-xs text-ink-400">{note}</span>
       </span>
     </button>
   );

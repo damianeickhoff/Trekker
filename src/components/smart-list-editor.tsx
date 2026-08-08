@@ -295,9 +295,9 @@ export function SmartListEditor({
                     {item.mediaType === "tv" ? <Tv size={18} /> : <Film size={18} />}
                   </div>
                 )}
-                <div className="absolute inset-x-1 bottom-1 origin-bottom-left scale-90">
-                  <ScoreBadge score={item.score} />
-                </div>
+                {/* The small variant, not a transform: scaling the full-size
+                    chip blurred its text on these 76px posters. */}
+                <ScoreBadge score={item.score} size="small" className="absolute bottom-1 left-1" />
               </div>
               <p className="mt-1 line-clamp-1 text-[11px] text-ink-300">{item.title}</p>
             </Link>

@@ -112,7 +112,7 @@ export function ListMenu({
             <div className="p-3">
               <p className="text-sm text-ink-200">
                 Delete “{name}”?
-                <span className="mt-1 block text-xs text-ink-500">
+                <span className="ios-dim mt-1 block text-xs text-ink-400">
                   {kind === "smart"
                     ? "The filters go with it. Nothing you have watched is affected."
                     : "The titles on it are only removed from this list."}
