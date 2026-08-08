@@ -37,8 +37,8 @@ export function CreditSection({
   const visible = showAll ? pool : pool.slice(0, PREVIEW);
 
   return (
-    <section className="mt-2">
-      <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
+    <section className="mt-8">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
         <h2 className="text-lg font-semibold tracking-tight">
           {title} <span className="text-sm font-normal text-ink-500">({items.length})</span>
         </h2>
@@ -71,7 +71,7 @@ export function CreditSection({
       </div>
 
       {showAll ? (
-        <div className="grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid grid-cols-3 gap-x-1.5 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {visible.map((item) => (
             <CreditCard key={`${item.mediaType}-${item.id}`} item={item} statuses={statuses} />
           ))}

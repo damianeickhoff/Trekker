@@ -41,7 +41,7 @@ function Grid({
   statuses?: Map<string, Parameters<typeof MediaCard>[0]["status"]>;
 }) {
   return (
-    <div className="mt-6 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+    <div className="mt-6 grid grid-cols-3 gap-x-1.5 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
       {items.map((item) => (
         <MediaCard
           key={`${item.mediaType}-${item.id}`}

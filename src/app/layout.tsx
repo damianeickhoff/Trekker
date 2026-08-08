@@ -143,7 +143,18 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      {/*
+        `min-h-dvh` rather than `min-h-full`.
+
+        `min-height: 100%` only means "a screenful" if <html>'s own height
+        resolves to one, which makes the whole page depend on a chain — and on
+        mobile, where the visible viewport shrinks and grows with the browser's
+        own chrome, that chain is exactly where a short page ends up shorter
+        than the screen. `dvh` is the visible viewport measured directly, so a
+        page with two lines on it still fills the window and nothing below the
+        content sits higher than the bottom of the screen.
+      */}
+      <body className="flex min-h-dvh flex-col">
         <ThemeSync theme={theme} />
         <ServiceWorkerRegistration />
         <OriginProvider>

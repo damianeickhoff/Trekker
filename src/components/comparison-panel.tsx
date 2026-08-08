@@ -99,7 +99,7 @@ export function ComparisonPanel({
           <h3 className="text-[11px] font-medium tracking-wider text-ink-500 uppercase">
             They watch, you do not
           </h3>
-          <div className="mt-2 grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-6">
+          <div className="mt-2 grid grid-cols-3 gap-x-1.5 gap-y-4 sm:grid-cols-6">
             {theirPicks.map((show) => (
               <Link key={show.showId} href={`/title/tv/${show.showId}`} className="group">
                 <span className="relative block aspect-2/3 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800">

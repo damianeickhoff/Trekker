@@ -142,7 +142,7 @@ export function WatchlistGrid({ items }: { items: WatchlistEntry[] }) {
           Nothing on your watchlist matches that.
         </p>
       ) : (
-        <div className="mt-5 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="mt-5 grid grid-cols-3 gap-x-1.5 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
           {shown.map((item) => (
             <div key={item.id}>
               <MediaCard

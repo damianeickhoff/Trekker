@@ -441,7 +441,7 @@ function TopMovies({ review }: { review: ReviewData }) {
         </p>
       </Reveal>
 
-      <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-6">
+      <div className="mt-3 grid grid-cols-3 gap-x-1.5 gap-y-6 sm:grid-cols-4 md:grid-cols-6">
         {review.topMovies.map((movie, index) => (
           <Reveal key={movie.movieId} delay={index * 80}>
             <Link href={`/title/movie/${movie.movieId}`} className="group" title={movie.title}>

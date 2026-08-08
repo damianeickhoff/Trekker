@@ -129,15 +129,8 @@ export default async function CalendarPage({
       >
         {/* Desktop gets a panel so the strip, the timeline's rail and the item
             cards all sit inside a margin instead of against the page edge.
-            Mobile keeps the full width it needs.
-
-            The floor stops a quiet week collapsing the page to the height of
-            the day strip. Without it, stepping from a busy week to an empty one
-            pulls everything below it hundreds of pixels up the screen, and the
-            week you were reading appears to jump. The floor that actually holds
-            the page up is on the wrapper in `CalendarWeek`; this one just keeps
-            the panel itself from collapsing to the height of the day strip. */}
-        <div className="mt-4 min-h-[22rem] sm:rounded-2xl sm:border sm:border-ink-800/80 sm:bg-ink-900/30 sm:p-6">
+            Mobile keeps the full width it needs. */}
+        <div className="mt-4 sm:rounded-2xl sm:border sm:border-ink-800/80 sm:bg-ink-900/30 sm:p-6">
           <WeekStrip days={days} today={today} byDate={byDate} />
 
           {entries.length === 0 ? (

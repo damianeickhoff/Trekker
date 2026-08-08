@@ -181,7 +181,11 @@ export function Nav({
                 near-white one in the light. The tile underneath is the same
                 violet-to-orange gradient either way, so the letter on it should
                 be too. */}
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-flare-500 to-ember-500 text-sm font-black text-white shadow-lg shadow-flare-600/30 ring-1 ring-white/20 transition ring-inset group-hover:shadow-flare-600/50">
+            {/* One flat accent colour rather than the violet-to-amber ramp it
+                used to be. The gradient only ever half-answered "what colour is
+                this app": whatever accent you picked, a third of the mark stayed
+                gold. A single fill says it properly. */}
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-flare-500 text-sm font-black text-white shadow-lg shadow-flare-600/30 ring-1 ring-white/20 transition ring-inset group-hover:shadow-flare-600/50">
               T
             </span>
             <span className="text-lg tracking-tight">Trekker</span>

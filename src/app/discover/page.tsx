@@ -90,7 +90,7 @@ export default async function DiscoverPage({
             />
           </div>
         ) : (
-          <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+          <div className="mt-4 grid grid-cols-3 gap-x-1.5 gap-y-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {items.map((item) => (
               <MediaCard
                 key={`${item.mediaType}-${item.id}`}
@@ -221,12 +221,12 @@ export default async function DiscoverPage({
       <CategoryNav type={filter} season={season} />
 
       {suggestions.length > 0 && (
-        <section className="mt-2">
+        <section className="mt-8">
           <h2 className="text-lg font-semibold tracking-tight">Things you may like</h2>
           <p className="mt-1 text-sm text-ink-400">
             Based on your watchlist and what you have been watching.
           </p>
-          <div className="mt-2">
+          <div className="mt-3">
             <Rail>
               {suggestions.map((item) => (
                 <MediaCard
@@ -294,7 +294,7 @@ export default async function DiscoverPage({
           watchedIds={statuses}
           requests={requests}
           items={upcomingTv?.items ?? []}
-          className="mt-2"
+          className="mt-4"
         />
         <CardRail
           title="Coming soon in cinemas"
@@ -302,7 +302,7 @@ export default async function DiscoverPage({
           watchedIds={statuses}
           requests={requests}
           items={upcoming?.items ?? []}
-          className={filter === "all" ? "mt-3" : "mt-2"}
+          className={filter === "all" ? "mt-6" : "mt-4"}
         />
       </SectionBand>
 
@@ -317,7 +317,7 @@ export default async function DiscoverPage({
           watchedIds={statuses}
           requests={requests}
           items={topMovies?.items ?? []}
-          className="mt-2"
+          className="mt-4"
         />
         <CardRail
           title="Shows"
@@ -325,7 +325,7 @@ export default async function DiscoverPage({
           watchedIds={statuses}
           requests={requests}
           items={topTv?.items ?? []}
-          className={filter === "all" ? "mt-3" : "mt-2"}
+          className={filter === "all" ? "mt-6" : "mt-4"}
         />
       </SectionBand>
     </div>
@@ -361,7 +361,7 @@ function SeasonBand({
           watchedIds={statuses}
           requests={requests}
           items={pick.items}
-          className={index === 0 ? "mt-2" : "mt-3"}
+          className={index === 0 ? "mt-4" : "mt-6"}
         />
       ))}
     </SectionBand>
@@ -386,7 +386,7 @@ function GenrePicker({
   );
 
   return (
-    <section className="mt-2">
+    <section className="mt-8">
       <div className="flex flex-wrap items-start justify-between gap-3 sm:items-center">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Find your next watch</h2>
@@ -448,7 +448,7 @@ function Spotlight({ items }: { items: NormalisedItem[] }) {
   const [lead, ...rest] = items;
 
   return (
-    <section className="mt-3">
+    <section className="mt-6">
       {/* Mobile: one card at a time, swiped and auto-advancing. Desktop: the
           lead plus a stack. */}
       <div className="lg:hidden">
