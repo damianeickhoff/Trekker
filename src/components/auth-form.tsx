@@ -31,7 +31,9 @@ export function AuthForm({
       <Link href="/" className="mb-8 flex items-center gap-3">
         {/* White rather than `text-ink-950`, matching the header mark — see the
             note on it in `nav.tsx`. */}
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-flare-500 to-ember-500 text-lg font-black text-white">
+        {/* The same flat accent as the mark in the header — this is the same
+            logo at a different size, so it cannot be a different colour. */}
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-flare-500 text-lg font-black text-white">
           T
         </span>
         <span className="text-2xl font-semibold tracking-tight">Trekker</span>
