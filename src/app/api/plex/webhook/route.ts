@@ -1,6 +1,8 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { logPlexScrobble } from "@/lib/plex-scrobble";
+import { checkLimit, recordFailure, type Limit } from "@/lib/rate-limit";
 
 /**
  * Plex's webhook, which fires the moment something is scrobbled — the instant
@@ -17,6 +19,29 @@ import { logPlexScrobble } from "@/lib/plex-scrobble";
  */
 
 export const dynamic = "force-dynamic";
+
+/**
+ * A brake on guessing the secret, counting only *failures* — Plex's own
+ * traffic never touches it, so a busy evening of scrobbles cannot trip it.
+ * One global bucket rather than per-IP: the secret is the thing under attack,
+ * and behind a reverse proxy the address is often the proxy anyway. If a guess
+ * spree does lock the endpoint, a scrobble missed during the window is not
+ * lost — the ten-minute history sync picks it up.
+ */
+const WEBHOOK_LIMIT: Limit = { attempts: 10, windowMs: 15 * 60 * 1000 };
+const LIMIT_KEY = "plex-webhook:key";
+
+/**
+ * Constant-time, via digests so unequal lengths cannot short-circuit either.
+ * A query-string secret is already the weaker shape (Plex offers no header),
+ * so the comparison should not leak anything more about it.
+ */
+function safeEqual(given: string, secret: string) {
+  return timingSafeEqual(
+    createHash("sha256").update(given).digest(),
+    createHash("sha256").update(secret).digest(),
+  );
+}
 
 type Payload = {
   event?: string;
@@ -40,8 +65,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "PLEX_WEBHOOK_SECRET is not set" }, { status: 503 });
   }
 
+  const gate = checkLimit(LIMIT_KEY, WEBHOOK_LIMIT);
+  if (!gate.allowed) {
+    return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
+  }
+
   const key = new URL(request.url).searchParams.get("key");
-  if (key !== secret) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+  if (!key || !safeEqual(key, secret)) {
+    recordFailure(LIMIT_KEY, WEBHOOK_LIMIT);
+    return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+  }
 
   let payload: Payload | null = null;
   try {
