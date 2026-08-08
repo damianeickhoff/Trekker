@@ -8,6 +8,7 @@ import { getAccount, PlexAuthError } from "./plex-auth";
 import { endHandoff, HANDOFF_COOKIE, readHandoff } from "./plex-handoff";
 import { switchToHomeUser } from "./plex-home";
 import { introduceToHome, seatHomeProfile } from "./plex-seat";
+import { sealSecret } from "./token-vault";
 
 export type ProfileChoiceState = { error?: string };
 
@@ -90,7 +91,8 @@ async function seatOwner(plexAccountId: string, token: string, title: string) {
   if (linked) {
     await db.user.update({
       where: { id: linked.id },
-      data: { plexAuthToken: token },
+      // Sealed at rest — see token-vault.ts. Same for every write below.
+      data: { plexAuthToken: sealSecret(token) },
     });
     return linked.id;
   }
@@ -105,7 +107,7 @@ async function seatOwner(plexAccountId: string, token: string, title: string) {
       where: { id: byEmail.id },
       data: {
         plexAccountId: account.id,
-        plexAuthToken: token,
+        plexAuthToken: sealSecret(token),
         plexUsername: account.username,
       },
     });
@@ -117,7 +119,7 @@ async function seatOwner(plexAccountId: string, token: string, title: string) {
       email: account.email,
       name: account.username || title,
       plexAccountId: account.id,
-      plexAuthToken: token,
+      plexAuthToken: sealSecret(token),
       plexUsername: account.username,
     },
   });

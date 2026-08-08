@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getAdmin } from "./admin";
 import { db } from "./db";
 import { clientIdentifier } from "./plex-auth";
+import { openSecret } from "./token-vault";
 
 /**
  * Whether a signed-in account may ask this install to fetch content.
@@ -49,13 +50,14 @@ export const hasPlexAccess = cache(async function hasPlexAccess(
   // deliberately so: an install whose owner has not linked Plex has no way to
   // tell a friend from a stranger, and refusing is the safe direction to be
   // wrong in.
-  if (!server?.plexMachineId || !viewer?.plexAuthToken) return false;
+  const viewerToken = openSecret(viewer?.plexAuthToken);
+  if (!server?.plexMachineId || !viewerToken) return false;
 
   try {
     const response = await fetch("https://plex.tv/api/v2/resources", {
       headers: {
         Accept: "application/json",
-        "X-Plex-Token": viewer.plexAuthToken,
+        "X-Plex-Token": viewerToken,
         "X-Plex-Client-Identifier": clientIdentifier(),
       },
       // Never cached. The URL is identical for every user and only the header

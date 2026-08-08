@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "./db";
 import type { HomeUser } from "./plex-home";
+import { sealSecret } from "./token-vault";
 
 /**
  * Finding — or making — the Trekker account a Plex identity belongs to.
@@ -158,7 +159,8 @@ export async function seatHomeProfile(user: HomeUser, token: string): Promise<st
     await db.user.update({
       where: { id: existing.id },
       data: {
-        plexAuthToken: token,
+        // Sealed at rest — see token-vault.ts.
+        plexAuthToken: sealSecret(token),
         plexUsername: user.username ?? user.title,
         plexManaged: user.restricted,
       },
@@ -173,7 +175,7 @@ export async function seatHomeProfile(user: HomeUser, token: string): Promise<st
       email: user.email ?? placeholderEmail(user.id),
       name: await distinctName(user.title),
       plexAccountId: user.id,
-      plexAuthToken: token,
+      plexAuthToken: sealSecret(token),
       // What ties their viewing on the server back to this profile. It is the
       // same field the settings page has always offered to fill in by hand —
       // this just knows the answer without being told.

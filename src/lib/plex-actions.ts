@@ -5,6 +5,7 @@ import { isAdmin } from "./admin";
 import { requireUser } from "./auth";
 import { db } from "./db";
 import { verifyPlex } from "./plex";
+import { sealSecret } from "./token-vault";
 
 export type PlexFormState = { error?: string; ok?: string };
 
@@ -32,7 +33,9 @@ export async function savePlexSettings(
 
   await db.user.update({
     where: { id: user.id },
-    data: { plexUrl: url, plexToken: token, plexMachineId: identity.machineId },
+    // Sealed at rest — see token-vault.ts. Verified against the server first,
+    // so what gets sealed is known to work.
+    data: { plexUrl: url, plexToken: sealSecret(token), plexMachineId: identity.machineId },
   });
 
   revalidatePath("/", "layout");

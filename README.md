@@ -972,8 +972,17 @@ to the item in the Plex web app) or a quiet "Not on Plex".
 Matching is by title plus release year within a year either way, so an odd
 naming scheme in your library can produce a miss. Lookups are never cached, time
 out after four seconds and fail soft — an unreachable server just means no
-badge. The token is stored in plain text in the database, so keep `dev.db`
-private.
+badge.
+
+Stored credentials — this token, each person's plex.tv token from the sign-in
+flow, and the Overseerr API key — are **encrypted at rest**
+([`token-vault.ts`](src/lib/token-vault.ts)), under a key derived from
+`AUTH_SECRET`: a copy of the database on its own no longer hands over the keys
+to the media server. Two consequences worth knowing. Rotating `AUTH_SECRET`,
+which already signs everyone out, now also forgets these connections — they
+read as "not connected" rather than erroring, and relinking is the fix. And
+rows written before the vault existed are still plaintext until the next time
+they are saved; they keep working unchanged in the meantime.
 
 ## Notes
 

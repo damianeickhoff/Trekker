@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { db } from "./db";
 import { getAdmin } from "./admin";
+import { openSecret } from "./token-vault";
 
 /**
  * Overseerr / Jellyseerr integration. Same shape of API in both, so one client
@@ -106,8 +107,9 @@ export async function getSeerrConnection(): Promise<SeerrConnection | null> {
     select: { seerrUrl: true, seerrApiKey: true },
   });
 
-  if (!user?.seerrUrl || !user.seerrApiKey) return null;
-  return { url: user.seerrUrl, apiKey: user.seerrApiKey };
+  const apiKey = openSecret(user?.seerrApiKey);
+  if (!user?.seerrUrl || !apiKey) return null;
+  return { url: user.seerrUrl, apiKey };
 }
 
 function toKind(status: number | undefined): SeerrStatusKind {

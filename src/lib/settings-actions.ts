@@ -6,6 +6,7 @@ import { isAdmin } from "./admin";
 import { requireUser } from "./auth";
 import { db } from "./db";
 import { verifySeerr } from "./seerr";
+import { sealSecret } from "./token-vault";
 import { defaultTraktClientId, TraktError, verifyTrakt } from "./trakt";
 
 export type SettingsState = { error?: string; ok?: string };
@@ -117,7 +118,8 @@ export async function saveSeerrSettings(
 
   await db.user.update({
     where: { id: user.id },
-    data: { seerrUrl: url, seerrApiKey: apiKey },
+    // Sealed at rest — see token-vault.ts.
+    data: { seerrUrl: url, seerrApiKey: sealSecret(apiKey) },
   });
 
   revalidatePath("/", "layout");

@@ -92,6 +92,12 @@ export function authSecretBytes(): Uint8Array {
   return new TextEncoder().encode(authSecret());
 }
 
+/** Test seam: the resolved secret is cached per process. */
+export function resetSecretCache() {
+  cached = null;
+  devFallback = null;
+}
+
 /**
  * Boot-time check. Throws with the reason, for `instrumentation.ts` to report
  * and exit on — outside development, where the fallback above applies.

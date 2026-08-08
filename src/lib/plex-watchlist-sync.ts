@@ -5,6 +5,7 @@ import { mapLimit } from "./concurrency";
 import { db } from "./db";
 import { addToPlexWatchlist, getPlexWatchlist, PlexWatchlistError } from "./plex-watchlist";
 import { getMovie, getTv, tmdbConfigured } from "./tmdb";
+import { openSecret } from "./token-vault";
 
 export type PlexSyncState = {
   error?: string;
@@ -43,13 +44,15 @@ export async function syncPlexWatchlist(userId: string): Promise<PlexSyncState> 
     select: { plexAuthToken: true },
   });
 
-  if (!account?.plexAuthToken) {
+  // Sealed at rest; one that will not open reads as not linked.
+  const token = openSecret(account?.plexAuthToken);
+  if (!token) {
     return { error: "Sign in with Plex first — that is what grants access to your watchlist." };
   }
 
   let entries;
   try {
-    entries = await getPlexWatchlist(account.plexAuthToken);
+    entries = await getPlexWatchlist(token);
   } catch (error) {
     if (error instanceof PlexWatchlistError) return { error: error.message };
     return { error: "Could not read your Plex watchlist" };
@@ -104,7 +107,7 @@ export async function syncPlexWatchlist(userId: string): Promise<PlexSyncState> 
   const missing = mine.filter((item) => !onPlex.has(`${item.mediaType}-${item.tmdbId}`));
 
   const pushed = await mapLimit(missing, 3, async (item) => {
-    const result = await addToPlexWatchlist(account.plexAuthToken!, {
+    const result = await addToPlexWatchlist(token, {
       tmdbId: item.tmdbId,
       mediaType: item.mediaType === "tv" ? "tv" : "movie",
       title: item.title,

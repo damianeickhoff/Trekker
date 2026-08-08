@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { HANDOFF_COOKIE, startHandoff } from "@/lib/plex-handoff";
 import { callbackOrigin, claimPin, getAccount, PIN_COOKIE, PlexAuthError } from "@/lib/plex-auth";
 import { getHomeUsers } from "@/lib/plex-home";
+import { sealSecret } from "@/lib/token-vault";
 
 /**
  * Step two: Plex has sent the browser back, so the PIN should now be claimable
@@ -59,7 +60,8 @@ export async function GET(request: NextRequest) {
       where: { id: viewer.id },
       data: {
         plexAccountId: account.id,
-        plexAuthToken: token,
+        // Sealed at rest — see token-vault.ts. Same for every write below.
+        plexAuthToken: sealSecret(token),
         plexUsername: account.username,
       },
     });
@@ -113,7 +115,7 @@ export async function GET(request: NextRequest) {
         where: { id: byEmail.id },
         data: {
           plexAccountId: account.id,
-          plexAuthToken: token,
+          plexAuthToken: sealSecret(token),
           plexUsername: account.username,
         },
       });
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
           email: account.email,
           name: account.username,
           plexAccountId: account.id,
-          plexAuthToken: token,
+          plexAuthToken: sealSecret(token),
           plexUsername: account.username,
         },
       });
@@ -134,7 +136,7 @@ export async function GET(request: NextRequest) {
     // Already linked: refresh the token, which is what reads their watchlist.
     await db.user.update({
       where: { id: userId },
-      data: { plexAuthToken: token, plexUsername: account.username },
+      data: { plexAuthToken: sealSecret(token), plexUsername: account.username },
     });
   }
 

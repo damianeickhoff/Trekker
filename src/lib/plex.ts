@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "./db";
 import { getAdmin } from "./admin";
+import { openSecret } from "./token-vault";
 
 /**
  * Talks to a user's own Plex Media Server over its local HTTP API.
@@ -97,11 +98,16 @@ export async function getPlexConnection(userId?: string): Promise<PlexConnection
       : Promise.resolve(null),
   ]);
 
-  if (!server?.plexUrl || !server.plexToken) return null;
+  // Sealed at rest; a token that will not open reads as absent, so a rotated
+  // AUTH_SECRET means "not connected" rather than a broken page.
+  const serverToken = openSecret(server?.plexToken);
+  const viewerToken = openSecret(viewer?.plexAuthToken);
+
+  if (!server?.plexUrl || !serverToken) return null;
 
   return {
     url: server.plexUrl,
-    token: viewer?.plexAuthToken || server.plexToken,
+    token: viewerToken || serverToken,
     machineId: server.plexMachineId,
   };
 }
