@@ -117,6 +117,9 @@ export const RUNTIME_FLOOR = 0;
 /** Anything at the top of the runtime slider means "no upper limit". */
 export const RUNTIME_CEILING = 240;
 
+/** One person a smart list insists on, as chosen in the editor. */
+export type CastPick = { id: number; name: string };
+
 export type SmartFilters = {
   kind: SmartKind;
   source: SmartSource;
@@ -124,6 +127,17 @@ export type SmartFilters = {
   genres: string[];
   /** TMDB provider ids — any one of them will do. */
   providers: number[];
+
+  /**
+   * People who have to be in it. Every one of them, like genres — "a film with
+   * both of these two" is a question worth being able to ask, and "either of
+   * them" is two lists.
+   *
+   * The name is stored alongside the id rather than looked up, because the
+   * editor, the rail caption and the saved description all need to say who this
+   * is, and none of them is a place to be making a TMDB call to find out.
+   */
+  cast: CastPick[];
   /** Certification labels for the instance's region. Films only. */
   certifications: string[];
   statuses: StatusSlug[];
@@ -162,6 +176,7 @@ export const DEFAULT_FILTERS: SmartFilters = {
   source: "all",
   genres: [],
   providers: [],
+  cast: [],
   certifications: [],
   statuses: [],
   scoreMin: 0,
@@ -214,6 +229,7 @@ export function isNarrowed(filters: SmartFilters): boolean {
   return (
     filters.genres.length > 0 ||
     filters.providers.length > 0 ||
+    filters.cast.length > 0 ||
     filters.certifications.length > 0 ||
     filters.statuses.length > 0 ||
     filters.scoreMin > 0 ||
@@ -248,6 +264,30 @@ function strings(value: unknown, allowed?: Set<string>): string[] {
 }
 
 /**
+ * People out of a stored blob. A pick with no usable id is dropped rather than
+ * repaired: an unnamed id would query correctly but leave the editor showing a
+ * chip with nothing written on it.
+ */
+function castPicks(value: unknown): CastPick[] {
+  if (!Array.isArray(value)) return [];
+
+  const picks: CastPick[] = [];
+  const seen = new Set<number>();
+
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const { id, name } = entry as Record<string, unknown>;
+    const numeric = Number(id);
+    if (!Number.isInteger(numeric) || numeric <= 0 || seen.has(numeric)) continue;
+
+    seen.add(numeric);
+    picks.push({ id: numeric, name: typeof name === "string" && name ? name : `#${numeric}` });
+  }
+
+  return picks;
+}
+
+/**
  * Reads a stored blob back into filters, repairing whatever does not parse.
  *
  * Never throws: this runs on rows written by whatever version of the app the
@@ -278,6 +318,7 @@ export function parseFilters(raw: unknown): SmartFilters {
     providers: Array.isArray(input.providers)
       ? input.providers.map(Number).filter((id) => Number.isInteger(id) && id > 0)
       : [],
+    cast: castPicks(input.cast),
     certifications: strings(input.certifications),
     statuses: strings(input.statuses, STATUS_VALUES as Set<string>) as StatusSlug[],
     scoreMin: clamp(input.scoreMin, 0, 100, 0),
@@ -328,6 +369,10 @@ export function describeFilters(filters: SmartFilters, genreLabel: (slug: string
   }
 
   if (filters.genres.length > 0) parts.push(filters.genres.map(genreLabel).join(" + "));
+
+  // Ahead of the medium, because "Bryan Cranston films" is how anyone would say
+  // it out loud — the person is the subject, not another narrowing.
+  if (filters.cast.length > 0) parts.push(filters.cast.map((person) => person.name).join(" + "));
 
   parts.push(filters.kind === "both" ? "films & shows" : filters.kind === "tv" ? "shows" : "films");
 

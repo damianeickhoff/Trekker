@@ -199,10 +199,29 @@
     color-scheme: light;
   }
 
+  /**
+   * The two washes are mixed from the accent rather than painted in violet, so
+   * the page behind everything follows the colour the user picked — and the
+   * seasonal costumes, which move the same variable.
+   *
+   * Mixed *towards the page colour* rather than given fixed hex values. That is
+   * what makes one formula work for every accent and both themes at once: the
+   * result is always the ink the page is already made of, nudged a little
+   * towards the accent, so it can never come out lighter than the page in dark
+   * mode or darker than it in light.
+   */
   body {
     background:
-      radial-gradient(120% 80% at 12% -10%, #241a4d 0%, transparent 55%),
-      radial-gradient(90% 60% at 95% 0%, #3b1d3d 0%, transparent 50%),
+      radial-gradient(
+        120% 80% at 12% -10%,
+        color-mix(in oklab, var(--color-flare-600) 34%, var(--color-ink-950)) 0%,
+        transparent 55%
+      ),
+      radial-gradient(
+        90% 60% at 95% 0%,
+        color-mix(in oklab, var(--color-flare-500) 22%, var(--color-ink-950)) 0%,
+        transparent 50%
+      ),
       var(--color-ink-950);
     background-attachment: fixed;
     color: var(--color-ink-100);
@@ -474,10 +493,20 @@
     );
   }
 
+  /* The same two washes, far weaker: the accent ramp inverts in light mode, so
+     these are strong colours and a pale page shows every percent of them. */
   html[data-theme="light"] body {
     background:
-      radial-gradient(120% 80% at 12% -10%, #ded7fb 0%, transparent 55%),
-      radial-gradient(90% 60% at 95% 0%, #fbe3ef 0%, transparent 50%),
+      radial-gradient(
+        120% 80% at 12% -10%,
+        color-mix(in oklab, var(--color-flare-500) 16%, var(--color-ink-950)) 0%,
+        transparent 55%
+      ),
+      radial-gradient(
+        90% 60% at 95% 0%,
+        color-mix(in oklab, var(--color-flare-400) 9%, var(--color-ink-950)) 0%,
+        transparent 50%
+      ),
       var(--color-ink-950);
     background-attachment: fixed;
   }
@@ -516,6 +545,32 @@
     rgb(0 0 0 / 0.15) 0%,
     rgb(0 0 0 / 0.55) 100%
   );
+}
+
+/**
+ * The balance bar's five bands.
+ *
+ * These used to be a fixed violet ramp, because adjacent steps of the accent
+ * ramp are too close together to tell apart and the accent moves under you.
+ * Both objections are answered by mixing towards the page colour instead of
+ * walking the ramp: the steps are a lightness sequence, evenly spaced, so they
+ * stay legible in any hue — and because the far end resolves to the page's own
+ * ink, the run reads the same way in dark and light without a second rule.
+ */
+.balance-band-1 {
+  background-color: var(--color-flare-500);
+}
+.balance-band-2 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 80%, var(--color-ink-950));
+}
+.balance-band-3 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 62%, var(--color-ink-950));
+}
+.balance-band-4 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 45%, var(--color-ink-950));
+}
+.balance-band-5 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 29%, var(--color-ink-950));
 }
 
 @utility scrim-b {
@@ -973,6 +1028,71 @@ html[data-theme="light"] .rail {
   --color-flare-400: #1d4ed8;
   --color-flare-500: #2563eb;
   --color-flare-600: #1e40af;
+}
+
+:root[data-accent="indigo"] {
+  --color-flare-300: #a5b4fc;
+  --color-flare-400: #818cf8;
+  --color-flare-500: #6366f1;
+  --color-flare-600: #4f46e5;
+}
+:root[data-accent="indigo"][data-theme="light"] {
+  --color-flare-300: #3730a3;
+  --color-flare-400: #4338ca;
+  --color-flare-500: #4f46e5;
+  --color-flare-600: #3730a3;
+}
+
+:root[data-accent="teal"] {
+  --color-flare-300: #5eead4;
+  --color-flare-400: #2dd4bf;
+  --color-flare-500: #14b8a6;
+  --color-flare-600: #0d9488;
+}
+:root[data-accent="teal"][data-theme="light"] {
+  --color-flare-300: #115e59;
+  --color-flare-400: #0f766e;
+  --color-flare-500: #0d9488;
+  --color-flare-600: #115e59;
+}
+
+:root[data-accent="lime"] {
+  --color-flare-300: #bef264;
+  --color-flare-400: #a3e635;
+  --color-flare-500: #84cc16;
+  --color-flare-600: #65a30d;
+}
+:root[data-accent="lime"][data-theme="light"] {
+  --color-flare-300: #3f6212;
+  --color-flare-400: #4d7c0f;
+  --color-flare-500: #65a30d;
+  --color-flare-600: #3f6212;
+}
+
+:root[data-accent="orange"] {
+  --color-flare-300: #fdba74;
+  --color-flare-400: #fb923c;
+  --color-flare-500: #f97316;
+  --color-flare-600: #ea580c;
+}
+:root[data-accent="orange"][data-theme="light"] {
+  --color-flare-300: #9a3412;
+  --color-flare-400: #c2410c;
+  --color-flare-500: #ea580c;
+  --color-flare-600: #9a3412;
+}
+
+:root[data-accent="fuchsia"] {
+  --color-flare-300: #f0abfc;
+  --color-flare-400: #e879f9;
+  --color-flare-500: #d946ef;
+  --color-flare-600: #c026d3;
+}
+:root[data-accent="fuchsia"][data-theme="light"] {
+  --color-flare-300: #86198f;
+  --color-flare-400: #a21caf;
+  --color-flare-500: #c026d3;
+  --color-flare-600: #86198f;
 }
 
 /* ===========================================================================

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useOrigin } from "./origin";
 
@@ -82,6 +82,7 @@ export function BackButton({
 }) {
   const router = useRouter();
   const origin = useOrigin();
+  const pathname = usePathname();
 
   /**
    * Back to where the chain started, not back one entry.
@@ -98,7 +99,17 @@ export function BackButton({
    */
   function goBack() {
     if (to === "origin") {
-      router.push(origin || fallback);
+      /**
+       * The origin is set from the route, and *every* page that is not a title
+       * page becomes it on arrival — so on Review or History the origin is the
+       * page you are standing on, and pushing it navigates nowhere at all. The
+       * button did nothing, which is exactly how it looked.
+       *
+       * Falling through to `fallback` is the honest answer here: a page that is
+       * its own origin has no chain to unwind, so what its caller named as the
+       * way out is the only place left to go.
+       */
+      router.push(origin && origin !== pathname ? origin : fallback);
       return;
     }
 

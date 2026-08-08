@@ -84,12 +84,25 @@ export function mediumApplies(filters: SmartFilters, mediaType: MediaType): bool
     if (!relevant) return false;
   }
 
+  // Discover carries `with_cast` for films and nothing equivalent for
+  // television — and, worse, accepts the parameter on `/discover/tv` and
+  // ignores it, so asking anyway returns the unfiltered catalogue rather than
+  // an error. Dropping the medium is the only reading that does not quietly
+  // answer a question nobody asked. Same call as the untranslatable genres
+  // below, for the same reason.
+  if (mediaType === "tv" && filters.cast.length > 0) return false;
+
   if (mediaType === "tv" && filters.genres.length > 0) {
     const untranslatable = filters.genres.some((slug) => findGenre(slug)?.tvId == null);
     if (untranslatable) return false;
   }
 
   return true;
+}
+
+/** Whether a cast filter is what is keeping television out, for the editor. */
+export function castBlocksTv(filters: SmartFilters): boolean {
+  return filters.cast.length > 0 && filters.kind !== "movie";
 }
 
 /** Genres in the filter that television has no equivalent for, for the editor. */
@@ -147,6 +160,12 @@ function discoverPath(filters: SmartFilters, mediaType: MediaType): string | nul
       .map((slug) => (isMovie ? findGenre(slug)?.movieId : findGenre(slug)?.tvId))
       .filter((id): id is number => typeof id === "number");
     if (ids.length > 0) params.set("with_genres", ids.join(","));
+  }
+
+  // -- Who is in it. Films only; `mediumApplies` has already ruled TV out -----
+  if (isMovie && filters.cast.length > 0) {
+    // Comma is AND, as with genres: two names means a film they are both in.
+    params.set("with_cast", filters.cast.map((person) => person.id).join(","));
   }
 
   // -- Where it streams ------------------------------------------------------

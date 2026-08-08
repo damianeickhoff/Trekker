@@ -13,12 +13,20 @@ import {
   Loader2,
   MonitorPlay,
   ShieldCheck,
+  Search,
   Sparkles,
   Tags,
   Tv,
+  Users,
+  X,
 } from "lucide-react";
 import { img } from "@/lib/images";
-import { createList, previewSmartList, updateSmartList } from "@/lib/list-actions";
+import {
+  createList,
+  previewSmartList,
+  searchPeople,
+  updateSmartList,
+} from "@/lib/list-actions";
 import { GENRES, findGenre } from "@/lib/genres";
 import type { Provider } from "@/lib/providers";
 import {
@@ -33,10 +41,11 @@ import {
   describeFilters,
   runtimeBounds,
   yearBounds,
+  type CastPick,
   type SmartFilters,
   type SmartKind,
 } from "@/lib/smart-filters";
-import type { NormalisedItem } from "@/lib/tmdb";
+import type { CastSearchResult, NormalisedItem } from "@/lib/tmdb";
 import { ScoreBadge } from "./media-card";
 import { RangeSlider } from "./range-slider";
 
@@ -98,6 +107,7 @@ export function SmartListEditor({
   const [filters, setFilters] = useState<SmartFilters>(initialFilters);
   const [items, setItems] = useState<NormalisedItem[]>([]);
   const [missingTv, setMissingTv] = useState<string[]>([]);
+  const [castDroppedTv, setCastDroppedTv] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -116,6 +126,7 @@ export function SmartListEditor({
 
       setItems(result?.items ?? []);
       setMissingTv(result?.genresWithoutTv ?? []);
+      setCastDroppedTv(result?.castBlocksTv ?? false);
       setLoading(false);
     }, DEBOUNCE_MS);
 
@@ -420,6 +431,24 @@ export function SmartListEditor({
               </Chip>
             ))}
           </div>
+        </Section>
+
+        <Section
+          icon={Users}
+          label="Who is in it"
+          summary={
+            filters.cast.length > 0
+              ? filters.cast.map((person) => person.name).join(", ")
+              : "Anyone"
+          }
+          count={filters.cast.length}
+          active={filters.cast.length > 0}
+        >
+          <CastFilter
+            picked={filters.cast}
+            onChange={(cast) => patch({ cast })}
+            blocksTv={castDroppedTv}
+          />
         </Section>
 
         {(statuses.length > 0 || showCertifications) && (
@@ -739,6 +768,163 @@ function Row({
       {hint && <p className="mt-0.5 text-[11px] text-ink-500">{hint}</p>}
       <div className="mt-2">{children}</div>
     </div>
+  );
+}
+
+/**
+ * Who has to be in it.
+ *
+ * A search box rather than a list of chips, because the vocabulary here is
+ * every person on TMDB — there is no set of twenty to lay out the way there is
+ * for genres or streaming services. Picks are kept as id *and* name so the
+ * summary line, the saved list's caption and this box can all say who was
+ * chosen without another round trip.
+ */
+function CastFilter({
+  picked,
+  onChange,
+  blocksTv,
+}: {
+  picked: CastPick[];
+  onChange: (picks: CastPick[]) => void;
+  /** The preview came back films-only because of this filter. */
+  blocksTv: boolean;
+}) {
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<CastSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  // Same guard as the preview: a broad query started first must not land on top
+  // of the narrow one typed after it.
+  const run = useRef(0);
+
+  /**
+   * The spinner and the clearing both belong to the keystroke, not to the
+   * request that follows it — the same reasoning as `patch` above, and what
+   * keeps this effect free of a synchronous setState in its body.
+   */
+  function retype(value: string) {
+    setTerm(value);
+    const query = value.trim();
+    setSearching(query.length >= 2);
+    if (query.length < 2) setResults([]);
+  }
+
+  useEffect(() => {
+    const query = term.trim();
+    if (query.length < 2) return;
+
+    const ticket = ++run.current;
+
+    const timer = setTimeout(async () => {
+      const found = await searchPeople(query).catch(() => []);
+      if (ticket !== run.current) return;
+      setResults(found);
+      setSearching(false);
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [term]);
+
+  function add(person: CastSearchResult) {
+    if (!picked.some((p) => p.id === person.id)) {
+      onChange([...picked, { id: person.id, name: person.name }]);
+    }
+    setTerm("");
+    setResults([]);
+    setSearching(false);
+  }
+
+  return (
+    <>
+      <p className="mb-2.5 text-[11px] text-ink-500">
+        Films only — TMDB has no way to search television by cast. Pick more than one and every
+        one of them has to be in it.
+      </p>
+
+      {picked.length > 0 && (
+        <div className="mb-2.5 flex flex-wrap gap-2">
+          {picked.map((person) => (
+            <span
+              key={person.id}
+              className="inline-flex items-center gap-1.5 rounded-full border border-flare-500 bg-flare-600/25 py-1.5 pr-1.5 pl-3 text-sm text-flare-200 light:text-flare-700"
+            >
+              {person.name}
+              <button
+                type="button"
+                onClick={() => onChange(picked.filter((p) => p.id !== person.id))}
+                aria-label={`Remove ${person.name}`}
+                className="grid h-5 w-5 place-items-center rounded-full transition hover:bg-flare-600/40"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="relative">
+        <Search
+          size={14}
+          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-500"
+        />
+        <input
+          type="search"
+          value={term}
+          onChange={(e) => retype(e.target.value)}
+          placeholder="Search for an actor or director"
+          className="w-full rounded-xl border border-ink-700 bg-ink-900/60 py-2 pr-3 pl-9 text-sm outline-none placeholder:text-ink-500 focus:border-flare-500"
+        />
+        {searching && (
+          <Loader2
+            size={14}
+            className="absolute top-1/2 right-3 -translate-y-1/2 animate-spin text-ink-500"
+          />
+        )}
+      </div>
+
+      {results.length > 0 && (
+        <ul className="mt-2 overflow-hidden rounded-xl border border-ink-700">
+          {results.map((person) => {
+            const already = picked.some((p) => p.id === person.id);
+            const portrait = img.profile(person.profile);
+            return (
+              <li key={person.id} className="border-b border-ink-800 last:border-b-0">
+                <button
+                  type="button"
+                  disabled={already}
+                  onClick={() => add(person)}
+                  className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition hover:bg-ink-800 disabled:opacity-40 disabled:hover:bg-transparent"
+                >
+                  <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-ink-800">
+                    {portrait ? (
+                      <Image src={portrait} alt="" fill sizes="36px" className="object-cover" />
+                    ) : null}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm">{person.name}</span>
+                    <span className="block truncate text-[11px] text-ink-500">
+                      {[person.department, person.knownFor].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {term.trim().length >= 2 && !searching && results.length === 0 && (
+        <p className="mt-2 text-[11px] text-ink-500">Nobody by that name.</p>
+      )}
+
+      {/* Only once it has actually cost something — saying it while the list is
+          already films-only would be a warning about nothing. */}
+      {blocksTv && (
+        <p className="mt-2.5 rounded-lg border border-ember-500/30 bg-ember-500/10 px-2.5 py-2 text-[11px] text-ember-400">
+          Shows were asked for but cannot be searched by cast, so this list is films only.
+        </p>
+      )}
+    </>
   );
 }
 

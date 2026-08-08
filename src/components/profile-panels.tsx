@@ -107,17 +107,19 @@ export function WeekdayBars({ weekday }: { weekday: { label: string; minutes: nu
  * Five purples, spaced far enough apart on the violet ramp to be told apart at
  * the size of a legend dot.
  *
- * Fixed rather than derived from the `flare` accent: adjacent steps of one ramp
- * are the thing that made the old palette unreadable, and the accent moves with
- * both the user's choice and the season — so a formula that works in violet
- * would collapse the moment somebody picked amber.
+ * Derived from the accent, so the panel is the colour the user chose. Defined
+ * in `globals.css` rather than as ramp steps here: walking `flare-300…600` was
+ * the thing that made an earlier palette unreadable, since adjacent steps are
+ * too close to tell apart and the gap between them changes with the hue. These
+ * mix one accent colour towards the page instead, which is an even lightness
+ * run in any hue and in either theme.
  */
 const GENRE_BAR = [
-  "bg-violet-300",
-  "bg-violet-400",
-  "bg-violet-500",
-  "bg-violet-700",
-  "bg-violet-900",
+  "balance-band-1",
+  "balance-band-2",
+  "balance-band-3",
+  "balance-band-4",
+  "balance-band-5",
 ] as const;
 
 /**

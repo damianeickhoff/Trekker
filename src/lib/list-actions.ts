@@ -6,8 +6,8 @@ import { requireUser } from "./auth";
 import { db } from "./db";
 import { refreshSmartList, SMART_LIST_MAX, SMART_LIST_STEP } from "./lists";
 import { DEFAULT_FILTERS, parseFilters } from "./smart-filters";
-import { genresWithoutTv, getViewerState, runSmartList } from "./smart-lists";
-import type { NormalisedItem } from "./tmdb";
+import { castBlocksTv, genresWithoutTv, getViewerState, runSmartList } from "./smart-lists";
+import { searchCast, type CastSearchResult, type NormalisedItem } from "./tmdb";
 
 /**
  * Everything that writes to a list.
@@ -318,6 +318,12 @@ export type PreviewResult = {
    * dropped — the editor says so rather than letting the results look broken.
    */
   genresWithoutTv: string[];
+  /**
+   * True when a cast filter is what dropped the shows half. TMDB's television
+   * discover has no cast parameter at all, so the editor has to say why the
+   * answer is films only rather than leave it looking like a bug.
+   */
+  castBlocksTv: boolean;
 };
 
 /** How many the editor shows while you are still deciding. */
@@ -395,5 +401,24 @@ export async function previewSmartList(rawFilters: unknown): Promise<PreviewResu
   return {
     items,
     genresWithoutTv: filters.kind === "movie" ? [] : genresWithoutTv(filters),
+    castBlocksTv: castBlocksTv(filters),
   };
+}
+
+/**
+ * People to choose from, for the cast filter.
+ *
+ * A server action rather than an API route: the editor is the only caller, it
+ * already reaches the server this way for its preview, and this keeps the TMDB
+ * key where it belongs. Signed in only — everything else in this file is, and a
+ * public search endpoint would be a free proxy onto somebody else's API quota.
+ */
+export async function searchPeople(query: string): Promise<CastSearchResult[]> {
+  await requireUser();
+
+  const term = query.trim();
+  // Two characters is where a name search stops being every actor on TMDB.
+  if (term.length < 2) return [];
+
+  return searchCast(term, 8).catch(() => []);
 }

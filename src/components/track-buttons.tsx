@@ -85,14 +85,22 @@ export function TrackButtons({
     // The heart is deliberately not here: it lives with the trailer and the
     // overflow menu, which is where the icon-only controls belong.
     <div className="flex w-full gap-2.5 sm:grid sm:w-auto sm:auto-cols-fr sm:grid-flow-col">
+      {/*
+        The floor is shared with the watch button below, and is the whole point
+        of it: on desktop `auto-cols-fr` sizes both columns to the widest child,
+        so a label wider than "Mark watched" grew this control *and* Save beside
+        it. "Not released yet" was that label. A floor both states clear means
+        the row measures the same whichever one is showing — and the shorter
+        wording is what the smart-list filter already calls this.
+      */}
       {item.mediaType === "movie" && !released && !watched && (
-        <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium text-ink-400 sm:flex-none">
+        <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium whitespace-nowrap text-ink-400 sm:min-w-[10.5rem] sm:flex-none">
           <Clock size={16} />
-          Not released yet
+          Not out yet
         </span>
       )}
       {item.mediaType === "movie" && (released || watched) && (
-        <div className="relative min-w-0 flex-1 sm:flex-none">
+        <div className="relative min-w-0 flex-1 sm:min-w-[10.5rem] sm:flex-none">
           <button
             disabled={pending}
             onClick={() => {
