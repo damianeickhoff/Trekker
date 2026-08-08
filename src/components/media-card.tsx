@@ -75,11 +75,26 @@ export function scoreTone(score: number) {
 /** The pill itself, minus the plate — see `scorePlate`. */
 export const SCORE_PILL = `inline-flex h-6 items-center gap-1.5 px-2.5 text-[10px] font-bold tabular-nums text-white ${OVERLAY_SHAPE}`;
 
+/**
+ * What the number is a score *of*, in the two forms the badge needs it: the word
+ * on the chip, and the tooltip behind it.
+ *
+ * Both come from one prop rather than two, because they are one fact said twice
+ * — a caller free to pass "Yours" alongside "Average audience score" is a caller
+ * who eventually will, and the badge would then contradict itself in a place
+ * nobody looks.
+ */
+const SCORE_MEANING = {
+  audience: { chip: "Audience", title: "Average audience score" },
+  yours: { chip: "Yours", title: "Your rating" },
+};
+
 export function ScoreBadge({
   score,
   className = "",
   variant = "overlay",
   size = "default",
+  meaning = "audience",
 }: {
   score: number;
   className?: string;
@@ -99,19 +114,26 @@ export function ScoreBadge({
    * reliably does what it says.
    */
   size?: "default" | "small";
+  /**
+   * Whose score this is. Almost everywhere it is TMDB's, which is why that is
+   * the default — but the profile's ratings rail wears the same pill for the
+   * viewer's own, where the audience wording is simply untrue.
+   */
+  meaning?: keyof typeof SCORE_MEANING;
 }) {
   // Nothing rated yet: show nothing rather than an empty placeholder.
   if (!score) return null;
 
   const tone = scoreTone(score);
+  const says = SCORE_MEANING[meaning];
 
   if (variant === "outline") {
     return (
       <span
         className={`inline-flex items-center gap-1.5 rounded-full border border-ink-600/70 bg-ink-900/70 px-2.5 py-1 text-[11px] backdrop-blur-sm light:border-ink-600 light:bg-white/80 ${className}`}
-        title="Average audience score"
+        title={says.title}
       >
-        <span className="text-ink-300">Audience</span>
+        <span className="text-ink-300">{says.chip}</span>
         <span className={`font-mono font-semibold tabular-nums ${tone}`}>{score}%</span>
       </span>
     );
@@ -129,7 +151,7 @@ export function ScoreBadge({
       className={`inline-flex items-center gap-1.5 font-bold tabular-nums text-white ${
         size === "small" ? "h-[17px] px-1.5 text-[9px]" : "h-6 px-2.5 text-[10px]"
       } ${OVERLAY_SHAPE} ${plate} ${className}`}
-      title="Average audience score"
+      title={says.title}
     >
       {score}%
     </span>
