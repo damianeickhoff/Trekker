@@ -918,6 +918,16 @@ the credentials live on the admin's row and every profile reads them
 ([`admin.ts`](src/lib/admin.ts)). Other profiles see a read-only summary of
 whether each server is connected.
 
+The admin also gets an **Accounts** tool under the same group: rename another
+account, set a new password for somebody locked out — the recovery story for an
+instance with no email to send a reset through; it ends every session the
+account had — or remove an account for good, confirmed by typing its name. The
+admin's own row is deliberately not offered: changing their own password proves
+the current one, and closing their own account guards the instance settings,
+and this tool must not be the way around either check. Managed Plex Home
+profiles cannot be given a password at all, since they are never signed into
+directly.
+
 ## Overseerr / Jellyseerr
 
 The admin connects an instance under **Settings → Overseerr / Jellyseerr** with

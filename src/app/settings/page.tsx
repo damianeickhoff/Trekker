@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CreditCard, LogOut, Server, Trophy } from "lucide-react";
+import { CreditCard, LogOut, Server, Trophy, Users } from "lucide-react";
 import { getAdmin } from "@/lib/admin";
 import { listAccounts } from "@/lib/admin-actions";
 import { getCurrentUser } from "@/lib/auth";
@@ -22,6 +22,7 @@ import {
   SettingsGroup,
   TraktSection,
 } from "@/components/settings-sections";
+import { AdminAccounts } from "@/components/admin-accounts";
 import { AdminBadges } from "@/components/admin-badges";
 import { NotificationsSection } from "@/components/notifications-section";
 import { ProviderPicker } from "@/components/provider-picker";
@@ -173,6 +174,21 @@ export default async function SettingsPage() {
               summary="Admin tool"
             >
               <AdminBadges accounts={accounts} self={user.id} period={periodKey(new Date())} />
+            </SettingsCard>
+
+            {/* The recovery story for an instance with no email: rename a
+                profile, set a new password for somebody locked out, remove an
+                account that is finished with. The admin's own account is
+                deliberately not offered — its safeguards live under You. */}
+            <SettingsCard
+              title="Accounts"
+              description="The other accounts on this instance: rename one, set a new password for somebody locked out, or remove one for good."
+              icon={<Users size={16} />}
+              summary={`${accounts.length} on this instance`}
+            >
+              <div className="mt-4">
+                <AdminAccounts accounts={accounts} self={user.id} />
+              </div>
             </SettingsCard>
           </>
         ) : (
