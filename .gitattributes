@@ -1,2 +1,5 @@
+# Everything the repo stores as text stays LF in the working tree too, so
+# git stops warning about conversions on every command run from Windows.
+* text=auto eol=lf
 *.sh text eol=lf
 Dockerfile text eol=lf
