@@ -1108,8 +1108,20 @@ function Hero({
               between its own halves — so the row is a pair of matching buttons
               and a pair of matching squares rather than four different widths.
               Desktop is unchanged: `contents` dissolves the wrapper, and the row
-              wraps as it always did. */}
-          <div className="mt-auto flex items-center justify-center gap-2.5 max-sm:order-2 sm:flex-wrap sm:justify-start">
+              wraps as it always did.
+
+              `@container` is what lets the controls inside give up their labels
+              one at a time as the row runs out of room — the heart's word first,
+              then Save's. It has to be the *row* that is measured rather than
+              the viewport: on desktop this is one column of a two-column hero
+              and on a phone it is the whole width, so no screen breakpoint
+              describes "this row is getting tight" at both. The thresholds
+              themselves live on the buttons; see `favourite-button.tsx`.
+
+              This is the only container query in the app. It is worth the new
+              idiom here because the alternative — measuring in JS, as the
+              synopsis clamp does — is a lot of machinery for two words. */}
+          <div className="@container mt-auto flex flex-wrap items-center justify-center gap-2.5 max-sm:order-2 sm:justify-start">
             <div className="min-w-0 flex-1 sm:contents">{actions}</div>
             {extras}
           </div>

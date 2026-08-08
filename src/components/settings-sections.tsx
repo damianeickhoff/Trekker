@@ -1057,6 +1057,7 @@ export function ExportSection() {
             {[
               ["plays", "History"],
               ["ratings", "Ratings"],
+              ["episode-ratings", "Episode thumbs"],
               ["watchlist", "Watchlist"],
               ["favourites", "Favourites"],
             ].map(([table, label]) => (

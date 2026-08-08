@@ -64,10 +64,18 @@ export function EpisodeControls({
     // Only a fresh mark has a date worth correcting; taking one back is done.
     setAskWhen(next);
 
+    /**
+     * `pending` covers the write and nothing else. It used to cover the refresh
+     * too, which meant the control stayed disabled through a second round trip
+     * re-rendering the whole episode page — after the tick above had already
+     * said what happened. The refresh is for the server-rendered detail around
+     * it, and nothing on screen is waiting on it.
+     */
+    const write = toggleEpisodeWatched({ showId, showName, showPoster, episode });
     startTransition(async () => {
-      await toggleEpisodeWatched({ showId, showName, showPoster, episode });
-      router.refresh();
+      await write;
     });
+    void write.then(() => router.refresh());
   }
 
   function moveTo(date: Date) {
@@ -84,14 +92,21 @@ export function EpisodeControls({
   }
 
   function rate(liked: boolean) {
-    // Tapping the verdict it already carries takes it back off.
-    const next = rating === liked ? undefined : liked;
-    setRating(next);
+    // Tapping the verdict it already carries takes it back off — but it is the
+    // *server* that reads a repeat as "clear this", from the same value arriving
+    // twice. Sending nothing, which is what this did once it had worked out the
+    // verdict was being cleared, took the thumb off the screen and left the row
+    // where it was; the refresh underneath then put it straight back.
+    setRating(rating === liked ? undefined : liked);
 
+    // Same shape as `toggle`: the verdict is already on screen, so the refresh
+    // behind it must not hold the buttons dead.
+    const write = rateEpisode({ showId, seasonNumber, episodeNumber, liked });
     startTransition(async () => {
-      if (next !== undefined) await rateEpisode({ showId, seasonNumber, episodeNumber, liked: next });
-      router.refresh();
+      const res = await write;
+      setRating(res.liked ?? undefined);
     });
+    void write.then(() => router.refresh());
   }
 
   if (!signedIn) return null;

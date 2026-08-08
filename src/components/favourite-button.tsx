@@ -66,14 +66,18 @@ export function FavouriteButton({
             // uses, and controls of three different heights on one row read as
             // an accident.
             //
-            // On a phone it takes a word as well. Desktop has room for a row of
-            // labelled pills and two silent squares at the end; a phone does
-            // not, and the square left the row lopsided — a labelled Save at one
-            // end and two glyphs at the other, with the gap between them doing
-            // the talking. Sized to its own content rather than sharing the row
-            // equally, so the watch and save pair beside it keeps enough width
-            // to spell its own labels out.
-            `inline-flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-xl border text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] sm:w-[50px] max-sm:px-3.5 ${
+            // A labelled pill wherever the row has room for one, and that same
+            // silent square where it does not. This is the first of the two
+            // labels the row gives up as it narrows — before Save's, because a
+            // heart is the one glyph here that needs no word to be read, where
+            // a bookmark could be save, saved, or a list.
+            //
+            // `@max-*` measures the action row, not the screen — see the
+            // container query on it in the title page. The two thresholds are
+            // written next to each other, here and in `save-button.tsx`, and
+            // want tuning by eye rather than by arithmetic: this one has to fire
+            // before the watch label would otherwise start pushing.
+            `@max-[27rem]:w-[50px] @max-[27rem]:px-0 inline-flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-xl border px-3.5 text-sm font-semibold backdrop-blur-sm transition active:scale-[0.98] ${
               favourite
                 ? "border-rose-500/70 bg-rose-600/20 text-rose-400 hover:border-rose-400 hover:bg-rose-600/30"
                 : "ios-surface ios-bright border-ink-600/70 bg-ink-900/50 text-ink-300 hover:border-rose-500 hover:bg-ink-800/80 hover:text-rose-400 light:border-ink-600 light:bg-white/85 light:hover:bg-white"
@@ -87,9 +91,11 @@ export function FavouriteButton({
       />
       {/* "Love" rather than "Favourite": the noun is the place the heart files
           things into — /watchlist/favourites — and the button is the act. The
-          long word would also be the only label on the row that had to truncate
-          to fit. Phone only; the desktop square is still deliberately silent. */}
-      {variant === "button" && <span className="truncate sm:hidden">Love</span>}
+          long word would also be the first to go when the row tightens, which
+          would make the threshold below have to fire earlier than it needs to. */}
+      {variant === "button" && (
+        <span className="whitespace-nowrap @max-[27rem]:hidden">Love</span>
+      )}
     </button>
   );
 }

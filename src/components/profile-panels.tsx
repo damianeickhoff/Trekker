@@ -235,7 +235,9 @@ export function RatingsRail({ ratings, total }: { ratings: RatingCard[]; total: 
                   />
                 )}
                 <span className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1">
-                  <ScoreBadge score={rating.score} />
+                  {/* The viewer's own score, not the audience's — this rail is
+                      the one place the pill means something else. */}
+                  <ScoreBadge score={rating.score} meaning="yours" />
                   {rating.review && (
                     <span
                       title="You wrote a review"

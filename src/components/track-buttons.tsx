@@ -83,13 +83,16 @@ export function TrackButtons({
     // the row look like it had been assembled by accident. A fixed width would
     // have done it too, but only until a label outgrew the number I picked.
     //
-    // On a phone the grid is the full width; on desktop it shrinks to fit, and
-    // `1fr` there resolves to the widest child applied to both. Either way a
-    // show — which has no watched pill — leaves one column, so Save takes the
-    // whole row rather than half of it.
+    // That is desktop only now. On a phone the two are a plain flex row where
+    // the watch pill takes what its label needs and Save takes the rest — equal
+    // halves are a nicety, and a whole watch label is not, so when there is only
+    // one of the two to be had the phone gives up the nicety. Either way a show
+    // — which has no watched pill — leaves one column, so Save takes the whole
+    // row rather than half of it.
     //
-    // The heart is deliberately not here: it lives with the trailer and the
-    // overflow menu, which is where the icon-only controls belong.
+    // The heart is not here: it lives with the trailer and the overflow menu.
+    // It does now carry a label of its own when the row is wide enough for one,
+    // which is decided by the container query on that row — see the title page.
     <div className="flex w-full gap-2.5 sm:grid sm:w-auto sm:auto-cols-fr sm:grid-flow-col">
       {/*
         The floor is shared with the watch button below, and is the whole point
@@ -100,13 +103,25 @@ export function TrackButtons({
         wording is what the smart-list filter already calls this.
       */}
       {item.mediaType === "movie" && !released && !watched && (
-        <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium whitespace-nowrap text-ink-400 sm:min-w-[10.5rem] sm:flex-none">
+        <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-ink-700 px-4 py-3.5 text-sm font-medium whitespace-nowrap text-ink-400 sm:min-w-[10.5rem]">
           <Clock size={16} />
           Not out yet
         </span>
       )}
+      {/*
+        Sized to its own label and never below it. This is the control the page
+        is about, and it used to be the only thing in the row that could lose:
+        everything beside it is `shrink-0`, so when the row ran out of width the
+        watch label was what got clipped — "Watched · 3×" reading as "Watche…".
+
+        The guarantee is here rather than in the thresholds that take the other
+        labels away, because a threshold tuned slightly wrong should cost a
+        cramped Save, not the one word that had to stay whole. Save is the
+        flexible half of the pair now, and it can afford to be: its label is one
+        short word which the row takes away entirely before it could clip.
+      */}
       {item.mediaType === "movie" && (released || watched) && (
-        <div className="relative min-w-0 flex-1 sm:min-w-[10.5rem] sm:flex-none">
+        <div className="relative shrink-0 sm:min-w-[10.5rem]">
           <button
             disabled={pending}
             onClick={() => {
@@ -122,26 +137,52 @@ export function TrackButtons({
                 return;
               }
 
+              /**
+               * Marked before it is confirmed. The episode list has always
+               * worked this way and the film button did not: it waited for the
+               * round trip before anything moved, which on the one control the
+               * whole page is about reads as the press not having registered.
+               *
+               * Safe to assume: the only thing that can refuse is an unreleased
+               * film, and the button is not offered for one — `released` gates
+               * it. The answer is still applied below, so a refusal corrects
+               * itself rather than being believed.
+               */
+              setWatched(true);
+              setWatchedAt(new Date());
+              setPlays(1);
+              // Already logged at the current time; the menu is only there in
+              // case that is wrong.
+              setAskWhen(true);
+              setWatchlistCleared(true);
+
+              const write = toggleMovieWatched({
+                movieId: item.tmdbId,
+                title: item.title,
+                poster: item.poster,
+                runtime: item.runtime ?? 0,
+                score: item.score,
+                releaseDate: item.releaseDate,
+              });
+
               startTransition(async () => {
-                const res = await toggleMovieWatched({
-                  movieId: item.tmdbId,
-                  title: item.title,
-                  poster: item.poster,
-                  runtime: item.runtime ?? 0,
-                  score: item.score,
-                  releaseDate: item.releaseDate,
-                });
+                const res = await write;
                 setWatched(res.watched);
                 setWatchedAt(res.watched ? new Date() : null);
                 setPlays(res.watched ? 1 : 0);
-                // Already logged at the current time; the menu is only there in
-                // case that is wrong.
                 setAskWhen(res.watched);
-                if (res.watched) setWatchlistCleared(true);
-                // The date now lives under the synopsis, rendered by the
-                // server, so it only moves when the server is asked again.
-                router.refresh();
+                setWatchlistCleared(res.watched);
               });
+
+              /**
+               * The date under the synopsis is rendered by the server, so it
+               * only moves when the server is asked again — but deliberately
+               * outside the transition above. Inside it, `pending` stayed true
+               * until a whole title page had been re-rendered, and the button
+               * sat disabled and greyed for the duration of a second round trip
+               * that nothing on screen was waiting for.
+               */
+              void write.then(() => router.refresh());
             }}
             // Weight rather than decoration: a soft vertical gradient, a
             // hairline of light along the inside of the top edge, and a shadow
@@ -172,7 +213,7 @@ export function TrackButtons({
             ) : (
               <Eye size={16} className="shrink-0" />
             )}
-            <span className="truncate">{watched ? "Watched" : "Watch"}</span>
+            <span className="whitespace-nowrap">{watched ? "Watched" : "Watch"}</span>
 
             {/* A "1×" would be noise on everything ever logged; the count only
                 earns its place once there is more than one. */}

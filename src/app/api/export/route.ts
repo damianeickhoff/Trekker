@@ -322,6 +322,46 @@ async function csvFor(userId: string, table: string): Promise<string | null> {
         await db.rating.findMany({ where: { userId }, orderBy: { updatedAt: "asc" } }),
       );
 
+    case "episode-ratings": {
+      const ratings = await db.episodeRating.findMany({
+        where: { userId },
+        // Reading order for a spreadsheet, which is the point of this format —
+        // the other sheets are chronological because that is how a log reads.
+        orderBy: [{ showId: "asc" }, { seasonNumber: "asc" }, { episodeNumber: "asc" }],
+      });
+
+      /**
+       * `EpisodeRating` keeps only the show's id, and every other sheet here
+       * carries a name. A column of bare TMDB ids is not something anybody can
+       * read, so the names come from the watched rows, which denormalise them
+       * already — one grouped read for the shows that actually have verdicts,
+       * rather than a lookup per rating.
+       */
+      const names = new Map(
+        (
+          await db.watchedEpisode.groupBy({
+            by: ["showId", "showName"],
+            where: { userId, showId: { in: [...new Set(ratings.map((r) => r.showId))] } },
+          })
+        ).map((row) => [row.showId, row.showName]),
+      );
+
+      return toCsv(
+        columns<(typeof ratings)[number]>(
+          ["show", (r) => names.get(r.showId) ?? ""],
+          ["showId", (r) => r.showId],
+          ["season", (r) => r.seasonNumber],
+          ["episode", (r) => r.episodeNumber],
+          // Two values and no third: an episode with no verdict has no row at
+          // all. Written as the words the buttons use rather than as a boolean,
+          // since "false" is a strange way to read "thumbs down".
+          ["verdict", (r) => (r.liked ? "up" : "down")],
+          ["updatedAt", (r) => r.updatedAt],
+        ),
+        ratings,
+      );
+    }
+
     case "watchlist":
       return toCsv(
         columns<Awaited<ReturnType<typeof db.watchlistItem.findMany>>[number]>(
