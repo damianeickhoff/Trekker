@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bookmark, CalendarDays, Compass, Ghost, Gift, Home, Rocket, Search, User as UserIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type { NotificationItem } from "@/lib/notification-centre";
 import { SEASONS, type Season, type SeasonSetting } from "@/lib/seasons";
 import { useOrigin } from "./origin";
@@ -46,6 +46,38 @@ function isActive(pathname: string, href: string) {
 }
 
 /**
+ * Whether the page has been scrolled at all.
+ *
+ * An external store rather than state set from an effect, for the same reason
+ * `origin.tsx` is one: this is a single value that lives outside React and
+ * changes in response to something React did not do. It also gets the value
+ * right on the very first render after mount, which matters when you arrive
+ * part-way down a page through the back button — an effect would paint the
+ * transparent bar first and then correct it.
+ *
+ * The snapshot is a boolean, so scrolling only re-renders on the crossing
+ * rather than on every pixel.
+ */
+function subscribeToScroll(onChange: () => void) {
+  window.addEventListener("scroll", onChange, { passive: true });
+  return () => window.removeEventListener("scroll", onChange);
+}
+
+/** A few pixels of slack, so a rubber-band overscroll does not flicker it. */
+const SCROLL_THRESHOLD = 8;
+
+function useScrolled() {
+  return useSyncExternalStore(
+    subscribeToScroll,
+    () => window.scrollY > SCROLL_THRESHOLD,
+    // The server has no scroll position, and the first client render has to
+    // agree with it or hydration complains. Top of the page is the honest
+    // answer for a fresh load.
+    () => false,
+  );
+}
+
+/**
  * Which path the tabs should be lit from.
  *
  * A title page matches none of them, so the bar used to go dark and stop saying
@@ -80,6 +112,7 @@ export function Nav({
   // state rather than two, so "open" and "which end" cannot disagree.
   const [searchAnchor, setSearchAnchor] = useState<"top" | "bottom" | null>(null);
   const searchOpen = searchAnchor !== null;
+  const scrolled = useScrolled();
 
   // "/" opens search, the way most media apps do it.
   useEffect(() => {
@@ -118,8 +151,30 @@ export function Nav({
         light mode where the status bar stays opaque, the inset is 0 and the
         padding costs nothing.
       */}
-      <header className="sticky top-0 z-40 pt-[env(safe-area-inset-top)] border-b border-ink-800/50 bg-gradient-to-b from-ink-950/90 to-ink-950/65 shadow-[0_8px_24px_-16px_rgb(0_0_0/0.9)] backdrop-blur-2xl backdrop-saturate-150 before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/8">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+        {/*
+          The glass is its own layer rather than the header's own background,
+          purely so it can fade.
+
+          Animating `backdrop-filter` from none to 2xl is not something browsers
+          interpolate usefully — it snaps, and on Safari it flickers the whole
+          bar. Cross-fading the opacity of a layer that already *has* the blur
+          sidesteps that entirely: at zero it is not painted at all, so the top
+          of the page is genuinely transparent rather than a very faint pane, and
+          there is no blur cost while it is invisible.
+
+          `inset-0` covers the safe-area padding too, so on an installed phone
+          app the glass still reaches up behind the status bar once it appears.
+        */}
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute inset-0 border-b border-ink-800/50 bg-gradient-to-b from-ink-950/90 to-ink-950/65 shadow-[0_8px_24px_-16px_rgb(0_0_0/0.9)] backdrop-blur-2xl backdrop-saturate-150 transition-opacity duration-300 ease-out before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-white/8 ${
+            scrolled ? "opacity-100" : "opacity-0"
+          }`}
+        />
+
+        {/* Above the glass layer, which is absolutely positioned behind it. */}
+        <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" className="group flex items-center gap-2.5 font-semibold tracking-tight">
             {/* Explicitly white, not `text-ink-950`: the ink ramp inverts in
                 light mode, so that one drew a near-black T in the dark and a

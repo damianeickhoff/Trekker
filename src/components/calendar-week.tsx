@@ -97,16 +97,32 @@ export function CalendarWeek({
         </div>
       </div>
 
+      {/*
+        A floor under the week, so a quiet one does not drag the page up.
+
+        Everything below this — the swipe hint, and on a phone the gap down to
+        the tab bar — sits wherever the week's content ends. Step from a full
+        week to an empty one and that was a few hundred pixels of travel, which
+        reads as the furniture moving rather than the content changing. Measured
+        against the viewport rather than in rems because what matters is that the
+        page still fills the screen, and that is what a screen's worth is.
+      */}
       <div
         key={weekStart}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className={`transition-opacity duration-200 ${pending ? "opacity-0" : "opacity-100"}`}
+        className={`flex min-h-[62vh] flex-col transition-opacity duration-200 ${
+          pending ? "opacity-0" : "opacity-100"
+        }`}
       >
         {children}
-      </div>
 
-      <p className="mt-3 text-center text-xs text-ink-500 sm:hidden">Swipe to change week</p>
+        {/* Pushed to the bottom of that floor, so it lands in the same place
+            whether the week holds eleven things or none. */}
+        <p className="mt-auto pt-6 text-center text-xs text-ink-500 sm:hidden">
+          Swipe to change week
+        </p>
+      </div>
     </>
   );
 }

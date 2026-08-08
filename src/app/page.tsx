@@ -305,7 +305,7 @@ function PosterTile({
             src={src}
             alt=""
             fill
-            sizes="160px"
+            sizes="(min-width: 640px) 184px, 152px"
             className="object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (

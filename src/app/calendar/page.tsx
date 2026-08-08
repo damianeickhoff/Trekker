@@ -134,9 +134,10 @@ export default async function CalendarPage({
             The floor stops a quiet week collapsing the page to the height of
             the day strip. Without it, stepping from a busy week to an empty one
             pulls everything below it hundreds of pixels up the screen, and the
-            week you were reading appears to jump. A minimum means the frame
-            stays put and only its contents change. */}
-        <div className="mt-4 min-h-[26rem] sm:rounded-2xl sm:border sm:border-ink-800/80 sm:bg-ink-900/30 sm:p-6">
+            week you were reading appears to jump. The floor that actually holds
+            the page up is on the wrapper in `CalendarWeek`; this one just keeps
+            the panel itself from collapsing to the height of the day strip. */}
+        <div className="mt-4 min-h-[22rem] sm:rounded-2xl sm:border sm:border-ink-800/80 sm:bg-ink-900/30 sm:p-6">
           <WeekStrip days={days} today={today} byDate={byDate} />
 
           {entries.length === 0 ? (

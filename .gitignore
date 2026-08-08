@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the template, which exists to be shared. It carries the only
+# instructions for generating AUTH_SECRET, and the server now refuses to start
+# without a real one — so an unshipped example is a deployment that cannot boot
+# and cannot find out why.
+!.env.example
 
 # vercel
 .vercel

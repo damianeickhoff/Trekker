@@ -242,7 +242,7 @@ export function MediaCard({
             src={src}
             alt=""
             fill
-            sizes="(max-width: 640px) 40vw, 180px"
+            sizes="(max-width: 640px) 45vw, 184px"
             className="object-cover md:transition md:duration-500 md:group-hover:scale-105"
           />
         ) : (
