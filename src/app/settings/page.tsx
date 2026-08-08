@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { CreditCard, LogOut, Server, Trophy, Users } from "lucide-react";
+import { CreditCard, Globe2, LogOut, Server, Trophy, Users } from "lucide-react";
 import { getAdmin } from "@/lib/admin";
 import { listAccounts } from "@/lib/admin-actions";
 import { getCurrentUser } from "@/lib/auth";
@@ -26,7 +26,9 @@ import { AdminAccounts } from "@/components/admin-accounts";
 import { AdminBadges } from "@/components/admin-badges";
 import { NotificationsSection } from "@/components/notifications-section";
 import { ProviderPicker } from "@/components/provider-picker";
+import { RegionPicker } from "@/components/region-picker";
 import { KNOWN_PROVIDERS, parseProviders } from "@/lib/providers";
+import { watchRegion } from "@/lib/region";
 import type { Theme } from "@/components/theme";
 import { isPlaceholderEmail } from "@/lib/plex-seat";
 import { publicKey } from "@/lib/push";
@@ -57,6 +59,7 @@ export default async function SettingsPage() {
       theme: true,
       accent: true,
       providers: true,
+      region: true,
       screensaverIdle: true,
       screensaverSource: true,
       screensaverPlace: true,
@@ -127,6 +130,17 @@ export default async function SettingsPage() {
         >
           <div className="mt-4">
             <ProviderPicker all={KNOWN_PROVIDERS} initial={subscriptions} />
+          </div>
+        </SettingsCard>
+        <SettingsCard
+          title="Your region"
+          description="Which country's streaming availability you see. Follows the instance unless your catalogue genuinely is another country's."
+          icon={<Globe2 size={16} />}
+          active={Boolean(account?.region)}
+          summary={account?.region ?? `${watchRegion()} — instance default`}
+        >
+          <div className="mt-4">
+            <RegionPicker current={account?.region ?? null} instanceRegion={watchRegion()} />
           </div>
         </SettingsCard>
         <NotificationsSection publicKey={publicKey()} />

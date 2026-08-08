@@ -148,6 +148,8 @@ export async function getShowcase(userId: string): Promise<Showcase> {
       screensaverPlace: true,
       screensaverLat: true,
       screensaverLon: true,
+      // Only for the thermometer's unit — their own region decides °C or °F.
+      region: true,
     },
   });
 
@@ -157,9 +159,12 @@ export async function getShowcase(userId: string): Promise<Showcase> {
   const [slides, weather] = await Promise.all([
     buildSlides(source, userId),
     account?.screensaverPlace && account.screensaverLat !== null && account.screensaverLon !== null
-      ? getWeather(account.screensaverLat, account.screensaverLon, account.screensaverPlace).catch(
-          () => null,
-        )
+      ? getWeather(
+          account.screensaverLat,
+          account.screensaverLon,
+          account.screensaverPlace,
+          account.region ?? undefined,
+        ).catch(() => null)
       : null,
   ]);
 

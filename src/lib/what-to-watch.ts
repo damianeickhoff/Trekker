@@ -2,7 +2,7 @@ import "server-only";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
 import { expandProviders, getUserProviders, KNOWN_PROVIDERS } from "./providers";
-import { watchRegion } from "./region";
+import { regionForUser } from "./region";
 import { getWatchStatuses } from "./stats";
 import { shuffle } from "./tonight";
 import {
@@ -165,13 +165,14 @@ export async function findPicks(
 
   if (!audience || !vibe || !kind || !time || !tmdbConfigured()) return nothing;
 
-  const [subscribed, watchlist, statuses] = await Promise.all([
+  const [subscribed, watchlist, statuses, region] = await Promise.all([
     getUserProviders(userId),
     db.watchlistItem.findMany({
       where: { userId },
       select: { mediaType: true, tmdbId: true },
     }),
     getWatchStatuses(userId).catch(() => new Map<string, WatchStatus>()),
+    regionForUser(userId),
   ]);
 
   const onWatchlist = new Set(
@@ -182,7 +183,7 @@ export async function findPicks(
   const wanted: MediaType[] =
     kind.value === "both" ? ["movie", "tv"] : [kind.value === "tv" ? "tv" : "movie"];
 
-  const query = { wanted, audience, vibe, time, providerIds };
+  const query = { wanted, audience, vibe, time, providerIds, region };
 
   let pool = await gather({ ...query, loose: false });
 
@@ -261,9 +262,7 @@ export async function findPicks(
       const [runtime, offers] = await Promise.all([
         getRuntime(entry.item.mediaType, entry.item.id).catch(() => null),
         providerIds.length > 0
-          ? getWatchProviders(entry.item.mediaType, entry.item.id, watchRegion()).catch(
-              () => null,
-            )
+          ? getWatchProviders(entry.item.mediaType, entry.item.id, region).catch(() => null)
           : Promise.resolve(null),
       ]);
 
@@ -336,6 +335,7 @@ async function gather({
   vibe,
   time,
   providerIds,
+  region,
   loose,
 }: {
   wanted: MediaType[];
@@ -343,6 +343,7 @@ async function gather({
   vibe: Vibe;
   time: TimeChoice;
   providerIds: number[];
+  region: string;
   /** Drops the length limit, the era and the quality floor. Never the genre. */
   loose: boolean;
 }): Promise<Gathered> {
@@ -376,6 +377,7 @@ async function gather({
           time,
           loose,
           providers: request.restricted ? providerIds : [],
+          region,
         }),
         request.kind,
         request.page,
@@ -420,6 +422,7 @@ function discoverPath({
   time,
   loose,
   providers,
+  region,
 }: {
   kind: MediaType;
   pool: Pool;
@@ -428,6 +431,7 @@ function discoverPath({
   time: TimeChoice;
   loose: boolean;
   providers: number[];
+  region: string;
 }): string {
   const params = new URLSearchParams();
   const recipe: Recipe = kind === "movie" ? vibe.movie : vibe.tv;
@@ -499,7 +503,7 @@ function discoverPath({
 
   if (providers.length > 0) {
     params.set("with_watch_providers", providers.join("|"));
-    params.set("watch_region", watchRegion());
+    params.set("watch_region", region);
   }
 
   return `/discover/${kind}?${params.toString()}`;

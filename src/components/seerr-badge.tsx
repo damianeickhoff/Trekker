@@ -1,5 +1,5 @@
 import { expandProviders, getUserProviders } from "@/lib/providers";
-import { watchRegion } from "@/lib/region";
+import { regionForUser } from "@/lib/region";
 import { hasPlexAccess } from "@/lib/plex-access";
 import { getSeerrConnection, getSeerrState } from "@/lib/seerr";
 import { getWatchProviders } from "@/lib/tmdb";
@@ -67,7 +67,8 @@ async function subscribedProviders(
   const mine = await getUserProviders(userId);
   if (mine.length === 0) return [];
 
-  const offers = await getWatchProviders(mediaType, tmdbId, watchRegion()).catch(() => null);
+  const region = await regionForUser(userId);
+  const offers = await getWatchProviders(mediaType, tmdbId, region).catch(() => null);
   if (!offers) return [];
 
   // Every id that counts as the same subscription, not just the one that was

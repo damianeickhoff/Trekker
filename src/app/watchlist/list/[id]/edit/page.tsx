@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { KNOWN_PROVIDERS } from "@/lib/providers";
-import { watchRegion } from "@/lib/region";
+import { regionForUser } from "@/lib/region";
 import { certificationsFor, parseFilters } from "@/lib/smart-filters";
 import { SmartListEditor } from "@/components/smart-list-editor";
 import { requestCap } from "@/lib/auto-request-limits";
@@ -31,7 +31,7 @@ export default async function EditSmartListPage({ params }: { params: Promise<Pa
   });
   if (!list) notFound();
 
-  const region = watchRegion();
+  const region = await regionForUser(user.id);
 
   // Whether asking Overseerr for anything is even possible on this instance.
   const seerrConnected = Boolean(await getSeerrConnection());

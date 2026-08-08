@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { findOnPlex, getPlexConnection } from "@/lib/plex";
 import { getWatchProviders, img, type MediaType, type WatchProvider } from "@/lib/tmdb";
-import { watchRegion } from "@/lib/region";
+import { regionForUser } from "@/lib/region";
 import { PlexOpen } from "./plex-open";
 
 /**
@@ -37,7 +37,7 @@ export async function StreamingStrip({
   year: string | null;
 }) {
   const [offers, plex] = await Promise.all([
-    getWatchProviders(mediaType, tmdbId, watchRegion()),
+    regionForUser(userId).then((region) => getWatchProviders(mediaType, tmdbId, region)),
     findPlex(userId, mediaType, title, year),
   ]);
 

@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "./db";
 import { findGenre } from "./genres";
 import { expandProviders } from "./providers";
-import { watchRegion } from "./region";
+import { regionForUser, watchRegion } from "./region";
 import {
   TV_STATUS_CODES,
   runtimeBounds,
@@ -114,7 +114,11 @@ export function genresWithoutTv(filters: SmartFilters): string[] {
  * The discover query for one medium, as a path `catalogue()` can take. Null
  * when this medium is not part of the answer.
  */
-function discoverPath(filters: SmartFilters, mediaType: MediaType): string | null {
+function discoverPath(
+  filters: SmartFilters,
+  mediaType: MediaType,
+  region: string = watchRegion(),
+): string | null {
   if (!mediumApplies(filters, mediaType)) return null;
 
   const isMovie = mediaType === "movie";
@@ -174,13 +178,13 @@ function discoverPath(filters: SmartFilters, mediaType: MediaType): string | nul
     if (ids.length > 0) {
       // An OR, and only meaningful alongside a region — same as the discover bar.
       params.set("with_watch_providers", ids.join("|"));
-      params.set("watch_region", watchRegion());
+      params.set("watch_region", region);
     }
   }
 
   // -- Age rating. TMDB carries these for films only -------------------------
   if (isMovie && filters.certifications.length > 0) {
-    params.set("certification_country", watchRegion());
+    params.set("certification_country", region);
     params.set("certification", filters.certifications.join("|"));
   }
 
@@ -232,7 +236,12 @@ export function describeQuery(filters: SmartFilters): string[] {
 }
 
 /** Sets of what the viewer has already seen and already put somewhere. */
-export type ViewerState = { watched: Set<string>; saved: Set<string> };
+export type ViewerState = {
+  watched: Set<string>;
+  saved: Set<string>;
+  /** Their streaming region. Absent falls back to the instance's. */
+  region?: string;
+};
 
 /**
  * The two things `exclude` needs, as plain id sets.
@@ -246,7 +255,7 @@ export type ViewerState = { watched: Set<string>; saved: Set<string> };
  * sitting on a list the user made themselves is very much dealt with.
  */
 export async function getViewerState(userId: string): Promise<ViewerState> {
-  const [movies, shows, watchlist, favourites, listed] = await Promise.all([
+  const [movies, shows, watchlist, favourites, listed, region] = await Promise.all([
     db.watchedMovie.findMany({ where: { userId }, select: { movieId: true } }),
     db.watchedEpisode.findMany({
       where: { userId },
@@ -259,6 +268,7 @@ export async function getViewerState(userId: string): Promise<ViewerState> {
       where: { list: { userId, kind: "manual" } },
       select: { mediaType: true, tmdbId: true },
     }),
+    regionForUser(userId),
   ]);
 
   const watched = new Set<string>();
@@ -270,7 +280,7 @@ export async function getViewerState(userId: string): Promise<ViewerState> {
     saved.add(`${row.mediaType}-${row.tmdbId}`);
   }
 
-  return { watched, saved };
+  return { watched, saved, region };
 }
 
 /**
@@ -357,7 +367,7 @@ export async function runSmartList(
   }
 
   const paths = (["movie", "tv"] as const)
-    .map((mediaType) => ({ mediaType, path: discoverPath(filters, mediaType) }))
+    .map((mediaType) => ({ mediaType, path: discoverPath(filters, mediaType, viewer.region) }))
     .filter((entry): entry is { mediaType: MediaType; path: string } => entry.path !== null);
 
   if (paths.length === 0) return [];

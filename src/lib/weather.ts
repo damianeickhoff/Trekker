@@ -55,16 +55,16 @@ export type Weather = {
 /**
  * Which unit to ask for.
  *
- * Taken from `WATCH_REGION`, which the instance already sets to say whose
- * streaming catalogue to show — a second question about where this thing is
- * installed would be a second question with the same answer. The list is every
+ * Taken from the viewer's region — their own setting where they made one,
+ * `WATCH_REGION` otherwise — because a second question about where this person
+ * is would be a second question with the same answer. The list is every
  * country that still reports the weather in Fahrenheit; everywhere else, and an
  * unset region, gets Celsius.
  */
 const FAHRENHEIT = new Set(["US", "BS", "BZ", "KY", "PW", "FM", "MH"]);
 
-function unit(): "C" | "F" {
-  return FAHRENHEIT.has(watchRegion()) ? "F" : "C";
+function unit(region: string = watchRegion()): "C" | "F" {
+  return FAHRENHEIT.has(region) ? "F" : "C";
 }
 
 /**
@@ -131,8 +131,9 @@ export async function getWeather(
   latitude: number,
   longitude: number,
   place: string,
+  region?: string,
 ): Promise<Weather | null> {
-  const scale = unit();
+  const scale = unit(region);
 
   const url = new URL(FORECAST);
   url.searchParams.set("latitude", latitude.toFixed(4));

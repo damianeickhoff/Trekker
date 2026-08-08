@@ -1,7 +1,7 @@
 import "server-only";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
-import { watchRegion } from "./region";
+import { regionForUser } from "./region";
 import { getRuntime, getWatchProviders, tmdbConfigured } from "./tmdb";
 
 /**
@@ -38,7 +38,7 @@ export async function getWatchlist(userId: string): Promise<WatchlistRow[]> {
     orderBy: { addedAt: "desc" },
   });
 
-  const enriched = await enrich(rows);
+  const enriched = await enrich(rows, userId);
 
   return enriched.map((row) => ({
     id: row.id,
@@ -71,7 +71,7 @@ type Row = {
  * watchlist therefore fills in over a few visits instead of holding the first
  * one open for a hundred round trips.
  */
-async function enrich<T extends Row>(rows: T[]): Promise<T[]> {
+async function enrich<T extends Row>(rows: T[], userId: string): Promise<T[]> {
   if (!tmdbConfigured()) return rows;
 
   const cutoff = Date.now() - STALE_AFTER;
@@ -91,7 +91,7 @@ async function enrich<T extends Row>(rows: T[]): Promise<T[]> {
 
   if (stale.length === 0) return rows;
 
-  const region = watchRegion();
+  const region = await regionForUser(userId);
 
   const results = await mapLimit(stale, FANOUT, async (row) => {
     const mediaType = row.mediaType === "tv" ? ("tv" as const) : ("movie" as const);

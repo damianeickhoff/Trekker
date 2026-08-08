@@ -413,7 +413,7 @@ const SORTS: Record<DiscoverFilters["sort"], Record<MediaType, string>> = {
   newest: { movie: "primary_release_date.desc", tv: "first_air_date.desc" },
 };
 
-export function buildDiscoverPath(filters: DiscoverFilters): string {
+export function buildDiscoverPath(filters: DiscoverFilters, region: string = watchRegion()): string {
   const params = new URLSearchParams();
   const isMovie = filters.kind === "movie";
 
@@ -442,7 +442,7 @@ export function buildDiscoverPath(filters: DiscoverFilters): string {
     // `with_watch_providers` is only meaningful alongside a region, and it is
     // an OR — any one of them will do, which is what "on my services" means.
     params.set("with_watch_providers", filters.providers.join("|"));
-    params.set("watch_region", watchRegion());
+    params.set("watch_region", region);
   }
 
   return `/discover/${filters.kind}?${params.toString()}`;
@@ -476,8 +476,12 @@ export function parseDiscoverFilters(search: Record<string, string | undefined>)
   };
 }
 
-export function fetchDiscover(filters: DiscoverFilters, page = 1): Promise<PagedItems> {
-  return catalogue(buildDiscoverPath(filters), filters.kind, page);
+export function fetchDiscover(
+  filters: DiscoverFilters,
+  page = 1,
+  region?: string,
+): Promise<PagedItems> {
+  return catalogue(buildDiscoverPath(filters, region), filters.kind, page);
 }
 
 /** Backdrops for the sign-in slideshow. Fails soft: no key, no slideshow. */

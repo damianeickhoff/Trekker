@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { KNOWN_PROVIDERS } from "@/lib/providers";
-import { watchRegion } from "@/lib/region";
+import { regionForUser } from "@/lib/region";
 import { certificationsFor, DEFAULT_FILTERS } from "@/lib/smart-filters";
 import { SmartListEditor } from "@/components/smart-list-editor";
 import { SetupNotice } from "@/components/ui";
@@ -15,7 +15,7 @@ export default async function NewSmartListPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const region = watchRegion();
+  const region = await regionForUser(user.id);
 
   return (
     <div className="rise">

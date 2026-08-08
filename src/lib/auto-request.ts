@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "./db";
 import { mapLimit } from "./concurrency";
 import { getUserProviders, expandProviders } from "./providers";
-import { watchRegion } from "./region";
+import { regionForUser } from "./region";
 import { getSeerrConnection, getSeerrStatuses, requestOnSeerr } from "./seerr";
 import { getWatchProviders } from "./tmdb";
 // Shared with the client panel that offers the setting — see the note there.
@@ -98,7 +98,7 @@ export async function autoRequestForList(listId: string): Promise<AutoRequestRes
     const mine = expandProviders(await getUserProviders(list.userId));
 
     if (mine.size > 0) {
-      const region = watchRegion();
+      const region = await regionForUser(list.userId);
       const checked = await mapLimit(candidates, FANOUT, async (item) => {
         const offers = await getWatchProviders(
           item.mediaType === "movie" ? "movie" : "tv",

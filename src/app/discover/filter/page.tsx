@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { fetchDiscover, parseDiscoverFilters } from "@/lib/catalogue";
 import { expandProviders, getUserProviders } from "@/lib/providers";
+import { regionForUser } from "@/lib/region";
 import { getRequestMarks } from "@/lib/request-marks";
 import { getWatchStatuses } from "@/lib/stats";
 import { tmdbConfigured } from "@/lib/tmdb";
@@ -52,7 +53,11 @@ export default async function DiscoverFilterPage({
   const filters = parseDiscoverFilters(resolved);
 
   const [results, statuses, requests] = await Promise.all([
-    fetchDiscover(filters, page).catch(() => null),
+    // The viewer's own region, so "on my services" answers about their
+    // catalogue — the one case on this page where the country matters.
+    regionForUser(user?.id).then((region) =>
+      fetchDiscover(filters, page, region).catch(() => null),
+    ),
     user ? getWatchStatuses(user.id) : Promise.resolve(undefined),
     // The category and genre grids do not mark requests; this one does, since
     // it is the page most likely to turn up something you have not got.

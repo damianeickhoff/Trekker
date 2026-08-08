@@ -787,6 +787,15 @@ as TMDB provider ids. When a title is already streaming on one of them, pressing
 **Request** asks first rather than quietly filing a download for something you
 could watch tonight. Nothing selected means no warnings.
 
+**Settings → Your region** sits beside it: which country's catalogue all of
+that is answered from. `WATCH_REGION` remains the instance-wide default and the
+right answer for a household in one country; the per-account setting exists for
+the housemate whose catalogue genuinely is another country's. It reaches
+everything availability touches — the streaming strip on title pages, the
+watchlist's **Streaming now**, smart lists filtered by service, the quiz's
+"on your services", the request warnings, what auto-request treats as already
+covered, and even whether the screensaver's thermometer reads °C or °F.
+
 ## Giving up on a show
 
 **Stop watching**, in a show's overflow menu, keeps everything you have watched

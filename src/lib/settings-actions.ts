@@ -94,6 +94,30 @@ export async function removeAvatar() {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Which country's streaming catalogue this person sees. Empty means "follow
+ * the instance", stored as null — one meaning, one representation.
+ */
+export async function saveRegion(
+  _prev: SettingsState,
+  formData: FormData,
+): Promise<SettingsState> {
+  const user = await requireUser();
+
+  const raw = String(formData.get("region") ?? "").trim().toUpperCase();
+  if (raw && !/^[A-Z]{2}$/.test(raw)) {
+    return { error: "A region is a two-letter country code, like NL or US" };
+  }
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { region: raw || null },
+  });
+
+  revalidatePath("/", "layout");
+  return { ok: raw ? `Streaming availability now follows ${raw}` : "Following the instance's region" };
+}
+
 export async function saveSeerrSettings(
   _prev: SettingsState,
   formData: FormData,

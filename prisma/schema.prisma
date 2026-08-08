@@ -37,6 +37,12 @@ model User {
   /// separated. Used to warn before requesting something they can already watch.
   providers String?
 
+  /// Which country's streaming availability this person sees, as an ISO 3166-1
+  /// code. Null means the instance's WATCH_REGION — the right answer for a
+  /// household in one country, which is most of them. Set per account for the
+  /// housemate living abroad, whose catalogue is genuinely different.
+  region String?
+
   /// Backdrop shown behind the profile header, chosen from a title page.
   coverBackdrop String?
   coverTitle    String?
