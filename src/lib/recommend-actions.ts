@@ -6,6 +6,7 @@ import { requireUser } from "./auth";
 import { avatarUrl } from "./avatar";
 import { db } from "./db";
 import { getFriendIds } from "./friends";
+import { sendToUser } from "./push";
 
 /**
  * Handing a title to somebody.
@@ -102,6 +103,19 @@ export async function recommendTitle(raw: unknown): Promise<RecommendState> {
       dismissedAt: null,
     },
   });
+
+  /**
+   * Pushed as well as belled, with the sender's own words where there are any —
+   * they are the reason to pay attention. The tag matches the upsert's unique
+   * key, so recommending the same title again updates the tray entry the way
+   * it updates the row. Failures are the push service's business.
+   */
+  await sendToUser(toUserId, {
+    title: `${user.name} recommends ${title}`,
+    body: note?.trim() || "Tap to see what it is.",
+    url: `/title/${mediaType}/${tmdbId}`,
+    tag: `rec:${user.id}:${mediaType}:${tmdbId}`,
+  }).catch(() => undefined);
 
   // The recipient's bell is rendered in the layout, so the whole tree.
   revalidatePath("/", "layout");

@@ -691,7 +691,11 @@ here.
 ## Notifications
 
 Optional. One push a day listing what is airing or releasing today from the
-shows you watch and the things on your list.
+shows you watch and the things on your list — plus a push the moment a friend
+request or a recommendation arrives, since either can otherwise sit unseen for
+days on an instance nobody opens daily. The social pushes use the same wording
+as the bell, so the two read as one event, and failures never surface in the
+sender's button.
 
 Generate a VAPID key pair once with `npx web-push generate-vapid-keys`, set
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`, then

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "./auth";
 import { db } from "./db";
+import { sendToUser } from "./push";
 
 export type FriendActionState = { error?: string; ok?: string };
 
@@ -44,6 +45,20 @@ export async function sendFriendRequest(targetId: string): Promise<FriendActionS
   await db.friendship.create({
     data: { requesterId: user.id, addresseeId: targetId, status: "pending" },
   });
+
+  /**
+   * The same news the bell carries, pushed to the devices that asked for push —
+   * a request can otherwise sit unseen for days on an instance nobody opens
+   * daily. Same wording as the bell, so the two read as one event; tagged per
+   * requester, so asking again replaces the tray entry rather than stacking it.
+   * Failures are the push service's business, never the button's.
+   */
+  await sendToUser(targetId, {
+    title: `${user.name} wants to be friends`,
+    body: "Accept to compare what you have both been watching.",
+    url: "/friends",
+    tag: `friend-request:${user.id}`,
+  }).catch(() => undefined);
 
   refresh();
   return { ok: "Request sent" };
