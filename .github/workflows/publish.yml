@@ -1,0 +1,77 @@
+# Builds the image and pushes it to GHCR.
+#
+# The Unraid template pulls `ghcr.io/damianeickhoff/trekker`, and until now the
+# only thing that ever put anything there was somebody running `docker build`
+# and `docker push` by hand — so a merge produced no image and the box had
+# nothing new to pull. This closes that gap.
+#
+# No secrets to configure: `GITHUB_TOKEN` can write to this repository's own
+# packages, which is what `packages: write` below grants it.
+
+name: Publish the image
+
+on:
+  push:
+    # Every branch, not just the default one. A branch build is tagged with the
+    # branch name and never touches `latest`, which makes it a way to try a
+    # change on the real box before it is merged.
+    branches: ["**"]
+    tags: ["v*"]
+    # Nothing under these reaches the image, and a build takes minutes. This
+    # file is deliberately not among them: an edit to it should prove itself.
+    paths-ignore:
+      - "**.md"
+      - "unraid/**"
+  workflow_dispatch:
+
+# A second push to the same branch makes the build in flight pointless. Tags are
+# excluded from the cancelling — a release build should finish.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Lowercased for us, which matters: GHCR rejects a capital letter and
+          # the repository name has one.
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Unraid is x86, and the runtime stage strips sharp's non-musl-x64
+          # binaries on the assumption that it is — see the Dockerfile. Building
+          # arm64 as well would need that assumption lifted first.
+          platforms: linux/amd64
+          # better-sqlite3 is compiled from source in the deps stage, which is
+          # most of the build time and changes only with the lockfile.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
