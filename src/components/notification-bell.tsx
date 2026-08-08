@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bell, Check, Target, Trophy, UserPlus } from "lucide-react";
+import { Bell, Check, CloudDownload, Target, Trophy, UserPlus } from "lucide-react";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -206,7 +206,9 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
                       ? UserPlus
                       : item.kind === "challenge"
                         ? Target
-                        : Trophy;
+                        : item.kind === "auto-request"
+                          ? CloudDownload
+                          : Trophy;
 
                   return (
                     <li key={item.key} className="flex items-start gap-2.5 px-3 py-2.5">

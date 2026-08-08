@@ -139,7 +139,16 @@ export async function autoRequestForList(listId: string): Promise<AutoRequestRes
   if (requested.length > 0) {
     await db.mediaList.update({
       where: { id: list.id },
-      data: { autoRequestedAt: new Date() },
+      data: {
+        autoRequestedAt: new Date(),
+        autoRequestedCount: requested.length,
+        // The first few names, for the bell to print. Three is enough to say
+        // what happened; the list page has the rest.
+        autoRequestedTitles: requested
+          .slice(0, 3)
+          .map((item) => item.title)
+          .join(", "),
+      },
     });
   }
 

@@ -26,7 +26,8 @@ export type NotificationKind =
   | "friend-request"
   | "achievement"
   | "challenge"
-  | "recommendation";
+  | "recommendation"
+  | "auto-request";
 
 export type NotificationItem = {
   /** Stable across reloads: what "mark as read" is recorded against. */
@@ -62,7 +63,7 @@ export const getNotifications = cache(async function getNotifications(
   const now = new Date();
   const period = periodKey(now);
 
-  const [requests, unlocked, wins, recommendations, readRows] = await Promise.all([
+  const [requests, unlocked, wins, recommendations, autoRequested, readRows] = await Promise.all([
     db.friendship.findMany({
       where: { addresseeId: userId, status: "pending" },
       select: {
@@ -99,6 +100,20 @@ export const getNotifications = cache(async function getNotifications(
         fromUser: { select: { name: true, avatarSetAt: true, id: true } },
       },
     }),
+    // Lists that filed Overseerr requests overnight. A feature that spends
+    // somebody's disk while they sleep must not be silent about having done
+    // so; the last run's outcome lives on the list row, so this is derived
+    // like everything else here.
+    db.mediaList.findMany({
+      where: { userId, kind: "smart", autoRequest: true, autoRequestedAt: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        autoRequestedAt: true,
+        autoRequestedCount: true,
+        autoRequestedTitles: true,
+      },
+    }),
     db.notificationRead.findMany({
       where: { userId },
       select: { key: true, dismissed: true },
@@ -124,6 +139,29 @@ export const getNotifications = cache(async function getNotifications(
       at: rec.createdAt,
       read: read.has(key) || rec.seenAt !== null,
       avatar: avatarUrl(rec.fromUser),
+    });
+  }
+
+  for (const list of autoRequested) {
+    if (!list.autoRequestedAt || list.autoRequestedCount === 0) continue;
+
+    // The moment is part of the key, as with badges: each run is its own piece
+    // of news, and dismissing last night's must not swallow tonight's.
+    const key = `autorequest:${list.id}:${list.autoRequestedAt.getTime()}`;
+    if (dismissed.has(key)) continue;
+
+    const count = list.autoRequestedCount;
+    items.push({
+      key,
+      kind: "auto-request",
+      title: `${list.name} requested ${count} ${count === 1 ? "title" : "titles"}`,
+      body: list.autoRequestedTitles
+        ? `Asked Overseerr for ${list.autoRequestedTitles}${count > 3 ? " and more" : ""}.`
+        : "Asked Overseerr on the list's behalf.",
+      href: `/watchlist/list/${list.id}`,
+      at: list.autoRequestedAt,
+      read: read.has(key),
+      icon: "cloud-download",
     });
   }
 

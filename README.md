@@ -669,6 +669,25 @@ Lists are rebuilt one at a time rather than all at once: each is already several
 TMDB requests deep, and firing thirty in parallel is how you get rate limited
 into an empty list.
 
+### Requesting what a list finds
+
+A smart list can ask Overseerr for what it finds, without being told to — the
+last section of the list's editor, off by default and opted into per list,
+because a standing question that files requests on its own is the one feature
+here that spends somebody else's disk. Each run is capped (five by default,
+twenty at most, clamped in code as well as in the form), skips anything
+Overseerr already knows about, and by default skips anything already streaming
+on a service the user pays for — the point is to fill gaps, not to duplicate a
+subscription. **Try it now** in the editor runs one pass immediately, because a
+setting you cannot try is a setting nobody trusts.
+
+It runs from the nightly `/api/lists/refresh` job and nowhere else — a page
+load must never be the thing that files twenty requests — after the rebuild, so
+a run asks for what the list says today. The morning after a run files
+anything, the bell says so: which list, how many, and the first few titles,
+derived from the outcome stamped on the list row like every other notification
+here.
+
 ## Notifications
 
 Optional. One push a day listing what is airing or releasing today from the

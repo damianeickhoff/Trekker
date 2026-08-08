@@ -428,6 +428,11 @@ model MediaList {
   autoRequestCap Int @default(5)
   /// When a run last filed anything, for the panel to report.
   autoRequestedAt DateTime?
+  /// What that run filed: how many, and the first few titles, comma separated.
+  /// Denormalised like every list row, so the bell can say what happened
+  /// without asking Overseerr anything.
+  autoRequestedCount  Int     @default(0)
+  autoRequestedTitles String?
 
   items MediaListItem[]
 
