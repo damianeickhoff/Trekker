@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, RotateCcw, Trash2, Undo2 } from "lucide-react";
+import { Check, ChevronDown, Loader2, RotateCcw, Trash2, Undo2 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,6 +11,14 @@ import { useEffect, useRef, useState } from "react";
  * so this is a correction rather than a required step: it opens automatically,
  * offers the three answers people actually give, and closes itself if ignored.
  * Picking one overwrites the timestamp.
+ *
+ * "Watch again" works the same way round, and for the same reason — it logs the
+ * viewing now and then stays open on the dates, so a rewatch of something seen
+ * last Tuesday is two taps rather than a form. What it must never do is close
+ * silently: two viewings logged close together collapse into one by design, and
+ * a menu that vanished leaving the count where it was looked exactly like a
+ * broken button — which is what "it won't go past two" turned out to be. So a
+ * refusal is said out loud, in place of the question.
  */
 
 export type WatchedChoice = { label: string; date: Date };
@@ -48,8 +56,12 @@ export function WatchedDateMenu({
    * Logs another viewing. Present only for something already on record — and
    * kept in here rather than given a button of its own, so the action row on a
    * title page does not grow a fourth control for something done occasionally.
+   *
+   * Answers whether the viewing was actually written: the caller must not close
+   * this menu, which stays open on the dates so the new viewing can be moved to
+   * the day it belongs on.
    */
-  onWatchAgain?: () => void;
+  onWatchAgain?: () => Promise<{ created: boolean }>;
   /** Present when the thing is already logged, which is what offers "unwatch". */
   onUnwatch?: () => void;
   unwatchLabel?: string;
@@ -66,6 +78,15 @@ export function WatchedDateMenu({
 }) {
   const [picking, setPicking] = useState(false);
   const [draft, setDraft] = useState("");
+  /**
+   * What happened to a "Watch again" press, once there has been one.
+   *
+   * `logged` turns the menu into a date question about the viewing just added;
+   * `refused` says the log already holds one around now. Both keep the menu
+   * open, which is the whole point of tracking it.
+   */
+  const [again, setAgain] = useState<"logged" | "refused" | null>(null);
+  const [logging, setLogging] = useState(false);
   const [box, setBox] = useState<{ top: number; left: number } | null>(null);
   const anchor = useRef<HTMLSpanElement>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -107,7 +128,9 @@ export function WatchedDateMenu({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [picking, align, onUnwatch]);
+    // `again` is in here for the same reason `picking` is: it changes how tall
+    // the menu is, and a menu that flipped upward to fit must be re-measured.
+  }, [picking, again, align, onUnwatch]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -166,9 +189,23 @@ export function WatchedDateMenu({
        */
       className="ios-menu fixed z-[110] overflow-hidden rounded-2xl border border-ink-700/70 bg-ink-850/95 backdrop-blur-2xl"
     >
-      <p className="ios-bright border-b border-white/10 light:border-ink-800 px-3 py-2 text-[11px] text-ink-400">
-        {onUnwatch ? "When did you watch it?" : "Logged just now. Watched it earlier?"}
-      </p>
+      {again === "refused" ? (
+        // Said plainly, and in the place the question would have been: the log
+        // already holds a viewing around now, so nothing was added. Moving that
+        // one to the day it belongs on is what clears the way for this one.
+        <p className="ios-bright border-b border-amber-500/35 bg-amber-900/20 px-3 py-2 text-[11px] text-amber-300 light:bg-amber-300/50 light:text-amber-700">
+          Already logged a viewing around now, so this one was not added. Give
+          that one its real date first.
+        </p>
+      ) : (
+        <p className="ios-bright border-b border-white/10 light:border-ink-800 px-3 py-2 text-[11px] text-ink-400">
+          {again === "logged"
+            ? "Logged another viewing. Watched it on another day?"
+            : onUnwatch
+              ? "When did you watch it?"
+              : "Logged just now. Watched it earlier?"}
+        </p>
+      )}
 
       {picking ? (
         <div className="p-3">
@@ -230,8 +267,14 @@ export function WatchedDateMenu({
           {/* Logging another viewing is not a date correction, so it sits below
               the dates — and below is also where it belongs for safety, since
               this menu opens by itself the moment something is first marked
-              watched and the dates are what is wanted in that moment. */}
-          {onWatchAgain && (
+              watched and the dates are what is wanted in that moment.
+
+              It goes once a viewing has just been logged, along with the two
+              ways of taking one back: against something added a second ago all
+              three read ambiguously, and the dates above are now the only
+              question worth asking. A refusal leaves them, since nothing
+              changed. */}
+          {onWatchAgain && again !== "logged" && (
             // The same block the sign-out button uses at the foot of the avatar
             // menu — a tinted panel rather than a row — because this is not one
             // more date to pick, it is a decision of a different kind. Violet
@@ -239,10 +282,19 @@ export function WatchedDateMenu({
             <div className="border-t border-white/10 light:border-ink-800 p-2 pt-2">
               <button
                 type="button"
-                onClick={onWatchAgain}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-flare-500/40 bg-flare-500/15 px-3 py-2.5 text-sm font-semibold text-flare-300 transition hover:border-flare-500/70 hover:bg-flare-500/25"
+                disabled={logging}
+                onClick={async () => {
+                  setLogging(true);
+                  try {
+                    const { created } = await onWatchAgain();
+                    setAgain(created ? "logged" : "refused");
+                  } finally {
+                    setLogging(false);
+                  }
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-flare-500/40 bg-flare-500/15 px-3 py-2.5 text-sm font-semibold text-flare-300 transition hover:border-flare-500/70 hover:bg-flare-500/25 disabled:opacity-60"
               >
-                <RotateCcw size={15} />
+                {logging ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
                 Watch again
               </button>
             </div>
@@ -250,7 +302,7 @@ export function WatchedDateMenu({
 
           {/* Taking it back is a different kind of action, so it sits apart
               from the dates rather than among them. */}
-          {onUnwatch && (
+          {onUnwatch && again !== "logged" && (
             <div className="p-2 pt-0">
               <button
                 type="button"
@@ -263,7 +315,7 @@ export function WatchedDateMenu({
             </div>
           )}
 
-          {onUnwatchAll && (
+          {onUnwatchAll && again !== "logged" && (
             <div className="p-2 pt-0">
               <button
                 type="button"

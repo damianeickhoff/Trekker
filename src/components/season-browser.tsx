@@ -261,6 +261,12 @@ export function SeasonBrowser({
    */
   const [askWhen, setAskWhen] = useState<{ episode: number; existing: boolean } | null>(null);
   /**
+   * The viewing the open menu is talking about, once "Watch again" has added
+   * one. Null means the latest, which is what an ordinary date correction has
+   * always meant — and what dating a rewatch backwards stops this one being.
+   */
+  const [rewatchId, setRewatchId] = useState<string | null>(null);
+  /**
    * Which whole-season action is waiting to be confirmed.
    *
    * The controls are icons, which is what keeps the header from turning into a
@@ -420,6 +426,9 @@ export function SeasonBrowser({
     // where both the date and "unwatch" now live.
     if (watched.has(ep.episodeNumber)) {
       if (!prompt) return;
+      // A fresh open is a fresh question, about the latest viewing again rather
+      // than about whatever the last visit to this menu logged.
+      setRewatchId(null);
       setAskWhen(
         askWhen?.episode === ep.episodeNumber
           ? null
@@ -475,31 +484,38 @@ export function SeasonBrowser({
     });
   }
 
-  /** Logs another viewing of one episode, from inside the menu. */
-  function watchAgain(ep: Episode) {
-    setAskWhen(null);
-
-    startTransition(async () => {
-      const res = await logRewatch({
-        mediaType: "tv",
-        tmdbId: showId,
-        title: showName,
-        poster: showPoster,
-        seasonNumber: active,
-        episodeNumber: ep.episodeNumber,
-        episodeName: ep.name,
-        runtime: ep.runtime,
-      });
-
-      // Taken from the answer rather than incremented: watching the same
-      // episode twice within half an hour is one viewing reported twice, and
-      // the count must not claim otherwise.
-      setWatched(
-        watched,
-        { ...watchedAt, [ep.episodeNumber]: new Date(res.lastWatchedAt).toISOString() },
-        { ...plays, [ep.episodeNumber]: res.plays },
-      );
+  /**
+   * Logs another viewing of one episode, from inside the menu.
+   *
+   * The menu stays open on purpose and turns into a date question about the
+   * viewing this adds — hence the play's id going into state, so a correction
+   * moves *that* row rather than whichever is newest once it has been dated
+   * backwards. `created` goes back to the menu, which says so when the
+   * duplicate window swallowed the viewing.
+   */
+  async function watchAgain(ep: Episode) {
+    const res = await logRewatch({
+      mediaType: "tv",
+      tmdbId: showId,
+      title: showName,
+      poster: showPoster,
+      seasonNumber: active,
+      episodeNumber: ep.episodeNumber,
+      episodeName: ep.name,
+      runtime: ep.runtime,
     });
+
+    // Taken from the answer rather than incremented: watching the same
+    // episode twice within half an hour is one viewing reported twice, and
+    // the count must not claim otherwise.
+    setWatched(
+      watched,
+      { ...watchedAt, [ep.episodeNumber]: new Date(res.lastWatchedAt).toISOString() },
+      { ...plays, [ep.episodeNumber]: res.plays },
+    );
+    setRewatchId(res.playId);
+
+    return { created: res.created };
   }
 
   /**
@@ -621,6 +637,8 @@ export function SeasonBrowser({
         seasonNumber: active,
         episodeNumber,
         watchedAt: date.toISOString(),
+        // Undefined for an ordinary correction, which means "the latest viewing".
+        playId: rewatchId ?? undefined,
       });
 
       // The picked date is shown straight away, but on an episode watched more

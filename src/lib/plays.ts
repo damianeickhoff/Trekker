@@ -44,6 +44,13 @@ export type PlayInput = PlayTarget & {
 export type PlayResult = {
   /** False when the play was suppressed as a duplicate. */
   created: boolean;
+  /**
+   * The row just written, for a caller that wants to say something else about
+   * this viewing in particular — the date menu corrects the one it has just
+   * logged rather than whichever happens to be newest. Null when nothing was
+   * written, which includes both a suppressed duplicate and an adopted row.
+   */
+  playId: string | null;
   /** True when this was not the first viewing. */
   isRewatch: boolean;
   plays: number;
@@ -231,10 +238,11 @@ export async function recordPlay(userId: string, input: PlayInput): Promise<Play
     score: input.score,
   };
 
-  const state = async (created: boolean): Promise<PlayResult> => {
+  const state = async (created: boolean, playId: string | null = null): Promise<PlayResult> => {
     const current = await resync(db, userId, target, describe);
     return {
       created,
+      playId,
       isRewatch: (current?.plays ?? 0) > 1,
       plays: current?.plays ?? 0,
       firstWatchedAt: current?.firstWatchedAt ?? watchedAt,
@@ -319,7 +327,7 @@ export async function recordPlay(userId: string, input: PlayInput): Promise<Play
   });
   if (nearby) return state(false);
 
-  await db.play.create({
+  const play = await db.play.create({
     data: {
       userId,
       mediaType: target.mediaType,
@@ -334,9 +342,10 @@ export async function recordPlay(userId: string, input: PlayInput): Promise<Play
       source,
       sourceRef,
     },
+    select: { id: true },
   });
 
-  return state(true);
+  return state(true, play.id);
 }
 
 export type NewEpisodePlay = {

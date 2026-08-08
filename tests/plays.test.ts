@@ -240,6 +240,21 @@ describe("recordPlay — guard 4: the duplicate window", () => {
     expect(later.isRewatch).toBe(true);
   });
 
+  /**
+   * A suppressed viewing has no row to point at, and the date menu leans on
+   * that: it is what tells it to say "already logged around now" rather than
+   * offering to correct a date that was never written.
+   */
+  it("names the row it wrote, and names nothing when it wrote none", async () => {
+    const first = await recordPlay(userId, { ...film(), watchedAt: T0 });
+    expect(first.playId).toBeTruthy();
+    expect(await db.play.findUnique({ where: { id: first.playId! } })).not.toBeNull();
+
+    const near = await recordPlay(userId, { ...film(), watchedAt: at(hours(3)) });
+    expect(near.created).toBe(false);
+    expect(near.playId).toBeNull();
+  });
+
   it("uses a tighter window for episodes", async () => {
     await recordPlay(userId, { ...episode(1), watchedAt: T0 });
 
@@ -390,6 +405,38 @@ describe("setPlayDate", () => {
 
     expect(moved.ok).toBe(true);
     expect(moved.lastWatchedAt).toEqual(T0);
+  });
+
+  /**
+   * The date menu's whole reason for holding on to an id. It logs a rewatch at
+   * the current time and then offers to move it — and moving it behind an
+   * earlier viewing is exactly what stops "the newest one" meaning it.
+   */
+  it("moves the viewing it is given rather than the newest one", async () => {
+    const first = await recordPlay(userId, { ...film(), watchedAt: T0 });
+    const second = await recordPlay(userId, { ...film(), watchedAt: at(hours(50)) });
+
+    // Dated back behind the first, which makes the first the newest.
+    await setPlayDate(
+      userId,
+      { mediaType: "movie", tmdbId: 550 },
+      at(-hours(50)),
+      second.playId!,
+    );
+
+    // Naming it again still reaches the same row, where "newest" would now
+    // reach the other one and silently correct the wrong viewing.
+    const again = await setPlayDate(
+      userId,
+      { mediaType: "movie", tmdbId: 550 },
+      at(-hours(100)),
+      second.playId!,
+    );
+
+    expect(again.ok).toBe(true);
+    expect(again.lastWatchedAt).toEqual(T0);
+    const untouched = await db.play.findFirstOrThrow({ where: { id: first.playId! } });
+    expect(untouched.watchedAt).toEqual(T0);
   });
 
   it("repairs a watched row that has no play behind it", async () => {
