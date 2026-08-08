@@ -39,50 +39,87 @@ export async function getMostWatched(
   limit = 5,
   range?: Range,
 ): Promise<MostWatched[]> {
-  const plays = await db.play.findMany({
-    where: { userId, ...(range ? rangeFilter(range) : {}) },
-    select: {
-      mediaType: true,
-      tmdbId: true,
-      title: true,
-      poster: true,
-      runtime: true,
-      watchedAt: true,
-    },
+  const where = { userId, ...(range ? rangeFilter(range) : {}) };
+
+  /**
+   * Counted in SQL rather than folded here.
+   *
+   * This used to read every play the account had, carrying a title and a poster
+   * on each, to answer with five rows — so the cost of the podium was the size
+   * of the whole log, and an account that rewatches paid it several times over.
+   * The counting is what the database is for; only the winners need describing.
+   */
+  const ranked = await db.play.groupBy({
+    by: ["mediaType", "tmdbId"],
+    where,
+    _count: { _all: true },
+    _sum: { runtime: true },
+    _max: { watchedAt: true },
+    // Ties broken on minutes afterwards, as before: `groupBy` will order on one
+    // aggregate at a time, and the count is the one that decides the podium.
+    orderBy: { _count: { tmdbId: "desc" } },
+    // A margin above the podium, so the minutes tiebreak has something to work
+    // with. Titles tied on count *below* this margin cannot reach the podium
+    // anyway, since everything above them was watched at least as often.
+    take: Math.max(limit * 4, 20),
   });
 
-  const byTitle = new Map<string, MostWatched>();
-
-  for (const play of plays) {
-    const mediaType = play.mediaType === "movie" ? "movie" : "tv";
-    const key = `${mediaType}-${play.tmdbId}`;
-
-    const entry = byTitle.get(key) ?? {
-      key,
-      mediaType,
-      tmdbId: play.tmdbId,
-      title: play.title,
-      poster: play.poster,
-      plays: 0,
-      minutes: 0,
-      lastWatchedAt: play.watchedAt,
-    };
-
-    entry.plays += 1;
-    entry.minutes += play.runtime;
-    // Artwork goes missing on old rows more often than on new ones, so a later
-    // play is the better bet for a poster.
-    if (play.watchedAt > entry.lastWatchedAt) {
-      entry.lastWatchedAt = play.watchedAt;
-      entry.poster = play.poster ?? entry.poster;
-    }
-
-    byTitle.set(key, entry);
-  }
-
-  return [...byTitle.values()]
+  const top = ranked
+    .map((row) => ({
+      mediaType: row.mediaType === "movie" ? ("movie" as const) : ("tv" as const),
+      tmdbId: row.tmdbId,
+      plays: row._count._all,
+      minutes: row._sum.runtime ?? 0,
+      lastWatchedAt: row._max.watchedAt!,
+    }))
     .sort((a, b) => b.plays - a.plays || b.minutes - a.minutes)
     .slice(0, limit);
+
+  if (top.length === 0) return [];
+
+  /**
+   * A name and a poster for each winner, from its most recent play.
+   *
+   * One indexed read apiece — deliberately not a single query over all five,
+   * because a show's plays are its episodes and the most-watched show is by
+   * definition the one with the most of them. `(userId, mediaType, tmdbId,
+   * watchedAt)` is indexed, so each of these touches one row.
+   *
+   * Artwork goes missing on old rows more often than on new ones, so the newest
+   * play is the better bet — and where even that has none, the newest row that
+   * does is worth one more look rather than a gap on the podium.
+   */
+  const described = await Promise.all(
+    top.map(async (row) => {
+      const identity = { ...where, mediaType: row.mediaType, tmdbId: row.tmdbId };
+
+      const newest = await db.play.findFirst({
+        where: identity,
+        select: { title: true, poster: true },
+        orderBy: { watchedAt: "desc" },
+      });
+
+      const poster =
+        newest?.poster ??
+        (
+          await db.play.findFirst({
+            where: { ...identity, poster: { not: null } },
+            select: { poster: true },
+            orderBy: { watchedAt: "desc" },
+          })
+        )?.poster ??
+        null;
+
+      return {
+        key: `${row.mediaType}-${row.tmdbId}`,
+        ...row,
+        title: newest?.title ?? "",
+        poster,
+      };
+    }),
+  );
+
+  return described;
 }
 
 export type HistoryPlay = {
@@ -181,7 +218,9 @@ export function groupPlays(plays: PlayRow[]): HistoryDay[] {
  * meant to be read at a glance. A week is a complete thought, and "show more"
  * leads somewhere built for the rest.
  */
-export async function getWeekHistory(userId: string): Promise<HistoryDay[]> {
+export async function getWeekHistory(
+  userId: string,
+): Promise<{ days: HistoryDay[]; truncated: boolean }> {
   const now = new Date();
   // Monday, matching the weekday chart above it on the same page.
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
@@ -194,10 +233,22 @@ export async function getWeekHistory(userId: string): Promise<HistoryDay[]> {
     // the migration, where whole imports share one timestamp.
     orderBy: [{ watchedAt: "desc" }, { id: "desc" }],
     select: PLAY_FIELDS,
+    // A week is a complete thought, but it is not a small one for everybody: an
+    // import landing inside it, or a weekend spent on a long-running show, put
+    // a poster on the page for every episode. Past this the panel says so and
+    // points at the history, which is built for that.
+    take: WEEK_LIMIT + 1,
   });
 
-  return groupPlays(plays);
+  // One row over the limit is only ever asked for to answer this.
+  return {
+    days: groupPlays(plays.slice(0, WEEK_LIMIT)),
+    truncated: plays.length > WEEK_LIMIT,
+  };
 }
+
+/** How much of this week the profile will draw before deferring to the history. */
+const WEEK_LIMIT = 200;
 
 export type HistoryPage = {
   days: HistoryDay[];

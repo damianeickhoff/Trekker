@@ -1,7 +1,7 @@
 import "server-only";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
-import { rangeFilter, type Range } from "./range";
+import { isBounded, rangeFilter, type Range } from "./range";
 import { getMovie, getTv, tmdbConfigured } from "./tmdb";
 
 export type FunStats = {
@@ -67,35 +67,49 @@ export async function getFunStats(userId: string, range?: Range): Promise<FunSta
   // watch something, and a comfort rewatch is still sitting down to watch
   // something. The title lists stay distinct — genres and franchises are facts
   // about what was watched, not about how many times.
+  // "All time" narrows nothing, so it takes the watched tables' path rather
+  // than the play log's — see `isBounded`.
+  const bounded = isBounded(range);
+
   const [plays, movies, episodes] = await Promise.all([
+    // Unordered on purpose: every fold below is a sum or a max, and the one
+    // thing that needs a sequence — the streak — sorts the days it has folded
+    // into. Ordering meant sorting the whole log to throw the order away.
     db.play.findMany({
       where: { userId, ...window },
       select: { mediaType: true, tmdbId: true, title: true, runtime: true, watchedAt: true },
-      orderBy: { watchedAt: "desc" },
     }),
     // Inside a window these come from the log too, so "oldest film" and "top
     // franchise" describe what was watched *then* rather than ever.
-    range
+    //
+    // Grouped rather than `distinct`: without `nativeDistinct` a distinct
+    // `findMany` fetches one row per viewing and dedupes them in the client,
+    // which is the whole play log to answer a question about titles.
+    bounded
       ? db.play
-          .findMany({
+          .groupBy({
+            by: ["tmdbId", "title"],
             where: { userId, mediaType: "movie", ...window },
-            select: { tmdbId: true, title: true },
-            distinct: ["tmdbId"],
-            orderBy: { watchedAt: "desc" },
+            _max: { watchedAt: true },
+            orderBy: { _max: { watchedAt: "desc" } },
           })
-          .then((rows) => rows.map((row) => ({ movieId: row.tmdbId, title: row.title })))
+          .then((rows) => {
+            // Grouping has to include `title` to be able to select it, and a
+            // film whose denormalised title changed between viewings therefore
+            // comes back twice. Newest wins, which is what `distinct` gave.
+            const seen = new Set<number>();
+            return rows
+              .filter((row) => !seen.has(row.tmdbId) && seen.add(row.tmdbId))
+              .map((row) => ({ movieId: row.tmdbId, title: row.title }));
+          })
       : db.watchedMovie.findMany({
           where: { userId },
           select: { movieId: true, title: true },
           orderBy: { watchedAt: "desc" },
         }),
-    range
+    bounded
       ? db.play
-          .findMany({
-            where: { userId, mediaType: "tv", ...window },
-            select: { tmdbId: true },
-            distinct: ["tmdbId"],
-          })
+          .groupBy({ by: ["tmdbId"], where: { userId, mediaType: "tv", ...window } })
           .then((rows) => rows.map((row) => ({ showId: row.tmdbId })))
       : db.watchedEpisode.findMany({
           where: { userId },

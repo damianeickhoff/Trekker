@@ -192,7 +192,7 @@ export default async function ProfilePage({
 
       <RatingsRail ratings={ratings} total={ratingCount} />
 
-      <WeekHistory days={week} total={playCount} />
+      <WeekHistory days={week.days} total={playCount} truncated={week.truncated} />
     </div>
   );
 }

@@ -174,7 +174,16 @@ function PlayRow({ play, position }: { play: HistoryPlay; position: number }) {
 }
 
 /** This week's slice, as it appears on the profile. */
-export function WeekHistory({ days, total }: { days: HistoryDay[]; total: number }) {
+export function WeekHistory({
+  days,
+  total,
+  truncated = false,
+}: {
+  days: HistoryDay[];
+  total: number;
+  /** True when the week ran longer than the profile will draw. */
+  truncated?: boolean;
+}) {
   return (
     <section className="mt-8">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
@@ -204,7 +213,11 @@ export function WeekHistory({ days, total }: { days: HistoryDay[]; total: number
             Show more
             <ArrowRight size={15} />
           </Link>
-          <p className="mt-2 text-xs text-ink-500">This week only — the rest is on its own page.</p>
+          <p className="mt-2 text-xs text-ink-500">
+            {truncated
+              ? "The most recent of this week — the rest is on its own page."
+              : "This week only — the rest is on its own page."}
+          </p>
         </div>
       </TimelinePanel>
     </section>

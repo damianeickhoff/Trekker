@@ -65,6 +65,21 @@ export function resolveRange(key: RangeKey): Range {
   }
 }
 
+/**
+ * Whether a range actually narrows anything.
+ *
+ * "All time" is a range object like any other, but it filters nothing — and the
+ * reads that answer "how many *different* films" have a cheap path for the
+ * unfiltered case, over the watched tables, and an expensive one over the play
+ * log. Branching on the range merely *existing* sent the default view down the
+ * expensive path, where the cost is one row per viewing rather than one per
+ * title. On an account with a lot of rewatches that is the difference between a
+ * page and a hang.
+ */
+export function isBounded(range?: Range | null) {
+  return Boolean(range?.from || range?.to);
+}
+
 /** Prisma `where` fragment for a range. Empty object for all time. */
 export function rangeFilter(range: Range) {
   if (!range.from && !range.to) return {};

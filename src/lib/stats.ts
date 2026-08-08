@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "./db";
-import { rangeFilter, type Range } from "./range";
+import { isBounded, rangeFilter, type Range } from "./range";
 import { getScore, tmdbConfigured } from "./tmdb";
 import { getShowCompletion, type ShowState } from "./continue-watching";
 import type { WatchStatus } from "@/components/media-card";
@@ -55,6 +55,10 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
  * separately — as does `showCount`, which is only ever a collection question.
  */
 export async function getStats(userId: string, range?: Range): Promise<Stats> {
+  // "All time" narrows nothing, so it takes the watched tables' path rather
+  // than the play log's — see `isBounded`.
+  const bounded = isBounded(range);
+
   const [plays, distinctMovies, shows, span] = await Promise.all([
     db.play.findMany({
       where: { userId, ...(range ? rangeFilter(range) : {}) },
@@ -62,20 +66,23 @@ export async function getStats(userId: string, range?: Range): Promise<Stats> {
     }),
     // Collection counts follow the window too: "12 different films" alongside
     // "this month" has to mean twelve films this month.
-    range
+    //
+    // Grouped rather than `distinct`: this client has no `nativeDistinct`, so a
+    // distinct `findMany` fetches every row and dedupes them here — one row per
+    // *viewing* to answer a question about titles. `groupBy` is an aggregate,
+    // and comes back one row per title.
+    bounded
       ? db.play
-          .findMany({
-            where: { userId, mediaType: "movie", ...rangeFilter(range) },
-            select: { tmdbId: true },
-            distinct: ["tmdbId"],
+          .groupBy({
+            by: ["tmdbId"],
+            where: { userId, mediaType: "movie", ...rangeFilter(range!) },
           })
           .then((rows) => rows.length)
       : db.watchedMovie.count({ where: { userId } }),
-    range
-      ? db.play.findMany({
-          where: { userId, mediaType: "tv", ...rangeFilter(range) },
-          select: { tmdbId: true },
-          distinct: ["tmdbId"],
+    bounded
+      ? db.play.groupBy({
+          by: ["tmdbId"],
+          where: { userId, mediaType: "tv", ...rangeFilter(range!) },
         })
       : db.watchedEpisode.findMany({
           where: { userId },
