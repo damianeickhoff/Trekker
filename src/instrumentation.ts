@@ -1,21 +1,20 @@
 /**
- * Node's fetch decompresses every gzipped response through a zlib stream, and
- * under backpressure those streams collect one `drain` listener per pending
- * write. Past ten, Node prints:
+ * Runs once, when the server starts.
  *
- *   MaxListenersExceededWarning: Possible EventEmitter memory leak detected.
- *   11 drain listeners added to [Gzip].
- *
- * It is a warning about a real ceiling rather than a leak — the listeners are
- * removed as the writes flush. The actual fix is fewer requests in flight, which
- * `mapLimit` in src/lib/concurrency.ts now enforces around the TMDB fan-outs;
- * this raises the ceiling so a burst of legitimate parallel requests does not
- * trip the warning on the way there.
+ * Its whole job is to turn a misconfiguration that would otherwise surface as
+ * "sign-in is broken" — hours later, to somebody else — into a container that
+ * refuses to start with the reason on stdout. That is the difference between a
+ * deployment you notice and one you do not.
  */
 export async function register() {
+  // This hook is compiled for the edge runtime as well, and runs during
+  // `next build`, where exiting would fail the build of anyone who does not
+  // happen to have production secrets to hand. Neither is a running server, so
+  // neither is what this is checking. The work itself lives behind a dynamic
+  // import so the edge bundle never even sees it.
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  if (process.env.NEXT_PHASE === "phase-production-build") return;
 
-  // Streams are EventEmitters, so this is the ceiling the zlib stream uses.
-  const { EventEmitter } = await import("node:events");
-  EventEmitter.defaultMaxListeners = 64;
+  const { checkBoot } = await import("./lib/boot-check");
+  checkBoot();
 }

@@ -47,6 +47,19 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model Recommendation
+ * "You should watch this."
+ * 
+ * The one social action the app had no way to perform: you could see a friend's
+ * activity, read their reviews and compare scores with them, but not hand them
+ * something. Everything else was inferred from what they happened to do.
+ * 
+ * Title and poster are denormalised, like every other list row here, so a
+ * recommendation renders without a TMDB call — and still reads correctly years
+ * later if the artwork has since changed.
+ */
+export type Recommendation = Prisma.RecommendationModel
+/**
  * Model DeletedPlay
  * A viewing the user deleted that had come from a source carrying its own id.
  * 

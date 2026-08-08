@@ -13,6 +13,7 @@ import { AchievementToaster } from "@/components/achievement-toaster";
 import { OriginProvider } from "@/components/origin";
 import { ScreensaverIdle } from "@/components/screensaver-idle";
 import { SeasonDecor } from "@/components/season-decor";
+import { ServiceWorkerRegistration } from "@/components/service-worker";
 import { ThemeSync, type Theme } from "@/components/theme";
 
 const geistSans = Geist({
@@ -144,6 +145,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <ThemeSync theme={theme} />
+        <ServiceWorkerRegistration />
         <OriginProvider>
         {/* Watches for the app being left alone. Listens to nothing at all
             until somebody has asked it to — see the component. */}

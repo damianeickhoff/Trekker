@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   ChevronDown,
   Download,
+  HardDriveDownload,
+  KeyRound,
+  LogOut,
   DownloadCloud,
   MonitorPlay,
   Palette,
@@ -42,6 +45,12 @@ import {
   uploadAvatar,
   type SettingsState,
 } from "@/lib/settings-actions";
+import {
+  changePassword,
+  deleteAccount,
+  signOutEverywhere,
+  type FormState,
+} from "@/lib/auth-actions";
 import { ACCENTS } from "@/lib/accents";
 import { AvatarCropper } from "./avatar-cropper";
 import { PlexWebhookHint } from "./plex-webhook-hint";
@@ -1011,6 +1020,243 @@ export function SeerrSection({
           className="rounded-xl bg-flare-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-flare-500 disabled:opacity-60"
         >
           {pending ? "Checking the instance…" : "Save and test"}
+        </button>
+      </form>
+    </SettingsCard>
+  );
+}
+
+/**
+ * Getting your data out.
+ *
+ * Three plain download links and no client state: an anchor with `download`
+ * already does everything a fetch-and-blob would, and does it while the page
+ * carries on working.
+ */
+export function ExportSection() {
+  return (
+    <SettingsCard
+      title="Export your data"
+      description="Everything you have logged, in a file you keep. Nothing here leaves the server until you press one of these."
+      icon={<HardDriveDownload size={16} />}
+      summary="Backup, spreadsheet, or a file another app can read"
+    >
+      <div className="mt-4 space-y-4">
+        <ExportRow
+          href="/api/export?format=json"
+          label="Everything, as JSON"
+          note="The real backup. Every viewing with its own date and where it came from, plus ratings, reviews, lists, the watchlist and your badges."
+        />
+
+        <div>
+          <p className="text-sm font-medium">Single sheets, as CSV</p>
+          <p className="mt-0.5 text-xs text-ink-500">
+            For a spreadsheet. One table at a time.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[
+              ["plays", "History"],
+              ["ratings", "Ratings"],
+              ["watchlist", "Watchlist"],
+              ["favourites", "Favourites"],
+            ].map(([table, label]) => (
+              <a
+                key={table}
+                href={`/api/export?format=csv&table=${table}`}
+                download
+                className="inline-flex items-center gap-1.5 rounded-lg border border-ink-700 px-3 py-1.5 text-xs font-medium text-ink-300 transition hover:border-flare-500 hover:text-flare-400"
+              >
+                <Download size={13} />
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <ExportRow
+          href="/api/export?format=trakt"
+          label="For another tracker"
+          /* Said plainly, because someone reaching for this is choosing a
+             backup and this is not one. */
+          note="Shaped like a Trakt export, so it imports here or anywhere that reads them. Lossy: it carries a play count and a last-watched date, so individual rewatch dates, ratings, reviews and lists do not survive it."
+        />
+      </div>
+    </SettingsCard>
+  );
+}
+
+function ExportRow({ href, label, note }: { href: string; label: string; note: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{label}</p>
+        <p className="mt-0.5 text-xs text-ink-500">{note}</p>
+      </div>
+      <a
+        href={href}
+        download
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-ink-700 px-3 py-2 text-xs font-medium text-ink-300 transition hover:border-flare-500 hover:text-flare-400"
+      >
+        <Download size={14} />
+        Download
+      </a>
+    </div>
+  );
+}
+
+/**
+ * Closing the account.
+ *
+ * The export link above the confirmation is the point of the ordering, and the
+ * delete button stays disabled until it has been used — a nudge rather than a
+ * rule, since the server has no way to prove a download finished and pretending
+ * otherwise would only produce a worse failure.
+ */
+export function DangerSection({ email }: { email: string }) {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(deleteAccount, {});
+  const [exported, setExported] = useState(false);
+  const [typed, setTyped] = useState("");
+
+  const ready = exported && typed.trim().toLowerCase() === email.toLowerCase();
+
+  return (
+    <SettingsCard
+      title="Close your account"
+      description="Removes your history, lists, ratings and friendships. There is no undo and no grace period."
+      icon={<Trash2 size={16} />}
+      summary="Permanent"
+    >
+      <div className="mt-4 space-y-4">
+        <div className="rounded-xl border border-ember-500/30 bg-ember-500/10 p-3">
+          <p className="text-xs text-ink-200">
+            Take a copy first. Once this is done there is nothing left to export.
+          </p>
+          <a
+            href="/api/export?format=json"
+            download
+            onClick={() => setExported(true)}
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg border border-ember-500/50 px-3 py-2 text-xs font-semibold text-ember-400 transition hover:bg-ember-500/15"
+          >
+            <Download size={14} />
+            Download everything
+          </a>
+        </div>
+
+        <form action={formAction} className="space-y-2.5">
+          <label className="block text-xs text-ink-400" htmlFor="confirm-email">
+            Type <span className="font-mono text-ink-200">{email}</span> to confirm.
+          </label>
+          <input
+            id="confirm-email"
+            name="confirm"
+            type="text"
+            autoComplete="off"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            className="w-full rounded-xl border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm outline-none focus:border-red-500"
+          />
+
+          {state.error && <p className="text-xs text-red-400">{state.error}</p>}
+
+          <button
+            type="submit"
+            disabled={!ready || pending}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-500/90 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Trash2 size={15} />
+            {pending ? "Closing…" : "Close my account"}
+          </button>
+
+          {!exported && (
+            <p className="text-[11px] text-ink-500">
+              Download your data first to enable this.
+            </p>
+          )}
+        </form>
+      </div>
+    </SettingsCard>
+  );
+}
+
+/**
+ * Changing the password, and ending sessions elsewhere.
+ *
+ * Both live here rather than under "close your account", because these are the
+ * things you reach for when something has gone slightly wrong, not when you are
+ * leaving.
+ */
+export function PasswordSection({ hasPassword }: { hasPassword: boolean }) {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    changePassword,
+    {},
+  );
+  const [done, setDone] = useState(false);
+
+  return (
+    <SettingsCard
+      title={hasPassword ? "Password" : "Set a password"}
+      description={
+        hasPassword
+          ? "Changing it signs out every other device. This one stays where it is."
+          : "This account signs in through Plex. Adding a password gives you a second way in if Plex is ever unreachable."
+      }
+      icon={<KeyRound size={16} />}
+      summary={hasPassword ? "Set" : "Plex only"}
+      active={hasPassword}
+    >
+      <form
+        action={async (formData) => {
+          setDone(false);
+          await formAction(formData);
+          setDone(true);
+        }}
+        className="mt-4 space-y-2.5"
+      >
+        {hasPassword && (
+          <input
+            name="current"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Current password"
+            className="w-full rounded-xl border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm outline-none focus:border-flare-500"
+          />
+        )}
+        <input
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          placeholder="New password"
+          className="w-full rounded-xl border border-ink-700 bg-ink-900/60 px-3 py-2 text-sm outline-none focus:border-flare-500"
+        />
+
+        {state.error && <p className="text-xs text-red-400">{state.error}</p>}
+        {done && !state.error && (
+          <p className="flex items-center gap-1.5 text-xs text-fresh-500">
+            <CheckCircle2 size={13} />
+            Saved. Other devices have been signed out.
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-xl bg-flare-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-flare-500 disabled:opacity-60"
+        >
+          {pending ? "Saving…" : hasPassword ? "Change password" : "Set password"}
+        </button>
+      </form>
+
+      <form action={signOutEverywhere} className="mt-4 border-t border-ink-800 pt-4">
+        <p className="text-xs text-ink-500">
+          Left it signed in somewhere you no longer have? This ends every session,
+          including this one.
+        </p>
+        <button
+          type="submit"
+          className="mt-2 inline-flex items-center gap-2 rounded-lg border border-ink-700 px-3 py-2 text-xs font-medium text-ink-300 transition hover:border-red-500/60 hover:text-red-300"
+        >
+          <LogOut size={14} />
+          Sign out everywhere
         </button>
       </form>
     </SettingsCard>

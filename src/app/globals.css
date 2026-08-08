@@ -573,6 +573,33 @@
   background-color: color-mix(in oklab, var(--color-flare-500) 29%, var(--color-ink-950));
 }
 
+/**
+ * The heatmap's five steps, plus the empty square.
+ *
+ * Same construction as the balance bands: one accent colour mixed towards the
+ * page, which gives an even lightness run in any hue and reads correctly in
+ * both themes from a single rule. `heat-0` is the page's own ink lifted just
+ * enough to show the grid exists.
+ */
+.heat-0 {
+  background-color: color-mix(in oklab, var(--color-ink-700) 45%, var(--color-ink-950));
+}
+.heat-1 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 25%, var(--color-ink-950));
+}
+.heat-2 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 45%, var(--color-ink-950));
+}
+.heat-3 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 65%, var(--color-ink-950));
+}
+.heat-4 {
+  background-color: color-mix(in oklab, var(--color-flare-500) 82%, var(--color-ink-950));
+}
+.heat-5 {
+  background-color: var(--color-flare-500);
+}
+
 @utility scrim-b {
   background-image: linear-gradient(
     to top,

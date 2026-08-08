@@ -13,7 +13,7 @@ import { Rail } from "./rail";
  * *when* you watch, *what* you watch, and *what you keep coming back to*.
  */
 
-function PanelHead({
+export function PanelHead({
   eyebrow,
   title,
   sub,

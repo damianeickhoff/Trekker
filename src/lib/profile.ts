@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "./db";
+import { likeTerm } from "./like";
 import { rangeFilter, type Range } from "./range";
 
 /**
@@ -205,10 +206,44 @@ export type HistoryPage = {
   more: boolean;
 };
 
+/**
+ * What the history is being narrowed to. Every field optional; an empty filter
+ * has to produce the same query the page ran before filtering existed.
+ */
+export type HistoryFilter = {
+  /** Matches the title or the episode name. */
+  q?: string | null;
+  mediaType?: "movie" | "tv" | null;
+  source?: string | null;
+};
+
+/**
+ * Built once and used by both the page and the count.
+ *
+ * Two copies of this is how a header ends up claiming 4,961 plays above a list
+ * of eleven — the count and the query have to be the same question.
+ */
+export function historyWhere(userId: string, filter: HistoryFilter = {}) {
+  const term = likeTerm(filter.q);
+
+  return {
+    userId,
+    ...(filter.mediaType ? { mediaType: filter.mediaType } : {}),
+    ...(filter.source ? { source: filter.source } : {}),
+    ...(term
+      ? { OR: [{ title: { contains: term } }, { episodeName: { contains: term } }] }
+      : {}),
+  };
+}
+
 /** One page of the full history, newest first. */
-export async function getHistoryPage(userId: string, page = 1): Promise<HistoryPage> {
+export async function getHistoryPage(
+  userId: string,
+  page = 1,
+  filter: HistoryFilter = {},
+): Promise<HistoryPage> {
   const plays = await db.play.findMany({
-    where: { userId },
+    where: historyWhere(userId, filter),
     // The id is a tiebreaker, not decoration. `skip`/`take` over a sort with
     // ties has no defined order between equal rows, so the same play could come
     // back on two consecutive pages — which it did, on the backfilled rows from
@@ -226,6 +261,6 @@ export async function getHistoryPage(userId: string, page = 1): Promise<HistoryP
   return { days: groupPlays(plays.slice(0, HISTORY_PAGE_SIZE)), page, more };
 }
 
-export function countPlays(userId: string) {
-  return db.play.count({ where: { userId } });
+export function countPlays(userId: string, filter: HistoryFilter = {}) {
+  return db.play.count({ where: historyWhere(userId, filter) });
 }

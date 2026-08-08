@@ -34,6 +34,7 @@ export type UserAvgAggregateOutputType = {
   screensaverIdle: number | null
   screensaverLat: number | null
   screensaverLon: number | null
+  tokenVersion: number | null
 }
 
 export type UserSumAggregateOutputType = {
@@ -44,6 +45,7 @@ export type UserSumAggregateOutputType = {
   screensaverIdle: number | null
   screensaverLat: number | null
   screensaverLon: number | null
+  tokenVersion: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -87,6 +89,7 @@ export type UserMinAggregateOutputType = {
   screensaverLat: number | null
   screensaverLon: number | null
   levelKnownKeys: string | null
+  tokenVersion: number | null
 }
 
 export type UserMaxAggregateOutputType = {
@@ -130,6 +133,7 @@ export type UserMaxAggregateOutputType = {
   screensaverLat: number | null
   screensaverLon: number | null
   levelKnownKeys: string | null
+  tokenVersion: number | null
 }
 
 export type UserCountAggregateOutputType = {
@@ -173,6 +177,7 @@ export type UserCountAggregateOutputType = {
   screensaverLat: number
   screensaverLon: number
   levelKnownKeys: number
+  tokenVersion: number
   _all: number
 }
 
@@ -185,6 +190,7 @@ export type UserAvgAggregateInputType = {
   screensaverIdle?: true
   screensaverLat?: true
   screensaverLon?: true
+  tokenVersion?: true
 }
 
 export type UserSumAggregateInputType = {
@@ -195,6 +201,7 @@ export type UserSumAggregateInputType = {
   screensaverIdle?: true
   screensaverLat?: true
   screensaverLon?: true
+  tokenVersion?: true
 }
 
 export type UserMinAggregateInputType = {
@@ -238,6 +245,7 @@ export type UserMinAggregateInputType = {
   screensaverLat?: true
   screensaverLon?: true
   levelKnownKeys?: true
+  tokenVersion?: true
 }
 
 export type UserMaxAggregateInputType = {
@@ -281,6 +289,7 @@ export type UserMaxAggregateInputType = {
   screensaverLat?: true
   screensaverLon?: true
   levelKnownKeys?: true
+  tokenVersion?: true
 }
 
 export type UserCountAggregateInputType = {
@@ -324,6 +333,7 @@ export type UserCountAggregateInputType = {
   screensaverLat?: true
   screensaverLon?: true
   levelKnownKeys?: true
+  tokenVersion?: true
   _all?: true
 }
 
@@ -454,6 +464,7 @@ export type UserGroupByOutputType = {
   screensaverLat: number | null
   screensaverLon: number | null
   levelKnownKeys: string | null
+  tokenVersion: number
   _count: UserCountAggregateOutputType | null
   _avg: UserAvgAggregateOutputType | null
   _sum: UserSumAggregateOutputType | null
@@ -520,6 +531,7 @@ export type UserWhereInput = {
   screensaverLat?: Prisma.FloatNullableFilter<"User"> | number | null
   screensaverLon?: Prisma.FloatNullableFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   episodes?: Prisma.WatchedEpisodeListRelationFilter
   movies?: Prisma.WatchedMovieListRelationFilter
   plays?: Prisma.PlayListRelationFilter
@@ -536,6 +548,8 @@ export type UserWhereInput = {
   deletedPlays?: Prisma.DeletedPlayListRelationFilter
   sentRequests?: Prisma.FriendshipListRelationFilter
   receivedRequests?: Prisma.FriendshipListRelationFilter
+  sentRecommendations?: Prisma.RecommendationListRelationFilter
+  receivedRecommendations?: Prisma.RecommendationListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -579,6 +593,7 @@ export type UserOrderByWithRelationInput = {
   screensaverLat?: Prisma.SortOrderInput | Prisma.SortOrder
   screensaverLon?: Prisma.SortOrderInput | Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrderInput | Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   episodes?: Prisma.WatchedEpisodeOrderByRelationAggregateInput
   movies?: Prisma.WatchedMovieOrderByRelationAggregateInput
   plays?: Prisma.PlayOrderByRelationAggregateInput
@@ -595,6 +610,8 @@ export type UserOrderByWithRelationInput = {
   deletedPlays?: Prisma.DeletedPlayOrderByRelationAggregateInput
   sentRequests?: Prisma.FriendshipOrderByRelationAggregateInput
   receivedRequests?: Prisma.FriendshipOrderByRelationAggregateInput
+  sentRecommendations?: Prisma.RecommendationOrderByRelationAggregateInput
+  receivedRecommendations?: Prisma.RecommendationOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -641,6 +658,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   screensaverLat?: Prisma.FloatNullableFilter<"User"> | number | null
   screensaverLon?: Prisma.FloatNullableFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   episodes?: Prisma.WatchedEpisodeListRelationFilter
   movies?: Prisma.WatchedMovieListRelationFilter
   plays?: Prisma.PlayListRelationFilter
@@ -657,6 +675,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   deletedPlays?: Prisma.DeletedPlayListRelationFilter
   sentRequests?: Prisma.FriendshipListRelationFilter
   receivedRequests?: Prisma.FriendshipListRelationFilter
+  sentRecommendations?: Prisma.RecommendationListRelationFilter
+  receivedRecommendations?: Prisma.RecommendationListRelationFilter
 }, "id" | "email" | "plexAccountId">
 
 export type UserOrderByWithAggregationInput = {
@@ -700,6 +720,7 @@ export type UserOrderByWithAggregationInput = {
   screensaverLat?: Prisma.SortOrderInput | Prisma.SortOrder
   screensaverLon?: Prisma.SortOrderInput | Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrderInput | Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -751,6 +772,7 @@ export type UserScalarWhereWithAggregatesInput = {
   screensaverLat?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   screensaverLon?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   levelKnownKeys?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntWithAggregatesFilter<"User"> | number
 }
 
 export type UserCreateInput = {
@@ -794,6 +816,7 @@ export type UserCreateInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -810,6 +833,8 @@ export type UserCreateInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -853,6 +878,7 @@ export type UserUncheckedCreateInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -869,6 +895,8 @@ export type UserUncheckedCreateInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserUpdateInput = {
@@ -912,6 +940,7 @@ export type UserUpdateInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -928,6 +957,8 @@ export type UserUpdateInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -971,6 +1002,7 @@ export type UserUncheckedUpdateInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -987,6 +1019,8 @@ export type UserUncheckedUpdateInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -1030,6 +1064,7 @@ export type UserCreateManyInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
 }
 
 export type UserUpdateManyMutationInput = {
@@ -1073,6 +1108,7 @@ export type UserUpdateManyMutationInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -1116,6 +1152,7 @@ export type UserUncheckedUpdateManyInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -1159,6 +1196,7 @@ export type UserCountOrderByAggregateInput = {
   screensaverLat?: Prisma.SortOrder
   screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserAvgOrderByAggregateInput = {
@@ -1169,6 +1207,7 @@ export type UserAvgOrderByAggregateInput = {
   screensaverIdle?: Prisma.SortOrder
   screensaverLat?: Prisma.SortOrder
   screensaverLon?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -1212,6 +1251,7 @@ export type UserMaxOrderByAggregateInput = {
   screensaverLat?: Prisma.SortOrder
   screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -1255,6 +1295,7 @@ export type UserMinOrderByAggregateInput = {
   screensaverLat?: Prisma.SortOrder
   screensaverLon?: Prisma.SortOrder
   levelKnownKeys?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserSumOrderByAggregateInput = {
@@ -1265,6 +1306,7 @@ export type UserSumOrderByAggregateInput = {
   screensaverIdle?: Prisma.SortOrder
   screensaverLat?: Prisma.SortOrder
   screensaverLon?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -1310,6 +1352,34 @@ export type NullableFloatFieldUpdateOperationsInput = {
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type UserCreateNestedOneWithoutSentRecommendationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSentRecommendationsInput, Prisma.UserUncheckedCreateWithoutSentRecommendationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSentRecommendationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserCreateNestedOneWithoutReceivedRecommendationsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedCreateWithoutReceivedRecommendationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReceivedRecommendationsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSentRecommendationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSentRecommendationsInput, Prisma.UserUncheckedCreateWithoutSentRecommendationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSentRecommendationsInput
+  upsert?: Prisma.UserUpsertWithoutSentRecommendationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSentRecommendationsInput, Prisma.UserUpdateWithoutSentRecommendationsInput>, Prisma.UserUncheckedUpdateWithoutSentRecommendationsInput>
+}
+
+export type UserUpdateOneRequiredWithoutReceivedRecommendationsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedCreateWithoutReceivedRecommendationsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutReceivedRecommendationsInput
+  upsert?: Prisma.UserUpsertWithoutReceivedRecommendationsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutReceivedRecommendationsInput, Prisma.UserUpdateWithoutReceivedRecommendationsInput>, Prisma.UserUncheckedUpdateWithoutReceivedRecommendationsInput>
 }
 
 export type UserCreateNestedOneWithoutDeletedPlaysInput = {
@@ -1536,6 +1606,526 @@ export type UserUpdateOneRequiredWithoutRatingsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutRatingsInput, Prisma.UserUpdateWithoutRatingsInput>, Prisma.UserUncheckedUpdateWithoutRatingsInput>
 }
 
+export type UserCreateWithoutSentRecommendationsInput = {
+  id?: string
+  email: string
+  name: string
+  passwordHash?: string | null
+  plexAccountId?: string | null
+  plexAuthToken?: string | null
+  plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
+  providers?: string | null
+  coverBackdrop?: string | null
+  coverTitle?: string | null
+  accent?: string
+  theme?: string
+  themeResolved?: string
+  avatarData?: runtime.Bytes | null
+  avatarType?: string | null
+  avatarSetAt?: Date | string | null
+  createdAt?: Date | string
+  plexUrl?: string | null
+  plexToken?: string | null
+  plexMachineId?: string | null
+  seerrUrl?: string | null
+  seerrApiKey?: string | null
+  traktClientId?: string | null
+  traktUsername?: string | null
+  levelFinishedShows?: number
+  levelFinishedFranchises?: number
+  levelSyncedAt?: Date | string | null
+  levelBaseShows?: number
+  levelBaseFranchises?: number
+  levelBaselineAt?: Date | string | null
+  challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
+  levelKnownKeys?: string | null
+  tokenVersion?: number
+  episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
+  movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
+  plays?: Prisma.PlayCreateNestedManyWithoutUserInput
+  watchlist?: Prisma.WatchlistItemCreateNestedManyWithoutUserInput
+  favourites?: Prisma.FavouriteCreateNestedManyWithoutUserInput
+  lists?: Prisma.MediaListCreateNestedManyWithoutUserInput
+  ratings?: Prisma.RatingCreateNestedManyWithoutUserInput
+  episodeRatings?: Prisma.EpisodeRatingCreateNestedManyWithoutUserInput
+  pushDevices?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
+  droppedShows?: Prisma.DroppedShowCreateNestedManyWithoutUserInput
+  achievements?: Prisma.UnlockedAchievementCreateNestedManyWithoutUserInput
+  challenges?: Prisma.ChallengeRunCreateNestedManyWithoutUserInput
+  readNotices?: Prisma.NotificationReadCreateNestedManyWithoutUserInput
+  deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
+  sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
+  receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
+}
+
+export type UserUncheckedCreateWithoutSentRecommendationsInput = {
+  id?: string
+  email: string
+  name: string
+  passwordHash?: string | null
+  plexAccountId?: string | null
+  plexAuthToken?: string | null
+  plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
+  providers?: string | null
+  coverBackdrop?: string | null
+  coverTitle?: string | null
+  accent?: string
+  theme?: string
+  themeResolved?: string
+  avatarData?: runtime.Bytes | null
+  avatarType?: string | null
+  avatarSetAt?: Date | string | null
+  createdAt?: Date | string
+  plexUrl?: string | null
+  plexToken?: string | null
+  plexMachineId?: string | null
+  seerrUrl?: string | null
+  seerrApiKey?: string | null
+  traktClientId?: string | null
+  traktUsername?: string | null
+  levelFinishedShows?: number
+  levelFinishedFranchises?: number
+  levelSyncedAt?: Date | string | null
+  levelBaseShows?: number
+  levelBaseFranchises?: number
+  levelBaselineAt?: Date | string | null
+  challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
+  levelKnownKeys?: string | null
+  tokenVersion?: number
+  episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
+  movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
+  plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
+  watchlist?: Prisma.WatchlistItemUncheckedCreateNestedManyWithoutUserInput
+  favourites?: Prisma.FavouriteUncheckedCreateNestedManyWithoutUserInput
+  lists?: Prisma.MediaListUncheckedCreateNestedManyWithoutUserInput
+  ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutUserInput
+  episodeRatings?: Prisma.EpisodeRatingUncheckedCreateNestedManyWithoutUserInput
+  pushDevices?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+  droppedShows?: Prisma.DroppedShowUncheckedCreateNestedManyWithoutUserInput
+  achievements?: Prisma.UnlockedAchievementUncheckedCreateNestedManyWithoutUserInput
+  challenges?: Prisma.ChallengeRunUncheckedCreateNestedManyWithoutUserInput
+  readNotices?: Prisma.NotificationReadUncheckedCreateNestedManyWithoutUserInput
+  deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
+  sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
+  receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
+}
+
+export type UserCreateOrConnectWithoutSentRecommendationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSentRecommendationsInput, Prisma.UserUncheckedCreateWithoutSentRecommendationsInput>
+}
+
+export type UserCreateWithoutReceivedRecommendationsInput = {
+  id?: string
+  email: string
+  name: string
+  passwordHash?: string | null
+  plexAccountId?: string | null
+  plexAuthToken?: string | null
+  plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
+  providers?: string | null
+  coverBackdrop?: string | null
+  coverTitle?: string | null
+  accent?: string
+  theme?: string
+  themeResolved?: string
+  avatarData?: runtime.Bytes | null
+  avatarType?: string | null
+  avatarSetAt?: Date | string | null
+  createdAt?: Date | string
+  plexUrl?: string | null
+  plexToken?: string | null
+  plexMachineId?: string | null
+  seerrUrl?: string | null
+  seerrApiKey?: string | null
+  traktClientId?: string | null
+  traktUsername?: string | null
+  levelFinishedShows?: number
+  levelFinishedFranchises?: number
+  levelSyncedAt?: Date | string | null
+  levelBaseShows?: number
+  levelBaseFranchises?: number
+  levelBaselineAt?: Date | string | null
+  challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
+  levelKnownKeys?: string | null
+  tokenVersion?: number
+  episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
+  movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
+  plays?: Prisma.PlayCreateNestedManyWithoutUserInput
+  watchlist?: Prisma.WatchlistItemCreateNestedManyWithoutUserInput
+  favourites?: Prisma.FavouriteCreateNestedManyWithoutUserInput
+  lists?: Prisma.MediaListCreateNestedManyWithoutUserInput
+  ratings?: Prisma.RatingCreateNestedManyWithoutUserInput
+  episodeRatings?: Prisma.EpisodeRatingCreateNestedManyWithoutUserInput
+  pushDevices?: Prisma.PushSubscriptionCreateNestedManyWithoutUserInput
+  droppedShows?: Prisma.DroppedShowCreateNestedManyWithoutUserInput
+  achievements?: Prisma.UnlockedAchievementCreateNestedManyWithoutUserInput
+  challenges?: Prisma.ChallengeRunCreateNestedManyWithoutUserInput
+  readNotices?: Prisma.NotificationReadCreateNestedManyWithoutUserInput
+  deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
+  sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
+  receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+}
+
+export type UserUncheckedCreateWithoutReceivedRecommendationsInput = {
+  id?: string
+  email: string
+  name: string
+  passwordHash?: string | null
+  plexAccountId?: string | null
+  plexAuthToken?: string | null
+  plexUsername?: string | null
+  plexManaged?: boolean
+  plexHomeLinkedAt?: Date | string | null
+  providers?: string | null
+  coverBackdrop?: string | null
+  coverTitle?: string | null
+  accent?: string
+  theme?: string
+  themeResolved?: string
+  avatarData?: runtime.Bytes | null
+  avatarType?: string | null
+  avatarSetAt?: Date | string | null
+  createdAt?: Date | string
+  plexUrl?: string | null
+  plexToken?: string | null
+  plexMachineId?: string | null
+  seerrUrl?: string | null
+  seerrApiKey?: string | null
+  traktClientId?: string | null
+  traktUsername?: string | null
+  levelFinishedShows?: number
+  levelFinishedFranchises?: number
+  levelSyncedAt?: Date | string | null
+  levelBaseShows?: number
+  levelBaseFranchises?: number
+  levelBaselineAt?: Date | string | null
+  challengesCollapsed?: boolean
+  xpPanelCollapsed?: boolean
+  screensaverIdle?: number
+  screensaverSource?: string
+  screensaverPlace?: string | null
+  screensaverLat?: number | null
+  screensaverLon?: number | null
+  levelKnownKeys?: string | null
+  tokenVersion?: number
+  episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
+  movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
+  plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
+  watchlist?: Prisma.WatchlistItemUncheckedCreateNestedManyWithoutUserInput
+  favourites?: Prisma.FavouriteUncheckedCreateNestedManyWithoutUserInput
+  lists?: Prisma.MediaListUncheckedCreateNestedManyWithoutUserInput
+  ratings?: Prisma.RatingUncheckedCreateNestedManyWithoutUserInput
+  episodeRatings?: Prisma.EpisodeRatingUncheckedCreateNestedManyWithoutUserInput
+  pushDevices?: Prisma.PushSubscriptionUncheckedCreateNestedManyWithoutUserInput
+  droppedShows?: Prisma.DroppedShowUncheckedCreateNestedManyWithoutUserInput
+  achievements?: Prisma.UnlockedAchievementUncheckedCreateNestedManyWithoutUserInput
+  challenges?: Prisma.ChallengeRunUncheckedCreateNestedManyWithoutUserInput
+  readNotices?: Prisma.NotificationReadUncheckedCreateNestedManyWithoutUserInput
+  deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
+  sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
+  receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+}
+
+export type UserCreateOrConnectWithoutReceivedRecommendationsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedCreateWithoutReceivedRecommendationsInput>
+}
+
+export type UserUpsertWithoutSentRecommendationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSentRecommendationsInput, Prisma.UserUncheckedUpdateWithoutSentRecommendationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSentRecommendationsInput, Prisma.UserUncheckedCreateWithoutSentRecommendationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSentRecommendationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSentRecommendationsInput, Prisma.UserUncheckedUpdateWithoutSentRecommendationsInput>
+}
+
+export type UserUpdateWithoutSentRecommendationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accent?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  themeResolved?: Prisma.StringFieldUpdateOperationsInput | string
+  avatarData?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  avatarType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarSetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plexUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexMachineId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktClientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  levelFinishedShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelFinishedFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  levelBaseShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
+  movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
+  plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
+  watchlist?: Prisma.WatchlistItemUpdateManyWithoutUserNestedInput
+  favourites?: Prisma.FavouriteUpdateManyWithoutUserNestedInput
+  lists?: Prisma.MediaListUpdateManyWithoutUserNestedInput
+  ratings?: Prisma.RatingUpdateManyWithoutUserNestedInput
+  episodeRatings?: Prisma.EpisodeRatingUpdateManyWithoutUserNestedInput
+  pushDevices?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
+  droppedShows?: Prisma.DroppedShowUpdateManyWithoutUserNestedInput
+  achievements?: Prisma.UnlockedAchievementUpdateManyWithoutUserNestedInput
+  challenges?: Prisma.ChallengeRunUpdateManyWithoutUserNestedInput
+  readNotices?: Prisma.NotificationReadUpdateManyWithoutUserNestedInput
+  deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
+  sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
+  receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSentRecommendationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accent?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  themeResolved?: Prisma.StringFieldUpdateOperationsInput | string
+  avatarData?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  avatarType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarSetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plexUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexMachineId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktClientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  levelFinishedShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelFinishedFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  levelBaseShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
+  movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
+  plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
+  watchlist?: Prisma.WatchlistItemUncheckedUpdateManyWithoutUserNestedInput
+  favourites?: Prisma.FavouriteUncheckedUpdateManyWithoutUserNestedInput
+  lists?: Prisma.MediaListUncheckedUpdateManyWithoutUserNestedInput
+  ratings?: Prisma.RatingUncheckedUpdateManyWithoutUserNestedInput
+  episodeRatings?: Prisma.EpisodeRatingUncheckedUpdateManyWithoutUserNestedInput
+  pushDevices?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  droppedShows?: Prisma.DroppedShowUncheckedUpdateManyWithoutUserNestedInput
+  achievements?: Prisma.UnlockedAchievementUncheckedUpdateManyWithoutUserNestedInput
+  challenges?: Prisma.ChallengeRunUncheckedUpdateManyWithoutUserNestedInput
+  readNotices?: Prisma.NotificationReadUncheckedUpdateManyWithoutUserNestedInput
+  deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
+  sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
+  receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
+}
+
+export type UserUpsertWithoutReceivedRecommendationsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedUpdateWithoutReceivedRecommendationsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedCreateWithoutReceivedRecommendationsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutReceivedRecommendationsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutReceivedRecommendationsInput, Prisma.UserUncheckedUpdateWithoutReceivedRecommendationsInput>
+}
+
+export type UserUpdateWithoutReceivedRecommendationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accent?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  themeResolved?: Prisma.StringFieldUpdateOperationsInput | string
+  avatarData?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  avatarType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarSetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plexUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexMachineId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktClientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  levelFinishedShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelFinishedFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  levelBaseShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
+  movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
+  plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
+  watchlist?: Prisma.WatchlistItemUpdateManyWithoutUserNestedInput
+  favourites?: Prisma.FavouriteUpdateManyWithoutUserNestedInput
+  lists?: Prisma.MediaListUpdateManyWithoutUserNestedInput
+  ratings?: Prisma.RatingUpdateManyWithoutUserNestedInput
+  episodeRatings?: Prisma.EpisodeRatingUpdateManyWithoutUserNestedInput
+  pushDevices?: Prisma.PushSubscriptionUpdateManyWithoutUserNestedInput
+  droppedShows?: Prisma.DroppedShowUpdateManyWithoutUserNestedInput
+  achievements?: Prisma.UnlockedAchievementUpdateManyWithoutUserNestedInput
+  challenges?: Prisma.ChallengeRunUpdateManyWithoutUserNestedInput
+  readNotices?: Prisma.NotificationReadUpdateManyWithoutUserNestedInput
+  deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
+  sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
+  receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutReceivedRecommendationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAccountId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexAuthToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plexHomeLinkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  providers?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverBackdrop?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  coverTitle?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  accent?: Prisma.StringFieldUpdateOperationsInput | string
+  theme?: Prisma.StringFieldUpdateOperationsInput | string
+  themeResolved?: Prisma.StringFieldUpdateOperationsInput | string
+  avatarData?: Prisma.NullableBytesFieldUpdateOperationsInput | runtime.Bytes | null
+  avatarType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarSetAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plexUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  plexMachineId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  seerrApiKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktClientId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  traktUsername?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  levelFinishedShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelFinishedFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelSyncedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  levelBaseShows?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaseFranchises?: Prisma.IntFieldUpdateOperationsInput | number
+  levelBaselineAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  challengesCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  xpPanelCollapsed?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  screensaverIdle?: Prisma.IntFieldUpdateOperationsInput | number
+  screensaverSource?: Prisma.StringFieldUpdateOperationsInput | string
+  screensaverPlace?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
+  movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
+  plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
+  watchlist?: Prisma.WatchlistItemUncheckedUpdateManyWithoutUserNestedInput
+  favourites?: Prisma.FavouriteUncheckedUpdateManyWithoutUserNestedInput
+  lists?: Prisma.MediaListUncheckedUpdateManyWithoutUserNestedInput
+  ratings?: Prisma.RatingUncheckedUpdateManyWithoutUserNestedInput
+  episodeRatings?: Prisma.EpisodeRatingUncheckedUpdateManyWithoutUserNestedInput
+  pushDevices?: Prisma.PushSubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  droppedShows?: Prisma.DroppedShowUncheckedUpdateManyWithoutUserNestedInput
+  achievements?: Prisma.UnlockedAchievementUncheckedUpdateManyWithoutUserNestedInput
+  challenges?: Prisma.ChallengeRunUncheckedUpdateManyWithoutUserNestedInput
+  readNotices?: Prisma.NotificationReadUncheckedUpdateManyWithoutUserNestedInput
+  deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
+  sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
+  receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+}
+
 export type UserCreateWithoutDeletedPlaysInput = {
   id?: string
   email: string
@@ -1577,6 +2167,7 @@ export type UserCreateWithoutDeletedPlaysInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -1592,6 +2183,8 @@ export type UserCreateWithoutDeletedPlaysInput = {
   readNotices?: Prisma.NotificationReadCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutDeletedPlaysInput = {
@@ -1635,6 +2228,7 @@ export type UserUncheckedCreateWithoutDeletedPlaysInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -1650,6 +2244,8 @@ export type UserUncheckedCreateWithoutDeletedPlaysInput = {
   readNotices?: Prisma.NotificationReadUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutDeletedPlaysInput = {
@@ -1709,6 +2305,7 @@ export type UserUpdateWithoutDeletedPlaysInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -1724,6 +2321,8 @@ export type UserUpdateWithoutDeletedPlaysInput = {
   readNotices?: Prisma.NotificationReadUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDeletedPlaysInput = {
@@ -1767,6 +2366,7 @@ export type UserUncheckedUpdateWithoutDeletedPlaysInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -1782,6 +2382,8 @@ export type UserUncheckedUpdateWithoutDeletedPlaysInput = {
   readNotices?: Prisma.NotificationReadUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutSentRequestsInput = {
@@ -1825,6 +2427,7 @@ export type UserCreateWithoutSentRequestsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -1840,6 +2443,8 @@ export type UserCreateWithoutSentRequestsInput = {
   readNotices?: Prisma.NotificationReadCreateNestedManyWithoutUserInput
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutSentRequestsInput = {
@@ -1883,6 +2488,7 @@ export type UserUncheckedCreateWithoutSentRequestsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -1898,6 +2504,8 @@ export type UserUncheckedCreateWithoutSentRequestsInput = {
   readNotices?: Prisma.NotificationReadUncheckedCreateNestedManyWithoutUserInput
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutSentRequestsInput = {
@@ -1946,6 +2554,7 @@ export type UserCreateWithoutReceivedRequestsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -1961,6 +2570,8 @@ export type UserCreateWithoutReceivedRequestsInput = {
   readNotices?: Prisma.NotificationReadCreateNestedManyWithoutUserInput
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutReceivedRequestsInput = {
@@ -2004,6 +2615,7 @@ export type UserUncheckedCreateWithoutReceivedRequestsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -2019,6 +2631,8 @@ export type UserUncheckedCreateWithoutReceivedRequestsInput = {
   readNotices?: Prisma.NotificationReadUncheckedCreateNestedManyWithoutUserInput
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutReceivedRequestsInput = {
@@ -2078,6 +2692,7 @@ export type UserUpdateWithoutSentRequestsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -2093,6 +2708,8 @@ export type UserUpdateWithoutSentRequestsInput = {
   readNotices?: Prisma.NotificationReadUpdateManyWithoutUserNestedInput
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSentRequestsInput = {
@@ -2136,6 +2753,7 @@ export type UserUncheckedUpdateWithoutSentRequestsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -2151,6 +2769,8 @@ export type UserUncheckedUpdateWithoutSentRequestsInput = {
   readNotices?: Prisma.NotificationReadUncheckedUpdateManyWithoutUserNestedInput
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUpsertWithoutReceivedRequestsInput = {
@@ -2205,6 +2825,7 @@ export type UserUpdateWithoutReceivedRequestsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -2220,6 +2841,8 @@ export type UserUpdateWithoutReceivedRequestsInput = {
   readNotices?: Prisma.NotificationReadUpdateManyWithoutUserNestedInput
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReceivedRequestsInput = {
@@ -2263,6 +2886,7 @@ export type UserUncheckedUpdateWithoutReceivedRequestsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -2278,6 +2902,8 @@ export type UserUncheckedUpdateWithoutReceivedRequestsInput = {
   readNotices?: Prisma.NotificationReadUncheckedUpdateManyWithoutUserNestedInput
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutEpisodesInput = {
@@ -2321,6 +2947,7 @@ export type UserCreateWithoutEpisodesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemCreateNestedManyWithoutUserInput
@@ -2336,6 +2963,8 @@ export type UserCreateWithoutEpisodesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutEpisodesInput = {
@@ -2379,6 +3008,7 @@ export type UserUncheckedCreateWithoutEpisodesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemUncheckedCreateNestedManyWithoutUserInput
@@ -2394,6 +3024,8 @@ export type UserUncheckedCreateWithoutEpisodesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutEpisodesInput = {
@@ -2453,6 +3085,7 @@ export type UserUpdateWithoutEpisodesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUpdateManyWithoutUserNestedInput
@@ -2468,6 +3101,8 @@ export type UserUpdateWithoutEpisodesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEpisodesInput = {
@@ -2511,6 +3146,7 @@ export type UserUncheckedUpdateWithoutEpisodesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUncheckedUpdateManyWithoutUserNestedInput
@@ -2526,6 +3162,8 @@ export type UserUncheckedUpdateWithoutEpisodesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutMoviesInput = {
@@ -2569,6 +3207,7 @@ export type UserCreateWithoutMoviesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemCreateNestedManyWithoutUserInput
@@ -2584,6 +3223,8 @@ export type UserCreateWithoutMoviesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutMoviesInput = {
@@ -2627,6 +3268,7 @@ export type UserUncheckedCreateWithoutMoviesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemUncheckedCreateNestedManyWithoutUserInput
@@ -2642,6 +3284,8 @@ export type UserUncheckedCreateWithoutMoviesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutMoviesInput = {
@@ -2701,6 +3345,7 @@ export type UserUpdateWithoutMoviesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUpdateManyWithoutUserNestedInput
@@ -2716,6 +3361,8 @@ export type UserUpdateWithoutMoviesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMoviesInput = {
@@ -2759,6 +3406,7 @@ export type UserUncheckedUpdateWithoutMoviesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUncheckedUpdateManyWithoutUserNestedInput
@@ -2774,6 +3422,8 @@ export type UserUncheckedUpdateWithoutMoviesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutPlaysInput = {
@@ -2817,6 +3467,7 @@ export type UserCreateWithoutPlaysInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemCreateNestedManyWithoutUserInput
@@ -2832,6 +3483,8 @@ export type UserCreateWithoutPlaysInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutPlaysInput = {
@@ -2875,6 +3528,7 @@ export type UserUncheckedCreateWithoutPlaysInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   watchlist?: Prisma.WatchlistItemUncheckedCreateNestedManyWithoutUserInput
@@ -2890,6 +3544,8 @@ export type UserUncheckedCreateWithoutPlaysInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutPlaysInput = {
@@ -2949,6 +3605,7 @@ export type UserUpdateWithoutPlaysInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUpdateManyWithoutUserNestedInput
@@ -2964,6 +3621,8 @@ export type UserUpdateWithoutPlaysInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlaysInput = {
@@ -3007,6 +3666,7 @@ export type UserUncheckedUpdateWithoutPlaysInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   watchlist?: Prisma.WatchlistItemUncheckedUpdateManyWithoutUserNestedInput
@@ -3022,6 +3682,8 @@ export type UserUncheckedUpdateWithoutPlaysInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutReadNoticesInput = {
@@ -3065,6 +3727,7 @@ export type UserCreateWithoutReadNoticesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -3080,6 +3743,8 @@ export type UserCreateWithoutReadNoticesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutReadNoticesInput = {
@@ -3123,6 +3788,7 @@ export type UserUncheckedCreateWithoutReadNoticesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -3138,6 +3804,8 @@ export type UserUncheckedCreateWithoutReadNoticesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutReadNoticesInput = {
@@ -3197,6 +3865,7 @@ export type UserUpdateWithoutReadNoticesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -3212,6 +3881,8 @@ export type UserUpdateWithoutReadNoticesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReadNoticesInput = {
@@ -3255,6 +3926,7 @@ export type UserUncheckedUpdateWithoutReadNoticesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -3270,6 +3942,8 @@ export type UserUncheckedUpdateWithoutReadNoticesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutWatchlistInput = {
@@ -3313,6 +3987,7 @@ export type UserCreateWithoutWatchlistInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -3328,6 +4003,8 @@ export type UserCreateWithoutWatchlistInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutWatchlistInput = {
@@ -3371,6 +4048,7 @@ export type UserUncheckedCreateWithoutWatchlistInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -3386,6 +4064,8 @@ export type UserUncheckedCreateWithoutWatchlistInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutWatchlistInput = {
@@ -3445,6 +4125,7 @@ export type UserUpdateWithoutWatchlistInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -3460,6 +4141,8 @@ export type UserUpdateWithoutWatchlistInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWatchlistInput = {
@@ -3503,6 +4186,7 @@ export type UserUncheckedUpdateWithoutWatchlistInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -3518,6 +4202,8 @@ export type UserUncheckedUpdateWithoutWatchlistInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutFavouritesInput = {
@@ -3561,6 +4247,7 @@ export type UserCreateWithoutFavouritesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -3576,6 +4263,8 @@ export type UserCreateWithoutFavouritesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutFavouritesInput = {
@@ -3619,6 +4308,7 @@ export type UserUncheckedCreateWithoutFavouritesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -3634,6 +4324,8 @@ export type UserUncheckedCreateWithoutFavouritesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutFavouritesInput = {
@@ -3693,6 +4385,7 @@ export type UserUpdateWithoutFavouritesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -3708,6 +4401,8 @@ export type UserUpdateWithoutFavouritesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutFavouritesInput = {
@@ -3751,6 +4446,7 @@ export type UserUncheckedUpdateWithoutFavouritesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -3766,6 +4462,8 @@ export type UserUncheckedUpdateWithoutFavouritesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutListsInput = {
@@ -3809,6 +4507,7 @@ export type UserCreateWithoutListsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -3824,6 +4523,8 @@ export type UserCreateWithoutListsInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutListsInput = {
@@ -3867,6 +4568,7 @@ export type UserUncheckedCreateWithoutListsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -3882,6 +4584,8 @@ export type UserUncheckedCreateWithoutListsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutListsInput = {
@@ -3941,6 +4645,7 @@ export type UserUpdateWithoutListsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -3956,6 +4661,8 @@ export type UserUpdateWithoutListsInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutListsInput = {
@@ -3999,6 +4706,7 @@ export type UserUncheckedUpdateWithoutListsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -4014,6 +4722,8 @@ export type UserUncheckedUpdateWithoutListsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutEpisodeRatingsInput = {
@@ -4057,6 +4767,7 @@ export type UserCreateWithoutEpisodeRatingsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -4072,6 +4783,8 @@ export type UserCreateWithoutEpisodeRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutEpisodeRatingsInput = {
@@ -4115,6 +4828,7 @@ export type UserUncheckedCreateWithoutEpisodeRatingsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -4130,6 +4844,8 @@ export type UserUncheckedCreateWithoutEpisodeRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutEpisodeRatingsInput = {
@@ -4189,6 +4905,7 @@ export type UserUpdateWithoutEpisodeRatingsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -4204,6 +4921,8 @@ export type UserUpdateWithoutEpisodeRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEpisodeRatingsInput = {
@@ -4247,6 +4966,7 @@ export type UserUncheckedUpdateWithoutEpisodeRatingsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -4262,6 +4982,8 @@ export type UserUncheckedUpdateWithoutEpisodeRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutDroppedShowsInput = {
@@ -4305,6 +5027,7 @@ export type UserCreateWithoutDroppedShowsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -4320,6 +5043,8 @@ export type UserCreateWithoutDroppedShowsInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutDroppedShowsInput = {
@@ -4363,6 +5088,7 @@ export type UserUncheckedCreateWithoutDroppedShowsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -4378,6 +5104,8 @@ export type UserUncheckedCreateWithoutDroppedShowsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutDroppedShowsInput = {
@@ -4437,6 +5165,7 @@ export type UserUpdateWithoutDroppedShowsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -4452,6 +5181,8 @@ export type UserUpdateWithoutDroppedShowsInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDroppedShowsInput = {
@@ -4495,6 +5226,7 @@ export type UserUncheckedUpdateWithoutDroppedShowsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -4510,6 +5242,8 @@ export type UserUncheckedUpdateWithoutDroppedShowsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutPushDevicesInput = {
@@ -4553,6 +5287,7 @@ export type UserCreateWithoutPushDevicesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -4568,6 +5303,8 @@ export type UserCreateWithoutPushDevicesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutPushDevicesInput = {
@@ -4611,6 +5348,7 @@ export type UserUncheckedCreateWithoutPushDevicesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -4626,6 +5364,8 @@ export type UserUncheckedCreateWithoutPushDevicesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutPushDevicesInput = {
@@ -4685,6 +5425,7 @@ export type UserUpdateWithoutPushDevicesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -4700,6 +5441,8 @@ export type UserUpdateWithoutPushDevicesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPushDevicesInput = {
@@ -4743,6 +5486,7 @@ export type UserUncheckedUpdateWithoutPushDevicesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -4758,6 +5502,8 @@ export type UserUncheckedUpdateWithoutPushDevicesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutAchievementsInput = {
@@ -4801,6 +5547,7 @@ export type UserCreateWithoutAchievementsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -4816,6 +5563,8 @@ export type UserCreateWithoutAchievementsInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutAchievementsInput = {
@@ -4859,6 +5608,7 @@ export type UserUncheckedCreateWithoutAchievementsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -4874,6 +5624,8 @@ export type UserUncheckedCreateWithoutAchievementsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutAchievementsInput = {
@@ -4933,6 +5685,7 @@ export type UserUpdateWithoutAchievementsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -4948,6 +5701,8 @@ export type UserUpdateWithoutAchievementsInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAchievementsInput = {
@@ -4991,6 +5746,7 @@ export type UserUncheckedUpdateWithoutAchievementsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -5006,6 +5762,8 @@ export type UserUncheckedUpdateWithoutAchievementsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutChallengesInput = {
@@ -5049,6 +5807,7 @@ export type UserCreateWithoutChallengesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -5064,6 +5823,8 @@ export type UserCreateWithoutChallengesInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutChallengesInput = {
@@ -5107,6 +5868,7 @@ export type UserUncheckedCreateWithoutChallengesInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -5122,6 +5884,8 @@ export type UserUncheckedCreateWithoutChallengesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutChallengesInput = {
@@ -5181,6 +5945,7 @@ export type UserUpdateWithoutChallengesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -5196,6 +5961,8 @@ export type UserUpdateWithoutChallengesInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutChallengesInput = {
@@ -5239,6 +6006,7 @@ export type UserUncheckedUpdateWithoutChallengesInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -5254,6 +6022,8 @@ export type UserUncheckedUpdateWithoutChallengesInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 export type UserCreateWithoutRatingsInput = {
@@ -5297,6 +6067,7 @@ export type UserCreateWithoutRatingsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayCreateNestedManyWithoutUserInput
@@ -5312,6 +6083,8 @@ export type UserCreateWithoutRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationCreateNestedManyWithoutToUserInput
 }
 
 export type UserUncheckedCreateWithoutRatingsInput = {
@@ -5355,6 +6128,7 @@ export type UserUncheckedCreateWithoutRatingsInput = {
   screensaverLat?: number | null
   screensaverLon?: number | null
   levelKnownKeys?: string | null
+  tokenVersion?: number
   episodes?: Prisma.WatchedEpisodeUncheckedCreateNestedManyWithoutUserInput
   movies?: Prisma.WatchedMovieUncheckedCreateNestedManyWithoutUserInput
   plays?: Prisma.PlayUncheckedCreateNestedManyWithoutUserInput
@@ -5370,6 +6144,8 @@ export type UserUncheckedCreateWithoutRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedCreateNestedManyWithoutUserInput
   sentRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutRequesterInput
   receivedRequests?: Prisma.FriendshipUncheckedCreateNestedManyWithoutAddresseeInput
+  sentRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutFromUserInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedCreateNestedManyWithoutToUserInput
 }
 
 export type UserCreateOrConnectWithoutRatingsInput = {
@@ -5429,6 +6205,7 @@ export type UserUpdateWithoutRatingsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUpdateManyWithoutUserNestedInput
@@ -5444,6 +6221,8 @@ export type UserUpdateWithoutRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUpdateManyWithoutToUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRatingsInput = {
@@ -5487,6 +6266,7 @@ export type UserUncheckedUpdateWithoutRatingsInput = {
   screensaverLat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   screensaverLon?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   levelKnownKeys?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   episodes?: Prisma.WatchedEpisodeUncheckedUpdateManyWithoutUserNestedInput
   movies?: Prisma.WatchedMovieUncheckedUpdateManyWithoutUserNestedInput
   plays?: Prisma.PlayUncheckedUpdateManyWithoutUserNestedInput
@@ -5502,6 +6282,8 @@ export type UserUncheckedUpdateWithoutRatingsInput = {
   deletedPlays?: Prisma.DeletedPlayUncheckedUpdateManyWithoutUserNestedInput
   sentRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutRequesterNestedInput
   receivedRequests?: Prisma.FriendshipUncheckedUpdateManyWithoutAddresseeNestedInput
+  sentRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutFromUserNestedInput
+  receivedRecommendations?: Prisma.RecommendationUncheckedUpdateManyWithoutToUserNestedInput
 }
 
 
@@ -5526,6 +6308,8 @@ export type UserCountOutputType = {
   deletedPlays: number
   sentRequests: number
   receivedRequests: number
+  sentRecommendations: number
+  receivedRecommendations: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5545,6 +6329,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   deletedPlays?: boolean | UserCountOutputTypeCountDeletedPlaysArgs
   sentRequests?: boolean | UserCountOutputTypeCountSentRequestsArgs
   receivedRequests?: boolean | UserCountOutputTypeCountReceivedRequestsArgs
+  sentRecommendations?: boolean | UserCountOutputTypeCountSentRecommendationsArgs
+  receivedRecommendations?: boolean | UserCountOutputTypeCountReceivedRecommendationsArgs
 }
 
 /**
@@ -5669,6 +6455,20 @@ export type UserCountOutputTypeCountReceivedRequestsArgs<ExtArgs extends runtime
   where?: Prisma.FriendshipWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSentRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecommendationWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountReceivedRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecommendationWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -5711,6 +6511,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   screensaverLat?: boolean
   screensaverLon?: boolean
   levelKnownKeys?: boolean
+  tokenVersion?: boolean
   episodes?: boolean | Prisma.User$episodesArgs<ExtArgs>
   movies?: boolean | Prisma.User$moviesArgs<ExtArgs>
   plays?: boolean | Prisma.User$playsArgs<ExtArgs>
@@ -5727,6 +6528,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   deletedPlays?: boolean | Prisma.User$deletedPlaysArgs<ExtArgs>
   sentRequests?: boolean | Prisma.User$sentRequestsArgs<ExtArgs>
   receivedRequests?: boolean | Prisma.User$receivedRequestsArgs<ExtArgs>
+  sentRecommendations?: boolean | Prisma.User$sentRecommendationsArgs<ExtArgs>
+  receivedRecommendations?: boolean | Prisma.User$receivedRecommendationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -5771,6 +6574,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   screensaverLat?: boolean
   screensaverLon?: boolean
   levelKnownKeys?: boolean
+  tokenVersion?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -5814,6 +6618,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   screensaverLat?: boolean
   screensaverLon?: boolean
   levelKnownKeys?: boolean
+  tokenVersion?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -5857,9 +6662,10 @@ export type UserSelectScalar = {
   screensaverLat?: boolean
   screensaverLon?: boolean
   levelKnownKeys?: boolean
+  tokenVersion?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "plexAccountId" | "plexAuthToken" | "plexUsername" | "plexManaged" | "plexHomeLinkedAt" | "providers" | "coverBackdrop" | "coverTitle" | "accent" | "theme" | "themeResolved" | "avatarData" | "avatarType" | "avatarSetAt" | "createdAt" | "plexUrl" | "plexToken" | "plexMachineId" | "seerrUrl" | "seerrApiKey" | "traktClientId" | "traktUsername" | "levelFinishedShows" | "levelFinishedFranchises" | "levelSyncedAt" | "levelBaseShows" | "levelBaseFranchises" | "levelBaselineAt" | "challengesCollapsed" | "xpPanelCollapsed" | "screensaverIdle" | "screensaverSource" | "screensaverPlace" | "screensaverLat" | "screensaverLon" | "levelKnownKeys", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "name" | "passwordHash" | "plexAccountId" | "plexAuthToken" | "plexUsername" | "plexManaged" | "plexHomeLinkedAt" | "providers" | "coverBackdrop" | "coverTitle" | "accent" | "theme" | "themeResolved" | "avatarData" | "avatarType" | "avatarSetAt" | "createdAt" | "plexUrl" | "plexToken" | "plexMachineId" | "seerrUrl" | "seerrApiKey" | "traktClientId" | "traktUsername" | "levelFinishedShows" | "levelFinishedFranchises" | "levelSyncedAt" | "levelBaseShows" | "levelBaseFranchises" | "levelBaselineAt" | "challengesCollapsed" | "xpPanelCollapsed" | "screensaverIdle" | "screensaverSource" | "screensaverPlace" | "screensaverLat" | "screensaverLon" | "levelKnownKeys" | "tokenVersion", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   episodes?: boolean | Prisma.User$episodesArgs<ExtArgs>
   movies?: boolean | Prisma.User$moviesArgs<ExtArgs>
@@ -5877,6 +6683,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   deletedPlays?: boolean | Prisma.User$deletedPlaysArgs<ExtArgs>
   sentRequests?: boolean | Prisma.User$sentRequestsArgs<ExtArgs>
   receivedRequests?: boolean | Prisma.User$receivedRequestsArgs<ExtArgs>
+  sentRecommendations?: boolean | Prisma.User$sentRecommendationsArgs<ExtArgs>
+  receivedRecommendations?: boolean | Prisma.User$receivedRecommendationsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -5901,6 +6709,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     deletedPlays: Prisma.$DeletedPlayPayload<ExtArgs>[]
     sentRequests: Prisma.$FriendshipPayload<ExtArgs>[]
     receivedRequests: Prisma.$FriendshipPayload<ExtArgs>[]
+    sentRecommendations: Prisma.$RecommendationPayload<ExtArgs>[]
+    receivedRecommendations: Prisma.$RecommendationPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -6058,6 +6868,14 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
      * it, adding a badge to the catalogue would hand out XP for watching nothing.
      */
     levelKnownKeys: string | null
+    /**
+     * Bumped whenever every existing session should stop working — a password
+     * change, a reset, or "sign out everywhere". Sessions are stateless JWTs, so
+     * without a number to compare against there is no way to revoke one before
+     * its thirty days are up; the token carries the value it was signed with and
+     * `getCurrentUser` refuses anything that no longer matches.
+     */
+    tokenVersion: number
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -6468,6 +7286,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   deletedPlays<T extends Prisma.User$deletedPlaysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$deletedPlaysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DeletedPlayPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sentRequests<T extends Prisma.User$sentRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sentRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FriendshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   receivedRequests<T extends Prisma.User$receivedRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$receivedRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FriendshipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  sentRecommendations<T extends Prisma.User$sentRecommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$sentRecommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  receivedRecommendations<T extends Prisma.User$receivedRecommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$receivedRecommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6537,6 +7357,7 @@ export interface UserFieldRefs {
   readonly screensaverLat: Prisma.FieldRef<"User", 'Float'>
   readonly screensaverLon: Prisma.FieldRef<"User", 'Float'>
   readonly levelKnownKeys: Prisma.FieldRef<"User", 'String'>
+  readonly tokenVersion: Prisma.FieldRef<"User", 'Int'>
 }
     
 
@@ -7309,6 +8130,54 @@ export type User$receivedRequestsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.FriendshipScalarFieldEnum | Prisma.FriendshipScalarFieldEnum[]
+}
+
+/**
+ * User.sentRecommendations
+ */
+export type User$sentRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Recommendation
+   */
+  select?: Prisma.RecommendationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Recommendation
+   */
+  omit?: Prisma.RecommendationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecommendationInclude<ExtArgs> | null
+  where?: Prisma.RecommendationWhereInput
+  orderBy?: Prisma.RecommendationOrderByWithRelationInput | Prisma.RecommendationOrderByWithRelationInput[]
+  cursor?: Prisma.RecommendationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecommendationScalarFieldEnum | Prisma.RecommendationScalarFieldEnum[]
+}
+
+/**
+ * User.receivedRecommendations
+ */
+export type User$receivedRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Recommendation
+   */
+  select?: Prisma.RecommendationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Recommendation
+   */
+  omit?: Prisma.RecommendationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RecommendationInclude<ExtArgs> | null
+  where?: Prisma.RecommendationWhereInput
+  orderBy?: Prisma.RecommendationOrderByWithRelationInput | Prisma.RecommendationOrderByWithRelationInput[]
+  cursor?: Prisma.RecommendationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecommendationScalarFieldEnum | Prisma.RecommendationScalarFieldEnum[]
 }
 
 /**

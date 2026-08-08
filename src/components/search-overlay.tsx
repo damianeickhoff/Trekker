@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, Tv, Film, User as UserIcon, X } from "lucide-react";
+import { Bookmark, Clock, Loader2, Search, Tv, Film, User as UserIcon, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 // Not from "@/lib/tmdb" — that module is server-only; the URL builders live
@@ -30,10 +30,22 @@ type Cast = {
   knownFor: string;
 };
 
-type Payload = { results: Title[]; people: Person[]; cast: Cast[] };
+/** Something already on your own shelves — watched, rated, listed, saved. */
+type Library = {
+  key: string;
+  mediaType: "movie" | "tv";
+  tmdbId: number;
+  title: string;
+  poster: string | null;
+  notes: string[];
+  listId?: string;
+};
+
+type Payload = { results: Title[]; people: Person[]; cast: Cast[]; library: Library[] };
 
 /** One flat list so arrow keys walk every kind of row without special cases. */
 type Row =
+  | { kind: "library"; key: string; item: Library }
   | { kind: "person"; key: string; person: Person }
   | { kind: "cast"; key: string; cast: Cast }
   | { kind: "title"; key: string; title: Title };
@@ -97,6 +109,14 @@ export function SearchOverlay({
   // never answered with an actor before the film.
   const rows: Row[] = ready
     ? [
+        // Your own library first. When somebody types the name of something
+        // they have watched, that is the highest-confidence answer on the page
+        // — and it is the only bucket that answers without TMDB.
+        ...data.library.map((item) => ({
+          kind: "library" as const,
+          key: `library-${item.key}`,
+          item,
+        })),
         ...data.people.map((person) => ({
           kind: "person" as const,
           key: `person-${person.id}`,
@@ -129,6 +149,7 @@ export function SearchOverlay({
             results: payload.results,
             people: payload.people ?? [],
             cast: payload.cast ?? [],
+            library: payload.library ?? [],
           });
           setActive(0);
         })
@@ -144,7 +165,13 @@ export function SearchOverlay({
   function go(row: Row) {
     onClose();
 
-    if (row.kind === "person") router.push(`/profiles/${row.person.id}`);
+    if (row.kind === "library") {
+      router.push(
+        row.item.listId
+          ? `/watchlist/list/${row.item.listId}`
+          : `/title/${row.item.mediaType}/${row.item.tmdbId}`,
+      );
+    } else if (row.kind === "person") router.push(`/profiles/${row.person.id}`);
     else if (row.kind === "cast") router.push(`/person/${row.cast.id}`);
     else router.push(`/title/${row.title.mediaType}/${row.title.id}`);
   }
@@ -266,7 +293,9 @@ export function SearchOverlay({
                     i === active ? "bg-white/10 light:bg-black/8" : ""
                   }`}
                 >
-                  {row.kind === "person" ? (
+                  {row.kind === "library" ? (
+                    <LibraryRow item={row.item} />
+                  ) : row.kind === "person" ? (
                     <PersonRow person={row.person} />
                   ) : row.kind === "cast" ? (
                     <CastRow cast={row.cast} />
@@ -297,6 +326,43 @@ export function SearchOverlay({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Something already yours.
+ *
+ * Marked by the accent rather than by a section header, on purpose: the row
+ * list is deliberately flat so arrow keys can walk it without reconciling an
+ * index against headings, so what a row *is* has to be legible from the row
+ * itself. The caption does that — "Watched 3× · rated 82%" is both the label
+ * and the useful part.
+ */
+function LibraryRow({ item }: { item: Library }) {
+  const art = item.poster ? img.poster(item.poster, "w185") : null;
+
+  return (
+    <>
+      <span className="relative grid h-12 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-white/10 text-white/50">
+        {art ? (
+          <Image src={art} alt="" fill sizes="36px" className="object-cover" />
+        ) : item.listId ? (
+          <Bookmark size={14} />
+        ) : (
+          <Clock size={14} />
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium">{item.title}</span>
+        <span className={`block truncate text-xs ${SUBTLE}`}>{item.notes.join(" · ")}</span>
+      </span>
+
+      {/* Says "this one is from your own shelves" without a heading above it. */}
+      <span className="shrink-0 rounded-full bg-flare-600/25 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-flare-200 uppercase light:text-flare-700">
+        Yours
+      </span>
+    </>
   );
 }
 

@@ -1,5 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { authSecret } from "./secrets";
 
 /**
  * Signing in with Plex, via plex.tv's PIN flow.
@@ -46,8 +47,11 @@ export function clientIdentifier() {
   const configured = process.env.PLEX_CLIENT_ID?.trim();
   if (configured) return configured;
 
-  const seed = process.env.AUTH_SECRET ?? "trekker-dev";
-  return `trekker-${createHash("sha256").update(seed).digest("hex").slice(0, 24)}`;
+  // Through the same accessor as the session key rather than reading the
+  // variable directly, so the two cannot disagree about what "unset" means —
+  // and so an unset secret is refused here too instead of quietly deriving an
+  // identifier every deployment in the world would share.
+  return `trekker-${createHash("sha256").update(authSecret()).digest("hex").slice(0, 24)}`;
 }
 
 function headers() {

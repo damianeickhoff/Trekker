@@ -7,7 +7,7 @@ import { getMonthlyChallenges } from "@/lib/challenges";
 import { getUpNext } from "@/lib/continue-watching";
 import { getFriendIds } from "@/lib/friends";
 import { db } from "@/lib/db";
-import { getOnThisDay } from "@/lib/heatmap";
+import { getOnThisDay } from "@/lib/on-this-day";
 import { getRecentActivity, withArtwork } from "@/lib/social";
 import { backfillScores, getStats, getWatchStatuses } from "@/lib/stats";
 import { img, tmdbConfigured, trending } from "@/lib/tmdb";
@@ -298,7 +298,7 @@ function PosterTile({
   const Icon = kind === "tv" ? Tv : Film;
 
   return (
-    <Link href={href} className="rail-item group w-[132px] sm:w-[160px]" title={title}>
+    <Link href={href} className="rail-item group w-[152px] sm:w-[184px]" title={title}>
       <div className="relative aspect-2/3 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800">
         {src ? (
           <Image

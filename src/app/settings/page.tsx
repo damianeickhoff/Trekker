@@ -9,6 +9,9 @@ import { logout } from "@/lib/auth-actions";
 import { currentSeason } from "@/lib/current-season";
 import { db } from "@/lib/db";
 import {
+  DangerSection,
+  ExportSection,
+  PasswordSection,
   AppearanceSection,
   PlexAccountSection,
   PlexSection,
@@ -49,6 +52,7 @@ export default async function SettingsPage() {
       traktClientId: true,
       plexUsername: true,
       plexAuthToken: true,
+      passwordHash: true,
       theme: true,
       accent: true,
       providers: true,
@@ -125,6 +129,13 @@ export default async function SettingsPage() {
           </div>
         </SettingsCard>
         <NotificationsSection publicKey={publicKey()} />
+
+        {/* Export sits next to closing the account on purpose: the two are the
+            same subject read in either direction, and the copy in the second
+            depends on the first being right beside it. */}
+        <PasswordSection hasPassword={Boolean(account?.passwordHash)} />
+        <ExportSection />
+        <DangerSection email={user.email} />
       </SettingsGroup>
 
       <SettingsGroup title="Your accounts elsewhere">

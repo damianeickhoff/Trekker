@@ -149,9 +149,13 @@ export function UserMenu({
             ref={menuRef}
             role="menu"
             style={{ top: anchor.top, right: anchor.right }}
-            className="ios-menu fixed z-50 w-60 overflow-hidden rounded-2xl border border-ink-700/70 bg-ink-850/70 backdrop-blur-2xl backdrop-saturate-150 light:bg-white/70"
+            className="ios-menu fixed z-50 w-72 overflow-hidden rounded-2xl border border-ink-700/70 bg-ink-850/70 backdrop-blur-2xl backdrop-saturate-150 light:bg-white/70"
           >
-          <div className="border-b border-ink-800 px-3 py-3">
+          {/* Rows are 44px tall rather than 36, which is the smallest thing a
+              thumb hits reliably — the same floor the floating controls use.
+              The width went with them: at 240px the longer labels sat closer
+              to the edge than the icons did to the other one. */}
+          <div className="border-b border-ink-800 px-3.5 py-3">
             <p className="truncate text-sm font-medium">{name}</p>
             <p className="truncate text-xs text-ink-400">{email}</p>
           </div>
@@ -160,9 +164,9 @@ export function UserMenu({
             <Link
               href="/profile"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <UserIcon size={15} />
+              <UserIcon size={17} />
               Profile
             </Link>
             {/* These three had no way in at all beyond a link buried on the
@@ -171,33 +175,33 @@ export function UserMenu({
             <Link
               href="/achievements"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <Trophy size={15} />
+              <Trophy size={17} />
               Achievements
             </Link>
             <Link
               href="/friends"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <Users size={15} />
+              <Users size={17} />
               Friends
             </Link>
             <Link
               href="/review"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <Sparkles size={15} />
+              <Sparkles size={17} />
               Your year
             </Link>
             <Link
               href="/settings"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <Settings size={15} />
+              <Settings size={17} />
               Settings
             </Link>
             {/* A button rather than a link, and the one thing in this menu that
@@ -207,9 +211,9 @@ export function UserMenu({
             <button
               type="button"
               onClick={startScreensaver}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+              className="flex w-full items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
             >
-              <MonitorPlay size={15} />
+              <MonitorPlay size={17} />
               Screensaver
             </button>
           </div>
@@ -222,9 +226,9 @@ export function UserMenu({
             <form action={switchProfile} className="border-t border-ink-800 py-1">
               <button
                 type="submit"
-                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
+                className="flex w-full items-center gap-3 px-3.5 py-3 text-sm text-ink-300 transition hover:bg-ink-800 hover:text-ink-100"
               >
-                <UsersRound size={15} />
+                <UsersRound size={17} />
                 Switch profile
               </button>
             </form>

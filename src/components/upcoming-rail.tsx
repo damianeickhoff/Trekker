@@ -69,7 +69,7 @@ function UpcomingCard({
     <Link
       href={`/title/${entry.mediaType}/${entry.tmdbId}`}
       title={`${entry.title} — ${entry.detail}`}
-      className="rail-item fade-in group w-[248px] sm:w-[288px]"
+      className="rail-item fade-in group w-[300px] sm:w-[360px]"
       style={{ "--fade-delay": `${index * 60}ms` } as React.CSSProperties}
     >
       <div className="relative aspect-16/9 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800">
@@ -78,7 +78,7 @@ function UpcomingCard({
             src={art}
             alt=""
             fill
-            sizes="288px"
+            sizes="(min-width: 640px) 360px, 300px"
             className="object-cover transition duration-500 group-hover:scale-105"
           />
         ) : (

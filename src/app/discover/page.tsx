@@ -221,7 +221,7 @@ export default async function DiscoverPage({
       <CategoryNav type={filter} season={season} />
 
       {suggestions.length > 0 && (
-        <section className="mt-8">
+        <section className="mt-4">
           <h2 className="text-lg font-semibold tracking-tight">Things you may like</h2>
           <p className="mt-1 text-sm text-ink-400">
             Based on your watchlist and what you have been watching.
@@ -233,7 +233,7 @@ export default async function DiscoverPage({
                   key={`${item.mediaType}-${item.id}`}
                   item={item}
                   status={statuses?.get(`${item.mediaType}-${item.id}`)}
-                  className="rail-item w-[132px] sm:w-[160px]"
+                  className="rail-item w-[152px] sm:w-[184px]"
                 />
               ))}
             </Rail>
@@ -386,7 +386,7 @@ function GenrePicker({
   );
 
   return (
-    <section className="mt-8">
+    <section className="mt-4">
       <div className="flex flex-wrap items-start justify-between gap-3 sm:items-center">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Find your next watch</h2>

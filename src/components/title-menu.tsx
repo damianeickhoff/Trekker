@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { setProfileCover } from "@/lib/cover-actions";
 import { setShowDropped } from "@/lib/dropped-actions";
 import { FLOATING_ICON } from "./back-button";
+import { RecommendRow } from "./recommend-menu";
 import { Popover } from "./popover";
 
 /**
@@ -18,6 +19,7 @@ export function TitleMenu({
   show,
   request,
   variant = "icon",
+  recommend,
 }: {
   /** `button` squares up with the watch row on desktop; `icon` floats on a phone. */
   variant?: "icon" | "button";
@@ -32,6 +34,11 @@ export function TitleMenu({
    * opened the menu at all.
    */
   request?: React.ReactNode;
+  /**
+   * The title itself, for the recommend row. Absent when there is nobody to
+   * recommend to — a signed-out reader, for instance.
+   */
+  recommend?: { mediaType: "movie" | "tv"; tmdbId: number; poster: string | null };
   /** Only shows can be given up on. */
   show?: {
     showId: number;
@@ -62,7 +69,7 @@ export function TitleMenu({
 
   // Nothing to offer at all: no artwork to use, nothing to request, and not a
   // show to drop.
-  if (!backdrop && !show && !request) return null;
+  if (!backdrop && !show && !request && !recommend) return null;
 
   function apply(remove: boolean) {
     startTransition(async () => {
@@ -119,6 +126,15 @@ export function TitleMenu({
         <Popover anchor={anchor} onClose={() => setOpen(false)} align="end" width={264}>
           <div role="menu">
             {request}
+
+          {recommend && (
+            <RecommendRow
+              mediaType={recommend.mediaType}
+              tmdbId={recommend.tmdbId}
+              title={title}
+              poster={recommend.poster}
+            />
+          )}
 
             {backdrop && (
               <button

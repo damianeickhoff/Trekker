@@ -99,7 +99,7 @@ export function SectionTitle({
   cta?: string;
 }) {
   return (
-    <div className="mt-8 mb-3 flex items-baseline justify-between gap-3">
+    <div className="mt-4 mb-3 flex items-baseline justify-between gap-3">
       <h2 className="text-lg font-semibold tracking-tight">{children}</h2>
       {href && (
         <Link href={href} className="text-sm text-flare-400 hover:text-flare-500">
@@ -155,11 +155,11 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function SkeletonRail({ count = 6, label }: { count?: number; label?: string }) {
   return (
-    <section className="mt-8" role="status" aria-label={label ?? "Loading"}>
+    <section className="mt-4" role="status" aria-label={label ?? "Loading"}>
       <Skeleton className="mb-3 h-6 w-44" />
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="w-[132px] shrink-0 sm:w-[160px]">
+          <div key={i} className="w-[152px] shrink-0 sm:w-[184px]">
             <Skeleton className="aspect-2/3 w-full rounded-xl" />
             <Skeleton className="mt-2 h-4 w-4/5" />
             <Skeleton className="mt-1 h-3 w-2/5" />

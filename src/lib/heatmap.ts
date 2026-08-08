@@ -2,94 +2,87 @@ import "server-only";
 import { db } from "./db";
 
 /**
- * The "this time last year" card on the home page.
+ * A year of watching, one square per day.
  *
- * Reads the play log rather than the watched tables, which is the point: this is
- * a question about days, and a day someone spent rewatching something is still a
- * day they spent watching.
+ * The classic tracker view, and the one thing the profile could not do despite
+ * having every byte for it — the file that used to bear this name held
+ * `getOnThisDay`, which answers a different question entirely and now lives in
+ * `on-this-day.ts`.
+ *
+ * Bucketed by **local** day, deliberately. `watchedAt` is an instant; asking
+ * SQLite to group by `date(watchedAt)` would group by UTC, and an episode
+ * finished at half past eleven on a winter evening would land on tomorrow's
+ * square for anybody east of Greenwich. The rows are small enough to fold in
+ * memory, so they are folded where the timezone is known.
  */
 
-export type OnThisDayEntry = {
-  key: string;
-  yearsAgo: number;
-  title: string;
-  subtitle: string;
-  poster: string | null;
-  href: string;
+export type HeatmapDay = {
+  /** `YYYY-MM-DD` in local time — the key the grid is drawn from. */
+  date: string;
+  minutes: number;
+  plays: number;
 };
 
+export type Heatmap = {
+  days: HeatmapDay[];
+  /** Inclusive bounds, so the grid knows how many columns to draw. */
+  from: string;
+  to: string;
+  /** The busiest day's minutes, which is what the shading is scaled against. */
+  peak: number;
+  total: number;
+};
+
+function localKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 /**
- * What was being watched on today's date in earlier years.
+ * The last `weeks` weeks, ending today.
  *
- * Returns nothing at all rather than an empty state: on most days there is no
- * answer, and a card that spends the rest of the year saying "nothing" is worse
- * than one that only appears when it has something to say.
+ * 53 rather than 52 so the grid always covers a full year even when today sits
+ * mid-week — a 52-column grid drops the same weekday from a year ago, which is
+ * exactly the comparison somebody looking at this wants to make.
  */
-export async function getOnThisDay(userId: string, limit = 6): Promise<OnThisDayEntry[]> {
+export async function getHeatmap(userId: string, weeks = 53): Promise<Heatmap> {
   const today = new Date();
-  const month = today.getMonth();
-  const date = today.getDate();
 
-  const first = await db.play.aggregate({ where: { userId }, _min: { watchedAt: true } });
-  const firstYear = first._min.watchedAt?.getFullYear();
-  if (firstYear === undefined || firstYear >= today.getFullYear()) return [];
-
-  // One range per earlier year rather than a scan of the whole history with the
-  // month and day picked out in JS. Each range is a plain window on `watchedAt`,
-  // so the [userId, watchedAt] index covers all of them — and building them from
-  // local dates keeps "this day" meaning the viewer's day, which no amount of
-  // SQL date arithmetic on a stored instant would.
-  const windows = [];
-  for (let year = firstYear; year < today.getFullYear(); year++) {
-    const start = new Date(year, month, date);
-    const end = new Date(year, month, date + 1);
-    windows.push({ watchedAt: { gte: start, lt: end } });
-  }
+  // Back to the Monday of the earliest week, so the first column is whole.
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  start.setDate(start.getDate() - (weeks * 7 - 1));
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
 
   const plays = await db.play.findMany({
-    where: { userId, OR: windows },
-    orderBy: { watchedAt: "desc" },
-    select: {
-      id: true,
-      mediaType: true,
-      tmdbId: true,
-      title: true,
-      poster: true,
-      seasonNumber: true,
-      episodeNumber: true,
-      watchedAt: true,
-    },
+    where: { userId, watchedAt: { gte: start } },
+    select: { watchedAt: true, runtime: true },
   });
 
-  const entries: OnThisDayEntry[] = [];
-  const seen = new Set<string>();
+  const byDay = new Map<string, HeatmapDay>();
 
   for (const play of plays) {
-    // One entry per title per year: a night spent on four episodes of the same
-    // show is one memory, not four.
-    const year = play.watchedAt.getFullYear();
-    const fingerprint = `${year}-${play.mediaType}-${play.tmdbId}`;
-    if (seen.has(fingerprint)) continue;
-    seen.add(fingerprint);
-
-    const yearsAgo = today.getFullYear() - year;
-    const isEpisode = play.mediaType === "tv";
-
-    entries.push({
-      key: `otd-${play.id}`,
-      yearsAgo,
-      title: play.title,
-      subtitle: isEpisode
-        ? `S${String(play.seasonNumber ?? 0).padStart(2, "0")}E${String(
-            play.episodeNumber ?? 0,
-          ).padStart(2, "0")}`
-        : "Movie",
-      poster: play.poster,
-      href: isEpisode ? `/title/tv/${play.tmdbId}` : `/title/movie/${play.tmdbId}`,
-    });
-
-    if (entries.length >= limit) break;
+    const key = localKey(play.watchedAt);
+    const day = byDay.get(key) ?? { date: key, minutes: 0, plays: 0 };
+    day.minutes += play.runtime;
+    day.plays += 1;
+    byDay.set(key, day);
   }
 
-  return entries;
+  const days = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+
+  return {
+    days,
+    from: localKey(start),
+    to: localKey(today),
+    /**
+     * The busiest day sets the top of the scale, rather than a fixed number of
+     * minutes. A fixed ceiling makes a light week look empty and a binge week
+     * look uniform; scaling to the person means the grid says something about
+     * *their* year either way.
+     */
+    peak: days.reduce((most, day) => Math.max(most, day.minutes), 0),
+    total: days.reduce((sum, day) => sum + day.minutes, 0),
+  };
 }

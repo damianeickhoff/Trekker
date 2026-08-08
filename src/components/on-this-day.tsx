@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarHeart, Film, Tv } from "lucide-react";
-import type { OnThisDayEntry } from "@/lib/heatmap";
+import type { OnThisDayEntry } from "@/lib/on-this-day";
 import { img } from "@/lib/tmdb";
 
 /**

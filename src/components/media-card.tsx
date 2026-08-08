@@ -275,7 +275,7 @@ export function CardRail({
   href,
   watchedIds,
   requests,
-  className = "mt-8",
+  className = "mt-4",
 }: {
   title: string;
   /** One line under the heading, for rows whose point is not self-evident. */
@@ -311,7 +311,7 @@ export function CardRail({
             item={item}
             status={watchedIds?.get(`${item.mediaType}-${item.id}`)}
             request={requests?.get(`${item.mediaType}-${item.id}`)}
-            className="rail-item w-[132px] sm:w-[160px]"
+            className="rail-item w-[152px] sm:w-[184px]"
           />
         ))}
       </Rail>

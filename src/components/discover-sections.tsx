@@ -33,7 +33,7 @@ export function NumberedRail({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="mt-4">
       <SectionHead title={title} description={description} href={href} />
       <Rail>
         {items.map((item, index) => (
@@ -134,7 +134,7 @@ export function BillboardRail({
   if (items.length === 0) return null;
 
   return (
-    <section className="mt-8">
+    <section className="mt-4">
       <SectionHead title={title} description={description} href={href} />
       <Rail>
         {items.slice(0, 12).map((item) => {

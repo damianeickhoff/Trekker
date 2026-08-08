@@ -262,6 +262,9 @@ function TitleExtras({
           title={title}
           isCover={isCover}
           show={show}
+          // Only inside `user &&`, so this never renders for a signed-out
+          // reader — there is nobody for them to recommend anything to.
+          recommend={{ mediaType, tmdbId, poster: favourite.poster }}
           request={
             /* Keyed because this node is built on the server and handed to a
                client component. Crossing that boundary turns `TitleMenu`'s

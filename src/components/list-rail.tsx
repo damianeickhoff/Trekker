@@ -60,7 +60,7 @@ export function ListRail({
   const Icon = LIST_ICONS[list.kind];
 
   return (
-    <section className="mt-8 first:mt-6">
+    <section className="mt-4 first:mt-3">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
@@ -101,7 +101,7 @@ export function ListRail({
               item={item}
               status={statuses?.get(`${item.mediaType}-${item.id}`)}
               request={requests?.get(`${item.mediaType}-${item.id}`)}
-              className="rail-item w-[132px] sm:w-[160px]"
+              className="rail-item w-[152px] sm:w-[184px]"
             />
           ))}
         </Rail>

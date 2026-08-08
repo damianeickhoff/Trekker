@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { loadHistoryPage } from "@/lib/history-actions";
+import type { HistoryFilter } from "@/lib/profile";
 import type { HistoryDay } from "@/lib/profile";
 import { DayTimeline, TimelinePanel } from "./watch-history";
 
@@ -20,9 +21,18 @@ import { DayTimeline, TimelinePanel } from "./watch-history";
 export function HistoryFeed({
   initialDays,
   initialMore,
+  filter,
 }: {
   initialDays: HistoryDay[];
   initialMore: boolean;
+  /**
+   * Passed through to every "load more" so page two is page two *of this
+   * filter*. The page also gives this component a `key` derived from the
+   * filter, which is what resets the accumulated days — without it, changing
+   * the filter would leave the old rows in place and append the new ones under
+   * them.
+   */
+  filter?: HistoryFilter;
 }) {
   const [days, setDays] = useState(initialDays);
   const [page, setPage] = useState(1);
@@ -30,6 +40,17 @@ export function HistoryFeed({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const sentinel = useRef<HTMLDivElement>(null);
+
+  /**
+   * Held in a ref rather than listed as a dependency.
+   *
+   * The filter cannot change for the life of this component — the page keys it
+   * on the filter, so a new one is a new mount with a fresh page 1. But the
+   * object arrives with a new identity on every server render, and depending on
+   * it would give `loadMore` a new identity too, which re-arms the observer
+   * effect below and fires an extra fetch for nothing.
+   */
+  const filterRef = useRef(filter);
 
   const loadMore = useCallback(async () => {
     // The guard is a ref-free `loading` check plus the observer disconnecting
@@ -40,7 +61,7 @@ export function HistoryFeed({
     setFailed(false);
 
     try {
-      const next = await loadHistoryPage(page + 1);
+      const next = await loadHistoryPage(page + 1, filterRef.current);
 
       setDays((current) => {
         // Belt to the ordering's braces: `getHistoryPage` sorts by id as well

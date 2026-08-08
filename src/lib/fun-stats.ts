@@ -21,6 +21,20 @@ export type FunStats = {
   topFranchise: { id: number; name: string; count: number } | null;
   binges: number;
   firstLogged: Date | null;
+  /**
+   * The show whose episodes have drawn the most thumbs up, and how the verdicts
+   * fell across everything.
+   *
+   * `EpisodeRating` was written by the season browser and read by nothing —
+   * every thumb was stored and then never counted towards a statistic, a badge,
+   * or a line on the profile. This is where it lands.
+   */
+  episodeVerdicts: {
+    liked: number;
+    disliked: number;
+    /** Needs at least two verdicts to be worth naming. */
+    favouriteShow: { name: string; liked: number } | null;
+  } | null;
 };
 
 /** Titles looked up on TMDB per side (films, shows) for the flavour stats. */
@@ -161,6 +175,38 @@ export async function getFunStats(userId: string, range?: Range): Promise<FunSta
   const topRewatch = [...rewatchCounts.values()].sort((a, b) => b.count - a.count)[0];
   const mostRewatched = topRewatch && topRewatch.count > 1 ? topRewatch : null;
 
+  /**
+   * The thumbs, folded by show.
+   *
+   * Read straight off `EpisodeRating` rather than derived from the play log:
+   * a verdict is an opinion about an episode, not a viewing of it, and somebody
+   * can perfectly well have rated an episode they watched years ago.
+   */
+  const verdicts = await db.episodeRating.findMany({
+    where: { userId },
+    select: { showId: true, liked: true },
+  });
+
+  const likedByShow = new Map<number, number>();
+  let liked = 0;
+  for (const verdict of verdicts) {
+    if (!verdict.liked) continue;
+    liked += 1;
+    likedByShow.set(verdict.showId, (likedByShow.get(verdict.showId) ?? 0) + 1);
+  }
+
+  const topShow = [...likedByShow.entries()].sort((a, b) => b[1] - a[1])[0];
+  // The show's name comes off the watched rows, which already carry it — a TMDB
+  // lookup for a name we have written down would be a call for nothing.
+  const showName = topShow
+    ? (
+        await db.watchedEpisode.findFirst({
+          where: { userId, showId: topShow[0] },
+          select: { showName: true },
+        })
+      )?.showName ?? null
+    : null;
+
   const flavour = await tmdbFlavour(movies, episodes);
 
   return {
@@ -180,6 +226,17 @@ export async function getFunStats(userId: string, range?: Range): Promise<FunSta
     // A "binge" being four or more episodes in one day.
     binges: days.filter((d) => d.items >= 4).length,
     firstLogged: days[0]?.date ?? null,
+    episodeVerdicts:
+      verdicts.length > 0
+        ? {
+            liked,
+            disliked: verdicts.length - liked,
+            favouriteShow:
+              topShow && showName && topShow[1] > 1
+                ? { name: showName, liked: topShow[1] }
+                : null,
+          }
+        : null,
   };
 }
 

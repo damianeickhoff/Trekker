@@ -22,6 +22,8 @@ import {
 import { RangeFilter } from "@/components/range-filter";
 import { WeekHistory } from "@/components/watch-history";
 import { formatHours, formatSpan } from "@/lib/format";
+import { getHeatmap } from "@/lib/heatmap";
+import { HeatmapPanel } from "@/components/heatmap";
 import { getStats } from "@/lib/stats";
 import { TitleBackdrop } from "@/components/title-backdrop";
 import { StatTile } from "@/components/ui";
@@ -47,7 +49,7 @@ export default async function ProfilePage({
   const rangeKey: RangeKey = isRangeKey(params.range) ? params.range : "all";
   const range = resolveRange(rangeKey);
 
-  const [stats, ratings, ratingCount, funStats, mostWatched, week, playCount, cover, level] =
+  const [stats, ratings, ratingCount, funStats, mostWatched, week, playCount, cover, level, heatmap] =
     await Promise.all([
       getStats(user.id, range),
       db.rating.findMany({
@@ -69,6 +71,8 @@ export default async function ProfilePage({
       // Counted columns only — see `lib/achievements/xp.ts`. Cheap enough to
       // belong on the banner rather than behind a link.
       getLevel(user.id),
+      // Ignores the range filter on purpose — see the panel's own note.
+      getHeatmap(user.id),
     ]);
 
   const avatar = avatarUrl(user);
@@ -172,7 +176,14 @@ export default async function ProfilePage({
         <GenreSplit genres={funStats.topGenres} />
       </div>
 
+      {/* Whole-history, deliberately: the range filter above cuts the numbers,
+          but a heatmap of "the last 30 days" is four columns and says nothing.
+          A year is the shortest span this shape is worth drawing. */}
       <div className="fade-in mt-3" style={fadeDelay(5)}>
+        <HeatmapPanel heatmap={heatmap} />
+      </div>
+
+      <div className="fade-in mt-3" style={fadeDelay(6)}>
         <MostWatchedPanel items={mostWatched} />
       </div>
 

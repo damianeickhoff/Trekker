@@ -139,10 +139,56 @@ model User {
   challenges     ChallengeRun[]
   readNotices    NotificationRead[]
 
+  /// Bumped whenever every existing session should stop working — a password
+  /// change, a reset, or "sign out everywhere". Sessions are stateless JWTs, so
+  /// without a number to compare against there is no way to revoke one before
+  /// its thirty days are up; the token carries the value it was signed with and
+  /// `getCurrentUser` refuses anything that no longer matches.
+  tokenVersion Int @default(0)
+
   deletedPlays   DeletedPlay[]
 
   sentRequests     Friendship[] @relation("SentFriendRequests")
   receivedRequests Friendship[] @relation("ReceivedFriendRequests")
+
+  sentRecommendations     Recommendation[] @relation("SentRecommendations")
+  receivedRecommendations Recommendation[] @relation("ReceivedRecommendations")
+}
+
+/// "You should watch this."
+///
+/// The one social action the app had no way to perform: you could see a friend's
+/// activity, read their reviews and compare scores with them, but not hand them
+/// something. Everything else was inferred from what they happened to do.
+///
+/// Title and poster are denormalised, like every other list row here, so a
+/// recommendation renders without a TMDB call — and still reads correctly years
+/// later if the artwork has since changed.
+model Recommendation {
+  id         String   @id @default(cuid())
+  fromUserId String
+  fromUser   User     @relation("SentRecommendations", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String
+  toUser     User     @relation("ReceivedRecommendations", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  /// "movie" | "tv"
+  mediaType String
+  tmdbId    Int
+  title     String
+  poster    String?
+  /// An optional line from the sender. Short on purpose — this is a nudge.
+  note      String?
+
+  createdAt   DateTime  @default(now())
+  /// When the recipient last saw it in their notifications.
+  seenAt      DateTime?
+  /// Set when they clear it, so it stops turning up without being deleted.
+  dismissedAt DateTime?
+
+  /// One standing recommendation per person per title: pressing it twice is the
+  /// same sentence said twice, not two separate suggestions.
+  @@unique([fromUserId, toUserId, mediaType, tmdbId])
+  @@index([toUserId, dismissedAt])
 }
 
 /// A viewing the user deleted that had come from a source carrying its own id.

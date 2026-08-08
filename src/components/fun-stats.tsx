@@ -6,6 +6,7 @@ import {
   Layers,
   PieChart,
   RotateCcw,
+  ThumbsUp,
   Timer,
   Trophy,
   UserRound,
@@ -131,6 +132,27 @@ export function FunStatsPanel({
       label: "Average episode",
       value: `${stats.averageEpisode}m`,
       sub: stats.binges > 0 ? `${stats.binges} binge days (4+ episodes)` : undefined,
+    });
+  }
+
+  /**
+   * The thumbs, which until now were stored and never shown anywhere but the
+   * season they were given on.
+   *
+   * Named by show rather than by episode: "the best episode of Breaking Bad" is
+   * a thing you would have to pick between six you liked, and this is a stat
+   * card, not an argument.
+   */
+  if (stats.episodeVerdicts) {
+    const { liked, disliked, favouriteShow } = stats.episodeVerdicts;
+
+    cards.push({
+      icon: <ThumbsUp size={14} />,
+      label: "Episodes you rated",
+      value: favouriteShow ? favouriteShow.name : `${liked} liked`,
+      sub: favouriteShow
+        ? `${favouriteShow.liked} episodes you liked · ${liked} liked, ${disliked} not`
+        : `${disliked} you did not`,
     });
   }
 

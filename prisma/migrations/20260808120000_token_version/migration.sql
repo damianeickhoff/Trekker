@@ -1,0 +1,11 @@
+-- Lets an outstanding session be revoked.
+--
+-- Sessions are stateless JWTs valid for thirty days, so until now nothing could
+-- invalidate one: changing a password, or losing a device, left every existing
+-- token working until it expired on its own. The token now carries the version
+-- it was signed with, and a mismatch is treated as signed out.
+--
+-- Defaulting to 0 means every session issued before this migration keeps
+-- working: `getCurrentUser` reads a missing claim as 0 too, so nobody is signed
+-- out by the deploy itself.
+ALTER TABLE "User" ADD COLUMN "tokenVersion" INTEGER NOT NULL DEFAULT 0;

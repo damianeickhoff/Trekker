@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  Recommendation: 'Recommendation',
   DeletedPlay: 'DeletedPlay',
   Friendship: 'Friendship',
   WatchedEpisode: 'WatchedEpisode',
@@ -124,10 +125,28 @@ export const UserScalarFieldEnum = {
   screensaverPlace: 'screensaverPlace',
   screensaverLat: 'screensaverLat',
   screensaverLon: 'screensaverLon',
-  levelKnownKeys: 'levelKnownKeys'
+  levelKnownKeys: 'levelKnownKeys',
+  tokenVersion: 'tokenVersion'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const RecommendationScalarFieldEnum = {
+  id: 'id',
+  fromUserId: 'fromUserId',
+  toUserId: 'toUserId',
+  mediaType: 'mediaType',
+  tmdbId: 'tmdbId',
+  title: 'title',
+  poster: 'poster',
+  note: 'note',
+  createdAt: 'createdAt',
+  seenAt: 'seenAt',
+  dismissedAt: 'dismissedAt'
+} as const
+
+export type RecommendationScalarFieldEnum = (typeof RecommendationScalarFieldEnum)[keyof typeof RecommendationScalarFieldEnum]
 
 
 export const DeletedPlayScalarFieldEnum = {

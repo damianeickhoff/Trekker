@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User'
+export type * from './models/Recommendation'
 export type * from './models/DeletedPlay'
 export type * from './models/Friendship'
 export type * from './models/WatchedEpisode'

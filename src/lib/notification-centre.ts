@@ -22,7 +22,11 @@ import { db } from "./db";
  * is actually resolved.
  */
 
-export type NotificationKind = "friend-request" | "achievement" | "challenge";
+export type NotificationKind =
+  | "friend-request"
+  | "achievement"
+  | "challenge"
+  | "recommendation";
 
 export type NotificationItem = {
   /** Stable across reloads: what "mark as read" is recorded against. */
@@ -58,7 +62,7 @@ export const getNotifications = cache(async function getNotifications(
   const now = new Date();
   const period = periodKey(now);
 
-  const [requests, unlocked, wins, readRows] = await Promise.all([
+  const [requests, unlocked, wins, recommendations, readRows] = await Promise.all([
     db.friendship.findMany({
       where: { addresseeId: userId, status: "pending" },
       select: {
@@ -78,6 +82,23 @@ export const getNotifications = cache(async function getNotifications(
       orderBy: { completedAt: "desc" },
       take: LIMIT,
     }),
+    // Only what is still standing: dismissing one sets `dismissedAt` rather
+    // than deleting it, so the sender's "already sent" mark survives.
+    db.recommendation.findMany({
+      where: { toUserId: userId, dismissedAt: null },
+      orderBy: { createdAt: "desc" },
+      take: LIMIT,
+      select: {
+        id: true,
+        mediaType: true,
+        tmdbId: true,
+        title: true,
+        note: true,
+        createdAt: true,
+        seenAt: true,
+        fromUser: { select: { name: true, avatarSetAt: true, id: true } },
+      },
+    }),
     db.notificationRead.findMany({
       where: { userId },
       select: { key: true, dismissed: true },
@@ -87,6 +108,24 @@ export const getNotifications = cache(async function getNotifications(
   const read = new Set(readRows.map((row) => row.key));
   const dismissed = new Set(readRows.filter((row) => row.dismissed).map((row) => row.key));
   const items: NotificationItem[] = [];
+
+  for (const rec of recommendations) {
+    const key = `rec:${rec.id}`;
+    if (dismissed.has(key)) continue;
+
+    items.push({
+      key,
+      kind: "recommendation",
+      title: `${rec.fromUser.name} recommends ${rec.title}`,
+      // The sender's own words when there are any, since that is the reason to
+      // pay attention to this rather than to the title.
+      body: rec.note ?? "Tap to see what it is.",
+      href: `/title/${rec.mediaType === "movie" ? "movie" : "tv"}/${rec.tmdbId}`,
+      at: rec.createdAt,
+      read: read.has(key) || rec.seenAt !== null,
+      avatar: avatarUrl(rec.fromUser),
+    });
+  }
 
   for (const request of requests) {
     const key = `friend:${request.id}`;
