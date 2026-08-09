@@ -9,6 +9,7 @@ import { getCurrentUser, requireUser } from "./auth";
 import { mapLimit } from "./concurrency";
 import { countAiredEpisodes, getSeason, getTv } from "./tmdb";
 import { hasPlexAccess } from "./plex-access";
+import { forgetRequestMarks } from "./request-marks";
 import { getSeerrConnection, requestOnSeerr } from "./seerr";
 import {
   clearShow,
@@ -876,6 +877,9 @@ export async function requestTitle(input: {
   const ok = await requestOnSeerr(connection, data.mediaType, data.tmdbId, data.seasons);
   if (!ok) return { ok: false, error: "Overseerr rejected the request" };
 
+  // The instance now says something different about this title, and the poster
+  // marks are reading a held sweep that predates it.
+  forgetRequestMarks();
   revalidateTracking(user.id);
   return { ok: true };
 }

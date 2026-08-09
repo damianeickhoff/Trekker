@@ -96,6 +96,9 @@ export default async function DiscoverPage({
                 key={`${item.mediaType}-${item.id}`}
                 item={item}
                 status={statuses?.get(`${item.mediaType}-${item.id}`)}
+                // Searching for something is the moment "is this already on the
+                // server" is most worth knowing, and the map is already here.
+                request={requests?.get(`${item.mediaType}-${item.id}`)}
               />
             ))}
           </div>
