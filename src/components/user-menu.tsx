@@ -27,6 +27,7 @@ export function UserMenu({
   avatarUrl,
   seasonSetting,
   canSwitchProfile = false,
+  version,
 }: {
   name: string;
   /**
@@ -44,6 +45,12 @@ export function UserMenu({
    * it out entirely — which is everyone but the instance's admin.
    */
   seasonSetting: SeasonSetting | null;
+  /**
+   * Which build is running, from `lib/version.ts`. Here rather than buried in
+   * settings because the question it answers — "did the update apply?" — is
+   * asked immediately after an update and wants answering in two taps.
+   */
+  version: string;
 }) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
@@ -247,6 +254,14 @@ export function UserMenu({
               Sign out
             </button>
           </form>
+
+          {/* The last line, and deliberately the quietest thing in the menu:
+              it is looked at once after an update and ignored for ever after.
+              Selectable, because the point of it is being read back to
+              somebody — or compared against a commit. */}
+          <p className="select-text px-3 pb-2.5 text-center text-[10px] text-ink-500">
+            Trekker · {version}
+          </p>
           </div>,
           document.body,
         )}

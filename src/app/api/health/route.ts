@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { buildVersion } from "@/lib/version";
 
 /**
  * Is this instance actually serving? For the container's `HEALTHCHECK`, and for
@@ -17,8 +18,12 @@ import { db } from "@/lib/db";
  * working instance look dead.
  *
  * Unauthenticated, because the thing calling it is Docker and cannot hold a
- * session. Safe to leave that way — the answer is one boolean either way, and
- * it says nothing about who is on the instance or what is on it.
+ * session. Safe to leave that way — a boolean and a build id say nothing about
+ * who is on the instance or what is on it, and the build id is the commit of a
+ * public repository. It earns its place here by being the one thing that can
+ * answer "is the container running what I just merged?" without a session:
+ * `curl -s host/api/health` beats reading digests in a Docker tab, and it is
+ * what a script would ask.
  */
 
 export const dynamic = "force-dynamic";
@@ -26,7 +31,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await db.$queryRaw`SELECT 1`;
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, version: buildVersion() });
   } catch (error) {
     console.error("Health check failed", error);
     // 503 rather than 500: the instance is not broken, it is not ready, and

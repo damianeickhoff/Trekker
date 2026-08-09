@@ -8,6 +8,7 @@ import { currentSeason } from "@/lib/current-season";
 import { db } from "@/lib/db";
 import { getNotifications } from "@/lib/notification-centre";
 import { displayEmail } from "@/lib/plex-seat";
+import { buildVersion } from "@/lib/version";
 import { Nav } from "@/components/nav";
 import { AchievementToaster } from "@/components/achievement-toaster";
 import { OriginProvider } from "@/components/origin";
@@ -233,6 +234,9 @@ export default async function RootLayout({
           season={season}
           seasonSetting={canOverride ? seasonSetting : null}
           notifications={notifications?.items ?? []}
+          // Read here rather than in the menu itself: `TREKKER_VERSION` is a
+          // runtime variable on the server, and the menu is a client component.
+          version={buildVersion()}
         />
         <main className="mx-auto w-full max-w-6xl grow px-4 pt-5 pb-28 sm:px-6 md:pt-9 md:pb-16">
           {children}

@@ -26,6 +26,7 @@ import { CardRail } from "@/components/media-card";
 import { BackButton } from "@/components/back-button";
 import { avatarUrl } from "@/lib/avatar";
 import { displayEmail } from "@/lib/plex-seat";
+import { buildVersion } from "@/lib/version";
 import { getNotifications } from "@/lib/notification-centre";
 import { heroColours, type HeroColours } from "@/lib/palette";
 import { getSeasonEpisodes } from "@/lib/up-next-rail";
@@ -196,6 +197,7 @@ async function TitleChrome({ user }: { user: NonNullable<SessionUser> }) {
         avatarUrl={avatarUrl(user)}
         seasonSetting={null}
         canSwitchProfile={Boolean(user.plexAccountId)}
+        version={buildVersion()}
       />
     </div>
   );

@@ -45,6 +45,26 @@ Unraid's own update check works against this: it compares the local digest
 against the registry, so "update available" shows up in the Docker tab like any
 other container.
 
+It only works because the workflow sets `provenance: false`. Left at its
+default, `docker/build-push-action` attaches a build-provenance attestation,
+which makes buildx publish an OCI *index* rather than a plain image manifest —
+and Unraid's digest comparison does not cope with the extra `unknown/unknown`
+entry in one. The symptom is the Docker tab insisting there is no update when
+there plainly is. Nothing here consumes the attestation, so it is off.
+
+## Which build am I actually running?
+
+Two places, and they agree:
+
+- **The avatar menu**, at the foot: `Trekker · 6aa9ecf`.
+- **`curl -s http://tower:3310/api/health`** → `{"ok":true,"version":"6aa9ecf"}`,
+  which needs no session and is the one to script against.
+
+That short commit is the same one in the `sha-<short>` tag, so it can be looked
+up in GHCR or on GitHub without translating anything. An image built by hand
+rather than by CI reports `dev`, since nothing stamped it — pass
+`--build-arg TREKKER_VERSION=$(git rev-parse HEAD)` if you want a real one.
+
 ### Option B — push to GHCR by hand
 
 Same destination, done locally — for when CI is not an option or you want to
