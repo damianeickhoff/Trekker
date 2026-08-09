@@ -271,7 +271,16 @@ export function MediaCard({
       className={`group block ${className}`}
       title={item.title}
     >
-      <div className="relative aspect-2/3 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800">
+      {/* `data-shared-art` marks this box as the artwork that travels into the
+          title page's hero when the card is opened — the route transition
+          names it at click time; see `page-transitions.tsx`. The hover is a
+          lift rather than more zoom: the picture already leans in, and the
+          card rising to meet the pointer is what says "this is a thing you can
+          pick up". Pointer widths only — a finger gets no hover back. */}
+      <div
+        data-shared-art
+        className="relative aspect-2/3 overflow-hidden rounded-xl border border-ink-700/60 bg-ink-800 md:transition md:duration-300 md:group-hover:-translate-y-1 md:group-hover:border-ink-500 md:group-hover:shadow-lg md:group-hover:shadow-black/40"
+      >
         {src ? (
           <Image
             src={src}

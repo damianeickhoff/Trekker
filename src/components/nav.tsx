@@ -154,7 +154,9 @@ export function Nav({
         light mode where the status bar stays opaque, the inset is 0 and the
         padding costs nothing.
       */}
-      <header className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+      {/* `vt-header` keeps the bar perfectly still while route transitions
+          cross-fade the page beneath it — see globals.css. */}
+      <header className="vt-header sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         {/*
           The glass is its own layer rather than the header's own background,
           purely so it can fade.
@@ -273,7 +275,7 @@ export function Nav({
         the same reason: the shorter the bar, the more of the page is page.
       */}
       <nav
-        className={`pointer-events-none fixed inset-x-0 bottom-0 flex items-center justify-center gap-1.5 px-4 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))] md:hidden ${
+        className={`vt-tabbar pointer-events-none fixed inset-x-0 bottom-0 flex items-center justify-center gap-1.5 px-4 pb-[max(0.5rem,calc(env(safe-area-inset-bottom)-0.75rem))] md:hidden ${
           searchOpen ? "z-[101]" : "z-40"
         }`}
       >

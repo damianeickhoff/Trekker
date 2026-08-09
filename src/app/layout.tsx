@@ -11,6 +11,7 @@ import { displayEmail } from "@/lib/plex-seat";
 import { Nav } from "@/components/nav";
 import { AchievementToaster } from "@/components/achievement-toaster";
 import { OriginProvider } from "@/components/origin";
+import { PageTransitions } from "@/components/page-transitions";
 import { ScreensaverIdle } from "@/components/screensaver-idle";
 import { SeasonDecor } from "@/components/season-decor";
 import { ServiceWorkerRegistration } from "@/components/service-worker";
@@ -158,6 +159,10 @@ export default async function RootLayout({
         <ThemeSync theme={theme} />
         <ServiceWorkerRegistration />
         <OriginProvider>
+        {/* Cross-fades in-app navigations — see the component for the whole
+            story. Inside `OriginProvider` only for tidiness; it talks to the
+            document, not to anything in the tree. */}
+        <PageTransitions />
         {/* Watches for the app being left alone. Listens to nothing at all
             until somebody has asked it to — see the component. */}
         {user && <ScreensaverIdle minutes={screensaverIdle} />}

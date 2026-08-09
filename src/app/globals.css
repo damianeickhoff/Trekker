@@ -1864,12 +1864,37 @@ html[data-theme="light"] .season-snow-far {
   animation: hero-zoom 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/*
+ * The same settle at desktop scale. A wide backdrop is already showing most of
+ * itself, so the phone's 12% would crop real picture on the way in; 6% is the
+ * largest move that still reads as the page breathing rather than the artwork
+ * reframing.
+ */
+@keyframes hero-zoom-soft {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.hero-zoom-soft {
+  transform: scale(1.06);
+}
+
+.hero-zoom-soft.hero-zoom-run {
+  animation: hero-zoom-soft 1.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero-zoom {
+  .hero-zoom,
+  .hero-zoom-soft {
     transform: none;
   }
 
-  .hero-zoom-run {
+  .hero-zoom-run,
+  .hero-zoom-soft.hero-zoom-run {
     animation: none;
   }
 }
@@ -1924,6 +1949,140 @@ html[data-theme="light"] .season-snow-far {
     animation: none;
     transition: none;
     transform: none;
+  }
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Route transitions
+ * ---------------------------------------------------------------------------
+ *
+ * Driven from `page-transitions.tsx`, which wraps in-app navigations in
+ * `document.startViewTransition`. Unlayered like the blocks around it: the
+ * pseudo-elements below are the browser's own, but the `view-transition-name`
+ * hooks sit on elements carrying Tailwind utilities and have to win.
+ *
+ * The whole page cross-fades; the incoming one rises a few pixels, which is
+ * the `rise` gesture the pages already make on arrival, now shared between
+ * the two of them. Going back plays it the other way round — the outgoing
+ * page sinks — so the two directions feel like opposites rather than the same
+ * dissolve twice.
+ */
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes vt-out-back {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+}
+
+@keyframes vt-in-back {
+  from {
+    opacity: 0;
+  }
+}
+
+::view-transition-old(root) {
+  animation: vt-out 0.2s ease both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+:root[data-vt-kind="back"]::view-transition-old(root) {
+  animation: vt-out-back 0.26s ease both;
+}
+
+:root[data-vt-kind="back"]::view-transition-new(root) {
+  animation: vt-in-back 0.26s ease both;
+}
+
+/*
+ * The chrome does not travel with the page.
+ *
+ * A name of its own lifts an element out of the root's photograph into a group
+ * of its own — and when the same element is in the same place on both sides,
+ * that group has nowhere to go and simply holds still. So the header, the tab
+ * bar and the back row sit rock steady while the page dissolves underneath
+ * them, which is most of what separates an app changing screens from a site
+ * loading a page. Where only one side has the element — the header on a
+ * phone's title page, say — its group fades alone, which is the right answer
+ * too.
+ */
+.vt-header {
+  view-transition-name: site-header;
+}
+
+.vt-tabbar {
+  view-transition-name: site-tabbar;
+}
+
+.back-row {
+  view-transition-name: back-row;
+}
+
+/*
+ * The poster's journey from a rail into the hero.
+ *
+ * `hero-art-name` sits on the title page's poster (and on its loading
+ * skeleton's, so the morph has somewhere to land while the page is still
+ * being fetched). The clicked card's copy of the name is applied from script
+ * at click time — see `page-transitions.tsx` for why it cannot live in the
+ * markup — and `data-vt-source` silences the page-side name for the outgoing
+ * photograph, so a title page's own hero never fights the card that was
+ * clicked on it.
+ *
+ * Desktop only: a phone's hero is a wide backdrop, and a 2:3 poster stretched
+ * into it reads as a glitch rather than as the same artwork moving.
+ */
+@media (min-width: 640px) {
+  .hero-art-name {
+    view-transition-name: hero-art;
+  }
+
+  html[data-vt-source="card"] .hero-art-name {
+    view-transition-name: none;
+  }
+}
+
+::view-transition-group(hero-art) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The two photographs are different crops of different sizes; `cover` lets
+   them fill the travelling box the way the artwork fills its frames, instead
+   of stretching to fit. */
+::view-transition-old(hero-art),
+::view-transition-new(hero-art) {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* The script already declines to start a transition under reduced motion;
+   this is the second lock on the same door, for any transition that starts
+   anyway. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

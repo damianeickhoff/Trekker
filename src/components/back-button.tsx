@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useOrigin, useOriginPath } from "./origin";
+import { startPageTransition } from "./page-transitions";
 
 /**
  * The look every control floating over the hero artwork shares — the way back,
@@ -98,6 +99,13 @@ export function BackButton({
    * and guessing it wrong navigates somewhere nobody asked for. Going forwards
    * to a known destination always lands.
    */
+  /**
+   * Every route out of here goes through `startPageTransition`, so leaving a
+   * title cross-fades the same way arriving did — and with the `back` flavour,
+   * which plays the dissolve the other way round. The click interceptor cannot
+   * do this one: it watches anchors, and this is a button that decides its
+   * destination at press time.
+   */
   function goBack() {
     if (to === "origin") {
       /**
@@ -115,19 +123,20 @@ export function BackButton({
        * from the path, and comparing the two would have this push the page you
        * are already on rather than fall through to `fallback`.
        */
-      router.push(origin && originPath !== pathname ? origin : fallback);
+      const target = origin && originPath !== pathname ? origin : fallback;
+      startPageTransition(() => router.push(target), { kind: "back" });
       return;
     }
 
     if (to === "href") {
-      router.push(fallback);
+      startPageTransition(() => router.push(fallback), { kind: "back" });
       return;
     }
 
     // A cold start on a shared link has no entry to go back to, so the history
     // length is what decides whether `back` means anything here.
-    if (window.history.length > 1) router.back();
-    else router.push(fallback);
+    if (window.history.length > 1) startPageTransition(() => router.back(), { kind: "back" });
+    else startPageTransition(() => router.push(fallback), { kind: "back" });
   }
 
   return (

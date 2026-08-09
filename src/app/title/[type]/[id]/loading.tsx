@@ -40,7 +40,12 @@ export default function Loading() {
       <Skeleton className="mb-6 hidden h-72 w-full rounded-2xl sm:block" />
 
       <div className="flex gap-5 max-sm:flex-col">
-        <Skeleton className="hidden aspect-2/3 w-40 shrink-0 rounded-xl sm:block" />
+        {/* Named like the real hero poster, so a card tapped in a rail morphs
+            onto this while the page is still being fetched. Sized to the real
+            poster's box exactly — it used to be a size smaller, which was fine
+            for a placeholder and is not fine for a morph target: the poster
+            would land here and then jump larger when the page arrived. */}
+        <Skeleton className="hero-art-name hidden aspect-2/3 shrink-0 rounded-xl sm:block sm:h-[400px]" />
 
         {/* Centred and pushed down the artwork on a phone, left-aligned beside
             the poster on desktop — the same two arrangements the real hero has. */}

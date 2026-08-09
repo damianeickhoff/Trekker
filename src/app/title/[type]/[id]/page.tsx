@@ -38,6 +38,7 @@ import { TitleHeroArt } from "@/components/title-hero-art";
 import { SeerrBadge } from "@/components/seerr-badge";
 import { Rail } from "@/components/rail";
 import { RatingWidget } from "@/components/rating-widget";
+import { Reveal } from "@/components/reveal";
 import { SeasonBrowser } from "@/components/season-browser";
 import { ShowProgress } from "@/components/show-progress";
 import { ShowSections } from "@/components/show-sections";
@@ -150,12 +151,16 @@ async function Recommendations({
   if (unseen.length === 0) return null;
 
   return (
-    <CardRail
-      title="You might also like"
-      items={unseen}
-      watchedIds={watchedIds}
-      requests={requests}
-    />
+    // Revealed on the way in like the sections above it: it is the last thing
+    // on the page, so it is always arrived at by scrolling.
+    <Reveal>
+      <CardRail
+        title="You might also like"
+        items={unseen}
+        watchedIds={watchedIds}
+        requests={requests}
+      />
+    </Reveal>
   );
 }
 
@@ -487,14 +492,16 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         </div>
       )}
       <Reviews reviews={movie.reviews.results} />
-      <TitleReviews
-        mediaType="movie"
-        tmdbId={tmdbId}
-        rated={state.rating !== null}
-        initialReview={state.rating?.review ?? null}
-        friends={friendReviews}
-        signedIn={Boolean(user)}
-      />
+      <Reveal>
+        <TitleReviews
+          mediaType="movie"
+          tmdbId={tmdbId}
+          rated={state.rating !== null}
+          initialReview={state.rating?.review ?? null}
+          friends={friendReviews}
+          signedIn={Boolean(user)}
+        />
+      </Reveal>
       <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>
         <Recommendations items={recommendations.slice(0, 14)} user={user} />
       </Suspense>
@@ -727,14 +734,16 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
             )}
             <Cast cast={show.credits.cast} href={`/title/tv/${tmdbId}/cast`} />
             <Reviews reviews={show.reviews.results} />
-            <TitleReviews
-              mediaType="tv"
-              tmdbId={tmdbId}
-              rated={state.rating !== null}
-              initialReview={state.rating?.review ?? null}
-              friends={friendReviews}
-              signedIn={Boolean(user)}
-            />
+            <Reveal>
+              <TitleReviews
+                mediaType="tv"
+                tmdbId={tmdbId}
+                rated={state.rating !== null}
+                initialReview={state.rating?.review ?? null}
+                friends={friendReviews}
+                signedIn={Boolean(user)}
+              />
+            </Reveal>
             <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>
               <Recommendations items={recommendations.slice(0, 14)} user={user} />
             </Suspense>
@@ -982,7 +991,7 @@ function Hero({
           the text on the artwork, which is what the colour-matched fade, the
           blur and the parallax are all for. */}
       <div className="hidden sm:block">
-        <TitleBackdrop backdrop={backdrop} />
+        <TitleBackdrop backdrop={backdrop} colours={colours} />
       </div>
       <TitleHeroArt backdrop={backdrop} poster={poster} colours={colours} />
 
@@ -996,7 +1005,11 @@ function Hero({
         {/* A fixed height rather than the height of the row: the row is free to
             grow when the synopsis is opened, and the poster should hold its
             shape when it does rather than stretch to follow. */}
-        <div className="relative mx-auto hidden h-48 w-32 shrink-0 self-start overflow-hidden rounded-xl bg-ink-800 shadow-2xl shadow-black/50 sm:mx-0 sm:block sm:aspect-2/3 sm:h-[400px] sm:w-auto">
+        {/* `hero-art-name` is where a poster tapped in a rail lands when the
+            route transition morphs it over — see globals.css. The hairline
+            ring is what stops a dark poster's edge dissolving into a dark
+            backdrop behind it. */}
+        <div className="hero-art-name relative mx-auto hidden h-48 w-32 shrink-0 self-start overflow-hidden rounded-xl bg-ink-800 shadow-2xl shadow-black/50 ring-1 ring-white/10 sm:mx-0 sm:block sm:aspect-2/3 sm:h-[400px] sm:w-auto">
           {posterUrl && (
             <Image src={posterUrl} alt="" fill sizes="270px" className="object-cover" />
           )}
@@ -1058,12 +1071,17 @@ function Hero({
                 className="hero-veil pointer-events-none absolute top-0 -bottom-56 left-1/2 -z-[1] w-screen -translate-x-1/2 sm:hidden"
               />
 
-              {tagline && <p className="mt-1.5 text-sm ios-dim text-ink-300 italic sm:mt-1">{tagline}</p>}
+              {/* From the tagline down, the text arrives as a stagger — each
+                  block a beat after the one it is read after, riding the
+                  page's own rise. Only the text: the action row and the strips
+                  below it hold glass, and an animated wrapper is a backdrop
+                  root that would blind the blur inside it. */}
+              {tagline && <p className="fade-in mt-1.5 text-sm ios-dim text-ink-300 italic [--fade-delay:60ms] sm:mt-1">{tagline}</p>}
 
               {/* One line of facts rather than a line plus a rack of genre pills.
                   The pills were the same information at three times the height,
                   and they pushed the synopsis out of a fixed-height row. */}
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-ink-100/60 sm:justify-start">
+              <div className="fade-in mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-ink-100/60 [--fade-delay:110ms] sm:justify-start">
                 {meta
                   .filter((m): m is string => Boolean(m))
                   .map((m, i) => (
@@ -1074,13 +1092,13 @@ function Hero({
                   ))}
               </div>
 
-              <div className="mt-4">{scores}</div>
+              <div className="fade-in mt-4 [--fade-delay:160ms]">{scores}</div>
 
               {/* Takes the space left between the genres and the buttons, with
                   the text centred in it — so a two-line synopsis is not left
                   stranded against the row above. */}
               <div
-                className={`flex min-h-0 flex-1 flex-col justify-center py-4 ${
+                className={`fade-in flex min-h-0 flex-1 flex-col justify-center py-4 [--fade-delay:210ms] ${
                   overviewDesktopOnly ? "max-sm:hidden" : ""
                 }`}
               >
@@ -1153,6 +1171,11 @@ function Cast({
   if (cast.length === 0) return null;
 
   return (
+    // The sections below the hero fade up as they are scrolled to, one beat
+    // each, rather than all being simply there — the same `Reveal` the recap
+    // reads by. Transition-based, so nothing lingers as a backdrop root once
+    // it has landed.
+    <Reveal>
     <section className="mt-8">
       {/* The heading is the link. A rail of eighteen answers "who is in this";
           finding one particular face means reading a list, and that lives on a
@@ -1173,7 +1196,9 @@ function Cast({
               href={`/person/${person.id}`}
               className="rail-item group w-[104px]"
             >
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-ink-800">
+              {/* The portrait lifts under the pointer, the same gesture as the
+                  posters — one hover language across every card. */}
+              <div className="relative aspect-square overflow-hidden rounded-xl bg-ink-800 md:transition md:duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-lg md:group-hover:shadow-black/40">
                 {src && (
                   <Image
                     src={src}
@@ -1191,6 +1216,7 @@ function Cast({
         })}
       </Rail>
     </section>
+    </Reveal>
   );
 }
 
@@ -1198,6 +1224,8 @@ function Reviews({ reviews }: { reviews: Review[] }) {
   if (reviews.length === 0) return null;
 
   return (
+    // Fades up on arrival — see the note on `Cast`.
+    <Reveal>
     <section className="mt-8">
       <h2 className="mb-3 text-lg font-semibold tracking-tight">What people are saying</h2>
       <Rail>
@@ -1225,5 +1253,6 @@ function Reviews({ reviews }: { reviews: Review[] }) {
         ))}
       </Rail>
     </section>
+    </Reveal>
   );
 }
