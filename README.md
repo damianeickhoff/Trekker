@@ -978,6 +978,14 @@ Available — and requesting a series asks for every season. Anything already
 filed on the instance reads as "Requested"; how Overseerr is getting on with the
 download is its own business.
 
+Posters carry the same fact as a mark in their top right corner — asked for,
+partly there, or on the server — across discover, search, the watchlist and
+every list. That one comes from a sweep of the whole media list rather than a
+lookup per card ([`request-marks.ts`](src/lib/request-marks.ts)), taken a page
+at a time and held for a couple of minutes so a grid of sixty posters costs
+nothing. Anything requested from inside Trekker drops the held copy
+immediately, so a mark you just caused never waits.
+
 ## Plex
 
 The admin links a Plex Media Server under **Settings → Plex**:
