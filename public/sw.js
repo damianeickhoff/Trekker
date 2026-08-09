@@ -17,18 +17,32 @@
  * That is a feature, not a cache tweak.
  */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const STATIC = `trekker-static-${VERSION}`;
 const SHELL = `trekker-shell-${VERSION}`;
 
-/** Answered from the cache when a navigation cannot reach the network. */
-const OFFLINE_URL = "/offline";
+/**
+ * Answered from the cache when a navigation cannot reach the server.
+ *
+ * A plain static file rather than a rendered route. It used to be `/offline`,
+ * which meant the fallback was a *Next page* — so it arrived wearing the header
+ * and the tab bar, every link in them leading nowhere, and it could only ever be
+ * as fresh as the last time the server had been up to render it. This one is
+ * needed precisely when the thing that would render it is not there.
+ *
+ * It is also the answer to a wait, not only to a failure: the container applies
+ * migrations before the server binds, so an update leaves several seconds where
+ * the icon works and nothing is listening. The page shows the mark, keeps asking
+ * `/api/health`, and reloads the moment it is answered — settling into the
+ * offline copy only once asking has stopped being reasonable.
+ */
+const BOOT_URL = "/boot.html";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((cache) => cache.addAll([OFFLINE_URL, "/icon.svg"]))
+      .then((cache) => cache.addAll([BOOT_URL, "/icon.svg"]))
       // A failed precache must not stop the worker installing — push
       // notifications are the part that matters most and they need no cache.
       .catch(() => undefined)
@@ -37,6 +51,20 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  /**
+   * Start the navigation request before this worker has finished booting.
+   *
+   * A service worker with a `fetch` handler is woken on every launch, and until
+   * it is running the request it is going to make has not been made. On a cold
+   * start that is dead time in front of every other kind of slow — the exact
+   * shape of "the app takes a moment before anything appears". Navigation
+   * preload takes the request off that critical path: the browser issues it in
+   * parallel with the wake-up, and the handler below picks up the answer.
+   */
+  if (self.registration.navigationPreload) {
+    event.waitUntil(self.registration.navigationPreload.enable().catch(() => undefined));
+  }
+
   event.waitUntil(
     caches
       .keys()
@@ -89,9 +117,22 @@ self.addEventListener("fetch", (event) => {
   // while the network is reachable — only a failed navigation gets the shell.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match(OFFLINE_URL).then((hit) => hit ?? Response.error()),
-      ),
+      (async () => {
+        try {
+          // The preloaded response when there is one — see `activate`. It is
+          // the same request, already in flight before this worker woke.
+          const preloaded = await event.preloadResponse;
+          if (preloaded) return preloaded;
+
+          return await fetch(request);
+        } catch {
+          // Not reachable. That is either a server still coming up or a phone
+          // with no signal, and the boot page is deliberately both: it cannot
+          // tell them apart yet either, so it asks until one of them is true.
+          const hit = await caches.match(BOOT_URL);
+          return hit ?? Response.error();
+        }
+      })(),
     );
   }
 });

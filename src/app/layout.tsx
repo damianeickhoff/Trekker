@@ -59,6 +59,34 @@ const chrome = cache(async () => {
   };
 });
 
+/**
+ * The iPhones and iPads worth having a launch screen for, as
+ * `[css width, css height, pixel ratio]`.
+ *
+ * iOS matches `apple-touch-startup-image` on the device's exact metrics, so
+ * this is a list of devices rather than a set of breakpoints — a size it does
+ * not recognise is ignored rather than scaled, and the app is back to launching
+ * into a blank web view. Several rows cover more than one model: every phone
+ * with the same panel takes the same entry.
+ *
+ * Anything not listed loses nothing it had before.
+ */
+const LAUNCH_SCREENS: [number, number, number][] = [
+  [440, 956, 3], // 16 Pro Max
+  [430, 932, 3], // 16 Plus, 15 Pro Max, 15 Plus, 14 Pro Max
+  [402, 874, 3], // 16 Pro
+  [393, 852, 3], // 16, 15, 15 Pro, 14 Pro
+  [428, 926, 3], // 14 Plus, 13 Pro Max, 12 Pro Max
+  [390, 844, 3], // 14, 13, 13 Pro, 12, 12 Pro
+  [375, 812, 3], // 13 mini, 12 mini, 11 Pro, X, XS
+  [414, 896, 3], // 11 Pro Max, XS Max
+  [414, 896, 2], // 11, XR
+  [414, 736, 3], // 8 Plus
+  [375, 667, 2], // SE (2nd/3rd), 8, 7
+  [820, 1180, 2], // iPad Air
+  [768, 1024, 2], // iPad, iPad mini
+];
+
 export async function generateMetadata(): Promise<Metadata> {
   const { resolved } = await chrome();
 
@@ -81,6 +109,27 @@ export async function generateMetadata(): Promise<Metadata> {
        * sits near enough to the header's own colour not to look like a seam.
        */
       statusBarStyle: resolved === "light" ? "default" : "black-translucent",
+      /**
+       * The launch screen. Android builds one from the manifest; iOS shows a
+       * blank web view until first paint unless it is handed an image, which is
+       * most of the pause between tapping the icon and seeing anything.
+       *
+       * Matched by exact device resolution, which is why there are this many
+       * and why they cannot be one flexible image — a size iOS does not
+       * recognise is simply ignored, and you are back to the blank. Both
+       * orientations of each, since the app is portrait-locked but the launch
+       * screen is not. See `app/splash/route.tsx` for what they draw.
+       */
+      startupImage: LAUNCH_SCREENS.flatMap(([width, height, scale]) => [
+        {
+          url: `/splash?w=${width * scale}&h=${height * scale}`,
+          media: `(device-width: ${width}px) and (device-height: ${height}px) and (-webkit-device-pixel-ratio: ${scale}) and (orientation: portrait)`,
+        },
+        {
+          url: `/splash?w=${height * scale}&h=${width * scale}`,
+          media: `(device-width: ${width}px) and (device-height: ${height}px) and (-webkit-device-pixel-ratio: ${scale}) and (orientation: landscape)`,
+        },
+      ]),
     },
   };
 }
