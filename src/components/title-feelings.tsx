@@ -9,21 +9,33 @@ import type { FeelingTally } from "@/lib/comments";
 /**
  * How a film landed, in one tap, from everybody who has seen it.
  *
- * A score says how good something was and a review says why. Neither answers
- * what it was actually like to sit through, which is the thing people ask each
- * other about — and the answer is cheap enough that somebody will give it when
- * they would never write a paragraph.
+ * Directly under the slider, because it is the next sentence in the same
+ * thought: you mark something watched, you say how good it was, you say what it
+ * was like. A score is a judgement and this is not — which is why the two sit
+ * together rather than this being filed with the writing further down.
  *
  * Public, unlike a review. That is the point of the tally: "four people found
  * this tense" is a fact about the film, and it needs more than your friends to
  * be one.
  *
- * The chips carry their own weight rather than sitting on the section's
- * background — a bar of flat outlines reads as a form, and this is meant to
- * read as a reaction. The one you picked is filled; the ones with the most
- * behind them keep a faint tint so the shape of the answer is visible before
- * any number is read.
+ * Colours follow the title page's own rules rather than the ink ramp: `ios-dim`
+ * and `ios-surface` are what turn into white-on-glass below 40rem, where the
+ * page is dark whatever the theme says, and the plain utilities beside them are
+ * what render everywhere else. Neither works alone — see `globals.css`, "Title
+ * pages".
  */
+
+/** The unselected tile: glass on a phone, a real surface everywhere else. */
+const TILE =
+  "ios-surface border-ink-700/70 bg-ink-900/50 hover:border-flare-500 light:border-ink-600 light:bg-white/85";
+
+/**
+ * The selected one takes no `ios-surface`, deliberately. That rule is unlayered
+ * and beats utilities below 40rem, so a chip carrying both would have its accent
+ * repainted white on a phone — the same split `favourite-button.tsx` makes.
+ */
+const TILE_ON =
+  "border-flare-400/60 bg-flare-600/25 shadow-[0_8px_24px_-12px] shadow-flare-500/80";
 
 export function TitleFeelings({
   mediaType,
@@ -46,15 +58,12 @@ export function TitleFeelings({
   const router = useRouter();
 
   const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
-  const most = Math.max(0, ...counts.values());
 
-  // Signed out with nothing to show is an empty heading. Signed out *with*
-  // something to show is worth reading, which is why this is not gated on being
-  // signed in.
+  // Signed out with nothing to show is a caption over nothing.
   if (!signedIn && total === 0) return null;
 
   function pick(id: string) {
-    // Moved before the server answers, and the tally with it: this is a chip
+    // Moved before the server answers, and the tally with it: this is a tile
     // that has to feel like a switch, and a round trip in the middle of one
     // reads as it not having worked.
     const next = picked === id ? null : id;
@@ -76,98 +85,75 @@ export function TitleFeelings({
         setCounts(counts);
       }
     });
-    // Outside the transition, so the chips revive as soon as the write lands
+    // Outside the transition, so the tiles revive as soon as the write lands
     // rather than when a whole page has re-rendered behind them.
     void write.then(() => router.refresh());
   }
 
   return (
-    <section className="mt-8">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <div>
-          <p className="text-[11px] font-medium tracking-wider text-flare-400 uppercase">
-            Everyone who watched
-          </p>
-          <h2 className="mt-0.5 text-lg font-semibold tracking-tight">How it felt</h2>
-        </div>
+    <div className="mt-4">
+      <p className="ios-dim mb-2 text-xs text-ink-400">
+        {total === 0
+          ? "How did it feel? Everyone here can see this."
+          : `How it felt, according to ${total} ${total === 1 ? "person" : "people"}.`}
+      </p>
 
-        {total > 0 && (
-          <span className="ios-surface shrink-0 rounded-full border border-ink-700/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-ink-300 backdrop-blur-sm">
-            {total} {total === 1 ? "answer" : "answers"}
-          </span>
-        )}
-      </div>
+      {/* Four across, so eight is two clean rows and every tile is the same
+          square whatever its label runs to. */}
+      <div className="grid grid-cols-4 gap-2">
+        {FEELINGS.map((feeling) => {
+          const count = counts.get(feeling.id) ?? 0;
+          const on = picked === feeling.id;
 
-      <div className="card p-3 sm:p-4">
-        <div className="flex flex-wrap gap-2">
-          {FEELINGS.map((feeling) => {
-            const count = counts.get(feeling.id) ?? 0;
-            const on = picked === feeling.id;
-            // Faint tint on whatever is leading, so the answer has a shape
-            // before anybody reads a number. Only once there is something to
-            // lead — one answer is not a consensus.
-            const leading = !on && count > 0 && count === most && total > 1;
-
-            // Nothing to press when signed out, and nothing to say about a
-            // feeling nobody picked — so it goes rather than sitting at zero.
-            if (!signedIn && count === 0) return null;
-
-            const inner = (
-              <>
-                <span aria-hidden className="text-base leading-none">
-                  {feeling.emoji}
-                </span>
-                <span>{feeling.label}</span>
-                {count > 0 && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${
-                      on ? "bg-white/20 text-white" : "bg-white/10 text-ink-300"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </>
-            );
-
-            const shape =
-              "inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-medium transition";
-
-            if (!signedIn) {
-              return (
-                <span key={feeling.id} className={`${shape} border-ink-700/70 text-ink-300`}>
-                  {inner}
-                </span>
-              );
-            }
-
-            return (
-              <button
-                key={feeling.id}
-                type="button"
-                disabled={pending}
-                aria-pressed={on}
-                onClick={() => pick(feeling.id)}
-                className={`${shape} active:scale-[0.97] disabled:opacity-60 ${
-                  on
-                    ? "border-flare-400/60 bg-flare-600/25 text-white shadow-[0_8px_24px_-12px] shadow-flare-500/80"
-                    : leading
-                      ? "border-ink-600/70 bg-white/[0.07] text-ink-100 hover:border-flare-500"
-                      : "border-ink-700/70 text-ink-300 hover:border-flare-500 hover:text-ink-100"
+          const inner = (
+            <>
+              <span aria-hidden className="text-xl leading-none">
+                {feeling.emoji}
+              </span>
+              <span
+                className={`text-center text-[10px] leading-tight ${
+                  on ? "ios-bright text-ink-100" : "ios-dim text-ink-400"
                 }`}
               >
-                {inner}
-              </button>
-            );
-          })}
-        </div>
+                {feeling.label}
+              </span>
+              {count > 0 && (
+                <span
+                  className={`font-mono text-[10px] tabular-nums ${
+                    on ? "ios-bright text-ink-100" : "ios-dim text-ink-400"
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </>
+          );
 
-        <p className="mt-3 text-[11px] text-ink-400">
-          {total === 0
-            ? "Nobody has said yet — everyone on this instance can see this."
-            : "Everyone on this instance can see this."}
-        </p>
+          const shape =
+            "flex aspect-square flex-col items-center justify-center gap-1 rounded-2xl border px-1 py-2 transition";
+
+          if (!signedIn) {
+            return (
+              <span key={feeling.id} className={`${shape} ${TILE}`}>
+                {inner}
+              </span>
+            );
+          }
+
+          return (
+            <button
+              key={feeling.id}
+              type="button"
+              disabled={pending}
+              aria-pressed={on}
+              onClick={() => pick(feeling.id)}
+              className={`${shape} active:scale-[0.97] disabled:opacity-60 ${on ? TILE_ON : TILE}`}
+            >
+              {inner}
+            </button>
+          );
+        })}
       </div>
-    </section>
+    </div>
   );
 }

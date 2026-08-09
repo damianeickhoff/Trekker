@@ -456,25 +456,39 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
             }}
           />
         }
-        // Nothing to rate until you have seen it.
+        /**
+         * Nothing to rate until you have seen it — but how it felt sits here
+         * too, under the slider, because it is the next sentence in the same
+         * thought rather than a section of its own. The tally is worth reading
+         * before you have watched it, so it is not behind the same gate.
+         */
         rating={
-          user && state.watched ? (
-            <RatingWidget
+          <>
+            {user && state.watched ? (
+              <RatingWidget
+                mediaType="movie"
+                tmdbId={tmdbId}
+                title={movie.title}
+                poster={movie.poster_path}
+                initialScore={state.rating?.score ?? null}
+                initialReview={state.rating?.review ?? null}
+                signedIn
+                context={await getRatingContext(
+                  user.id,
+                  "movie",
+                  tmdbId,
+                  Math.round(movie.vote_average * 10) || null,
+                )}
+              />
+            ) : null}
+            <TitleFeelings
               mediaType="movie"
               tmdbId={tmdbId}
-              title={movie.title}
-              poster={movie.poster_path}
-              initialScore={state.rating?.score ?? null}
-              initialReview={state.rating?.review ?? null}
-              signedIn
-              context={await getRatingContext(
-                user.id,
-                "movie",
-                tmdbId,
-                Math.round(movie.vote_average * 10) || null,
-              )}
+              tally={feelings.tally}
+              mine={feelings.mine}
+              signedIn={Boolean(user)}
             />
-          ) : null
+          </>
         }
         streaming={
           <Suspense fallback={<ChipFallback width="w-48" />}>
@@ -502,15 +516,6 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         rated={state.rating !== null}
         initialReview={state.rating?.review ?? null}
         friends={friendReviews}
-        signedIn={Boolean(user)}
-      />
-      {/* Feelings before comments: one is a glance and the other is a read, and
-          the cheap thing belongs above the thing that costs attention. */}
-      <TitleFeelings
-        mediaType="movie"
-        tmdbId={tmdbId}
-        tally={feelings.tally}
-        mine={feelings.mine}
         signedIn={Boolean(user)}
       />
       <TitleComments
@@ -684,25 +689,35 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
             }}
           />
         }
-        // One episode in is enough to have a view; nothing watched is not.
+        // One episode in is enough to have a view; nothing watched is not. How
+        // it felt sits under it either way — see the note in `MovieView`.
         rating={
-          user && watchedEpisodes.length > 0 ? (
-            <RatingWidget
+          <>
+            {user && watchedEpisodes.length > 0 ? (
+              <RatingWidget
+                mediaType="tv"
+                tmdbId={tmdbId}
+                title={show.name}
+                poster={show.poster_path}
+                initialScore={state.rating?.score ?? null}
+                initialReview={state.rating?.review ?? null}
+                signedIn
+                context={await getRatingContext(
+                  user.id,
+                  "tv",
+                  tmdbId,
+                  Math.round(show.vote_average * 10) || null,
+                )}
+              />
+            ) : null}
+            <TitleFeelings
               mediaType="tv"
               tmdbId={tmdbId}
-              title={show.name}
-              poster={show.poster_path}
-              initialScore={state.rating?.score ?? null}
-              initialReview={state.rating?.review ?? null}
-              signedIn
-              context={await getRatingContext(
-                user.id,
-                "tv",
-                tmdbId,
-                Math.round(show.vote_average * 10) || null,
-              )}
+              tally={feelings.tally}
+              mine={feelings.mine}
+              signedIn={Boolean(user)}
             />
-          ) : null
+          </>
         }
         streaming={
           <Suspense fallback={<ChipFallback width="w-48" />}>
@@ -764,16 +779,9 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
               friends={friendReviews}
               signedIn={Boolean(user)}
             />
-            {/* Both sit inside the details tab on a show, one tap further in
-                than they are on a film. That is where everything else about the
-                show itself lives; the episode list is a different question. */}
-            <TitleFeelings
-              mediaType="tv"
-              tmdbId={tmdbId}
-              tally={feelings.tally}
-              mine={feelings.mine}
-              signedIn={Boolean(user)}
-            />
+            {/* Inside the details tab on a show, one tap further in than on a
+                film. That is where everything else about the show itself lives;
+                the episode list is a different question. */}
             <TitleComments
               mediaType="tv"
               tmdbId={tmdbId}
