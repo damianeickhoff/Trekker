@@ -17,7 +17,11 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
-      { src: "/apple-icon", sizes: "192x192", type: "image/png", purpose: "maskable" },
+      // The maskable entry used to claim 192×192 for the same 180×180 asset,
+      // which is the sort of lie Chrome checks: a size that does not match is
+      // dropped, and the icon it would have drawn on the launch splash is
+      // dropped with it. Declared at what it actually is instead.
+      { src: "/apple-icon", sizes: "180x180", type: "image/png", purpose: "maskable" },
     ],
   };
 }

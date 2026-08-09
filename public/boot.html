@@ -1,0 +1,240 @@
+<!doctype html>
+<!--
+  The screen between tapping the icon and the app answering.
+
+  Served by the service worker whenever a navigation cannot reach the server —
+  which on this deployment is not an edge case: the container runs `migrate
+  deploy` before the server binds, so every update leaves a window of several
+  seconds where the app is installed, the icon works, and nothing is listening.
+  What used to happen then was a blank screen and then the browser's own error
+  page. This is what happens instead.
+
+  It is one file with two states rather than two documents. "Still coming" and
+  "not coming" are the same wait at different lengths, and the second is only
+  known by having done the first — so the page starts hopeful, keeps asking,
+  and settles into the offline copy once asking has stopped being reasonable.
+
+  Deliberately static, self-contained and framework-free: it is needed exactly
+  when the thing that would render it is not there. No build step, no fonts to
+  fetch, no stylesheet to miss. The background matches `background_color` in the
+  manifest so the hand-off from the OS launch screen has nothing to flash.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07070c" />
+    <title>Trekker</title>
+    <style>
+      :root {
+        --ink: #07070c;
+        --ink-400: #9ca3af;
+        --ink-100: #f3f4f6;
+        --violet: #8b5cf6;
+        --amber: #f59e0b;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        background: var(--ink);
+        color: var(--ink-100);
+        /* The system stack: a webfont is a network request, and this page only
+           exists because the network is the thing that failed. */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: grid;
+        place-items: center;
+        padding: 2rem calc(1.5rem + env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom))
+          calc(1.5rem + env(safe-area-inset-left));
+        text-align: center;
+      }
+
+      /* The same mark the home screen icon uses, so the icon appears to open
+         into the app rather than being replaced by something else. */
+      .mark {
+        width: 84px;
+        height: 84px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, var(--violet) 0%, var(--amber) 100%);
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+        box-shadow: 0 24px 60px -24px rgb(139 92 246 / 0.7);
+      }
+
+      .mark svg { width: 46px; height: 46px; display: block; }
+
+      h1 {
+        margin: 1.5rem 0 0;
+        font-size: 1.0625rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      p {
+        margin: 0.5rem auto 0;
+        max-width: 22rem;
+        font-size: 0.875rem;
+        line-height: 1.55;
+        color: var(--ink-400);
+      }
+
+      /* An indeterminate sliver rather than a spinner: there is no progress to
+         report, and a bar that pretends otherwise is a lie told slowly. */
+      .track {
+        width: 132px;
+        height: 3px;
+        margin: 1.75rem auto 0;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.08);
+        overflow: hidden;
+      }
+
+      .track i {
+        display: block;
+        width: 40%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--violet), var(--amber));
+        animation: slide 1.4s ease-in-out infinite;
+      }
+
+      @keyframes slide {
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(360%); }
+      }
+
+      button {
+        margin-top: 1.75rem;
+        border: 0;
+        border-radius: 12px;
+        background: var(--violet);
+        color: #fff;
+        font: inherit;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.7rem 1.15rem;
+        cursor: pointer;
+        transition: background-color 0.15s ease, transform 0.15s ease;
+      }
+
+      button:active { transform: scale(0.98); }
+
+      /* The two states. Only one is ever in the document's flow. */
+      [hidden] { display: none !important; }
+
+      .fade { animation: fade 0.4s ease both; }
+
+      @keyframes fade {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: none; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .track i { animation: none; width: 100%; opacity: 0.5; }
+        .fade { animation: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 512 512" fill="none">
+          <path
+            d="M150 186h212M256 186v168"
+            stroke="#07070c"
+            stroke-width="52"
+            stroke-linecap="round"
+          />
+        </svg>
+      </span>
+
+      <!-- Waiting. -->
+      <div id="waiting">
+        <h1>Trekker</h1>
+        <p id="waiting-copy">Starting up…</p>
+        <div class="track" role="progressbar" aria-label="Starting up"><i></i></div>
+      </div>
+
+      <!-- Given up. The wording is the offline page's, which this replaces. -->
+      <div id="offline" hidden class="fade">
+        <h1>No connection</h1>
+        <p>
+          Trekker keeps everything on your own server, so it needs to reach it to
+          show you anything. Nothing has been lost — this page will work again
+          the moment you are back.
+        </p>
+        <button type="button" id="retry">Try again</button>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // Roughly twelve seconds of asking before this stops being "starting up"
+        // and starts being "not there". Long enough to cover a container that is
+        // applying migrations before it binds, short enough that a genuinely
+        // offline phone is not left watching a bar for a minute.
+        var INTERVAL_MS = 1200;
+        var ATTEMPTS = 10;
+
+        var tries = 0;
+        var waiting = document.getElementById("waiting");
+        var offline = document.getElementById("offline");
+        var copy = document.getElementById("waiting-copy");
+
+        function giveUp() {
+          waiting.hidden = true;
+          offline.hidden = false;
+        }
+
+        function check() {
+          tries += 1;
+
+          // `cache: "no-store"` because the answer is about *now*. A cached 200
+          // would have this reload into the same dead server for ever.
+          fetch("/api/health", { cache: "no-store" })
+            .then(function (res) {
+              if (!res.ok) throw new Error("not ready");
+              // It is answering. Going back to the address bar's own URL rather
+              // than to "/" keeps whatever the user actually opened.
+              window.location.reload();
+            })
+            .catch(function () {
+              if (tries >= ATTEMPTS) return giveUp();
+              // Said only once there is something worth saying: a message that
+              // appears instantly reads as an error rather than as a wait.
+              if (tries === 3) copy.textContent = "Waiting for your server…";
+              window.setTimeout(check, INTERVAL_MS);
+            });
+        }
+
+        document.getElementById("retry").addEventListener("click", function () {
+          tries = 0;
+          offline.hidden = true;
+          waiting.hidden = false;
+          copy.textContent = "Trying again…";
+          check();
+        });
+
+        // Coming back to the app is itself a reason to look again, and it is a
+        // better signal than any timer: a phone that has just been handed its
+        // network back fires this before the next tick would have run.
+        window.addEventListener("online", function () {
+          tries = 0;
+          check();
+        });
+
+        check();
+      })();
+    </script>
+  </body>
+</html>
