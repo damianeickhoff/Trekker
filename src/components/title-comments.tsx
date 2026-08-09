@@ -50,13 +50,13 @@ function Avatar({ name, src, size = 36 }: { name: string; src: string | null; si
 }
 
 const BOX =
-  "w-full resize-y rounded-xl border border-ink-700/70 bg-ink-900/50 p-3 text-sm leading-relaxed text-ink-100 outline-none transition placeholder:text-ink-500 focus:border-flare-500 focus:bg-ink-900/70 disabled:opacity-60 light:bg-white/70";
+  "w-full resize-y rounded-xl border border-ink-700/70 bg-ink-900/50 p-3 text-sm leading-relaxed text-ink-100 outline-none transition placeholder:text-ink-400 focus:border-flare-500 focus:bg-ink-900/70 disabled:opacity-60 light:bg-white/70";
 
 const SEND =
   "rounded-xl bg-flare-600 px-4 py-2 text-xs font-semibold text-white shadow-[0_8px_20px_-10px] shadow-flare-600/80 transition active:scale-[0.98] hover:bg-flare-500 disabled:opacity-40 disabled:shadow-none";
 
 const QUIET =
-  "rounded-xl px-3 py-2 text-xs font-medium text-ink-400 transition hover:text-ink-100";
+  "ios-dim rounded-xl px-3 py-2 text-xs font-medium text-ink-400 transition hover:text-ink-100";
 
 type ItemProps = {
   comment: CommentNode;
@@ -89,7 +89,7 @@ function CommentItem(props: ItemProps) {
     <li
       className={
         reply
-          ? "rounded-2xl border border-ink-800/70 bg-white/[0.03] p-3"
+          ? "card p-3"
           : "card overflow-hidden p-4"
       }
     >
@@ -99,11 +99,11 @@ function CommentItem(props: ItemProps) {
         <div className="min-w-0 flex-1">
           <Link
             href={`/profiles/${comment.author.id}`}
-            className="block truncate text-sm font-semibold hover:underline"
+            className="ios-bright block truncate text-sm font-semibold text-ink-100 hover:underline"
           >
             {comment.author.name}
           </Link>
-          <p className="text-[11px] text-ink-500">{ago(comment.createdAt)}</p>
+          <p className="ios-dim text-[11px] text-ink-400">{ago(comment.createdAt)}</p>
         </div>
 
         {comment.own && (
@@ -113,14 +113,14 @@ function CommentItem(props: ItemProps) {
             onClick={() => props.onDelete(comment.id)}
             aria-label="Delete comment"
             title="Delete comment"
-            className="shrink-0 rounded-lg p-1.5 text-ink-600 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
+            className="ios-dim shrink-0 rounded-lg p-1.5 text-ink-400 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-60"
           >
             <Trash2 size={15} />
           </button>
         )}
       </div>
 
-      <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap text-ink-200">
+      <p className="ios-bright mt-3 text-sm leading-relaxed whitespace-pre-wrap text-ink-100">
         {comment.body}
       </p>
 
@@ -138,7 +138,7 @@ function CommentItem(props: ItemProps) {
             className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition active:scale-[0.97] disabled:opacity-60 ${
               reaction.mine
                 ? "border-flare-400/60 bg-flare-600/25 text-white"
-                : "border-ink-700/70 bg-white/[0.04] text-ink-300 hover:border-flare-500 hover:text-ink-100"
+                : "ios-surface ios-dim border-ink-700/70 bg-ink-900/50 text-ink-400 hover:border-flare-500 light:border-ink-600 light:bg-white/85"
             }`}
           >
             <span aria-hidden className="leading-none">
@@ -158,7 +158,7 @@ function CommentItem(props: ItemProps) {
               className={`grid h-7 w-7 place-items-center rounded-full border transition active:scale-[0.97] ${
                 open
                   ? "border-flare-500 text-flare-300"
-                  : "border-ink-700/70 text-ink-500 hover:border-flare-500 hover:text-flare-300"
+                  : "ios-surface ios-dim border-ink-700/70 bg-ink-900/50 text-ink-400 hover:border-flare-500 hover:text-flare-300 light:border-ink-600 light:bg-white/85"
               }`}
             >
               <SmilePlus size={14} />
@@ -203,7 +203,7 @@ function CommentItem(props: ItemProps) {
       </div>
 
       {comment.replies.length > 0 && (
-        <ul className="mt-3 space-y-2 border-l-2 border-ink-800/80 pl-3">
+        <ul className="mt-3 space-y-2 border-l-2 border-white/10 pl-3 light:border-ink-200">
           {comment.replies.map((child) => (
             <CommentItem key={child.id} {...props} comment={child} reply />
           ))}
@@ -211,7 +211,7 @@ function CommentItem(props: ItemProps) {
       )}
 
       {props.replyTo === comment.id && (
-        <div className="mt-3 border-l-2 border-flare-600/40 pl-3">
+        <div className="mt-3 border-l-2 border-flare-500/50 pl-3">
           <textarea
             value={props.replyDraft}
             maxLength={2000}
@@ -303,16 +303,11 @@ export function TitleComments({
 
   return (
     <section className="mt-8">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <div>
-          <p className="text-[11px] font-medium tracking-wider text-flare-400 uppercase">
-            Everyone on this instance
-          </p>
-          <h2 className="mt-0.5 text-lg font-semibold tracking-tight">Comments</h2>
-        </div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Comments</h2>
 
         {count > 0 && (
-          <span className="ios-surface shrink-0 rounded-full border border-ink-700/70 px-2.5 py-1 font-mono text-[11px] tabular-nums text-ink-300 backdrop-blur-sm">
+          <span className="ios-surface ios-dim shrink-0 rounded-full border border-ink-700/70 bg-ink-900/50 px-2.5 py-1 font-mono text-[11px] tabular-nums text-ink-400 backdrop-blur-sm light:border-ink-600 light:bg-white/85">
             {count}
           </span>
         )}
@@ -332,7 +327,7 @@ export function TitleComments({
             />
           </div>
           <div className="mt-2.5 flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto text-[11px] text-ink-500">
+            <span className="ios-dim mr-auto text-[11px] text-ink-400">
               Anyone signed in here can read this.
             </span>
             <button
@@ -379,7 +374,7 @@ export function TitleComments({
         </ul>
       ) : (
         signedIn && (
-          <p className="mt-3 px-1 text-sm text-ink-500">
+          <p className="ios-dim mt-3 px-1 text-sm text-ink-400">
             Nothing yet. Say the first thing about this {thing}.
           </p>
         )

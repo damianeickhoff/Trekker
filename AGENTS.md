@@ -34,6 +34,15 @@ catalogue. The README is thorough and current — read it for what a feature is
   and `light:` variants defined in `globals.css`, never Tailwind's built-in
   `dark:`. The ink ramp inverts between themes; on fixed-colour surfaces use
   literal `text-black`/`text-white`.
+- Title pages are their own world below 40rem: the ink ramp is forced dark there
+  whatever the theme, and `light:` deliberately does not match at all. Anything
+  rendered on one needs the `ios-*` markers — panels are `card`, secondary text
+  is `ios-dim` *beside* its `text-ink-300|400`, plain white text is `ios-bright`,
+  popovers are `ios-menu`. Those markers emit no CSS above 40rem, so each one
+  needs real utilities and a `light:` pair next to it; and because they are
+  unlayered they beat utilities below it, so an accent-filled selected state must
+  not carry `ios-surface` or it will be repainted. See the "Title pages" block at
+  the foot of `globals.css`.
 - Denormalised titles and posters on rows are deliberate: list rows must render
   without a TMDB call.
 - External calls (TMDB, Plex, Overseerr) fail soft and are fanned out through

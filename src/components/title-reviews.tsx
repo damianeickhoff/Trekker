@@ -82,13 +82,11 @@ export function TitleReviews({
 
   return (
     <section className="mt-8">
+      {/* A bare heading, like Cast and "What people are saying" above it. The
+          kicker line this briefly had belongs to the profile and discover
+          pages; on a title page it was the only one of its kind. */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <div>
-          <p className="text-[11px] font-medium tracking-wider text-flare-400 uppercase">
-            In your own words
-          </p>
-          <h2 className="mt-0.5 text-lg font-semibold tracking-tight">Reviews</h2>
-        </div>
+        <h2 className="text-lg font-semibold tracking-tight">Reviews</h2>
 
         {openable && (
           <button
