@@ -68,7 +68,7 @@ export function TrackButtons({
     return (
       <button
         onClick={() => router.push("/login")}
-        className="ios-primary mx-auto rounded-xl bg-flare-600 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] shadow-flare-600/80 transition active:scale-[0.98] hover:bg-flare-500 sm:mx-0"
+        className="mx-auto rounded-xl bg-flare-600 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] shadow-flare-600/80 transition active:scale-[0.98] hover:bg-flare-500 sm:mx-0"
       >
         Sign in to track this
       </button>
@@ -193,18 +193,26 @@ export function TrackButtons({
             // it. No gradient and no inner highlight — those read as a plastic
             // bevel at this size, and the shape is doing the work instead.
             //
-            // The same purple whether or not it has been watched: the tick, the
-            // date and the chevron already say which state it is in, and
-            // swapping the colour underneath them made the two states look like
-            // two different buttons.
+            // The accent, at two strengths. The same colour whether or not it
+            // has been watched — the tick and the count already say which state
+            // it is in, and a second colour would have made them read as two
+            // different buttons — but unwatched it sits back a little and
+            // watched it comes forward at full strength.
+            //
+            // Every class that differs between the two states is inside the
+            // ternary, including the hover and the shadow's tint. Two `bg-*` on
+            // one element resolve by stylesheet order rather than by which was
+            // written last, which is a coin toss; one at a time is the only
+            // version that reliably does what it says.
+            //
             // The transparent border is load-bearing: the watchlist button beside
             // this one has a real one, and without a matching box the two ended
             // up two pixels different in height.
-            className={`ios-primary ${
-              // Filled once it means something. Unwatched it is an invitation and
-              // sits back; watched it is a statement and comes forward.
-              watched ? "ios-primary-on" : ""
-            } inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent bg-flare-600 px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] shadow-flare-600/80 transition active:scale-[0.98] max-sm:px-3 hover:bg-flare-500 disabled:opacity-60`}
+            className={`${
+              watched
+                ? "bg-flare-600 shadow-flare-600/80 hover:bg-flare-500"
+                : "bg-flare-600/85 shadow-flare-600/50 hover:bg-flare-600"
+            } inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-3.5 text-sm font-semibold text-white shadow-[0_10px_28px_-10px] transition active:scale-[0.98] max-sm:px-3 disabled:opacity-60`}
           >
             {pending ? (
               <Loader2 size={16} className="shrink-0 animate-spin" />
