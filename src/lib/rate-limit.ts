@@ -29,6 +29,13 @@ export type Limit = { attempts: number; windowMs: number };
 /** Five tries a quarter of an hour: generous for a typo, useless for a list. */
 export const LOGIN_LIMIT: Limit = { attempts: 5, windowMs: 15 * 60 * 1000 };
 
+/**
+ * Ten comments in five minutes. Well past a lively conversation, well short of
+ * anything that could fill a title page — this is a household, so the brake is
+ * against a stuck finger and a runaway script rather than against a stranger.
+ */
+export const COMMENT_LIMIT: Limit = { attempts: 10, windowMs: 5 * 60 * 1000 };
+
 function sweep(now: number) {
   for (const [key, bucket] of buckets) {
     if (bucket.resetAt <= now) buckets.delete(key);
@@ -75,6 +82,16 @@ export function recordFailure(key: string, limit: Limit = LOGIN_LIMIT) {
 
   bucket.count += 1;
 }
+
+/**
+ * The same counter, under a name that is true for the other kind of caller.
+ *
+ * Sign-in counts *failures*, because a correct password is not an attack. A
+ * comment has no failure to count — every post is a real one, and what is being
+ * limited is the rate rather than the wrongness. Same bucket, same window; only
+ * the word would have lied.
+ */
+export const recordEvent = recordFailure;
 
 /** A success clears the slate — the password was right, so nothing was guessed. */
 export function clearLimit(key: string) {

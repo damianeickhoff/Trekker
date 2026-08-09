@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Clock, Eye, Loader2 } from "lucide-react";
+import { Check, Clock, Eye, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
@@ -231,9 +231,6 @@ export function TrackButtons({
               </span>
             )}
 
-            {watched && (
-              <ChevronDown size={15} className="-mr-1 ml-0.5 shrink-0 opacity-70" />
-            )}
           </button>
 
           {askWhen && (

@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { getRatingContext } from "@/lib/rating-context";
 import { getRequestMarks } from "@/lib/request-marks";
 import { getFriendReviews } from "@/lib/reviews";
+import { getComments, getFeelings } from "@/lib/comments";
 import { getWatchStatuses } from "@/lib/stats";
 import {
   countAiredEpisodes,
@@ -50,6 +51,8 @@ import { getSaveState, type SaveState } from "@/lib/lists";
 import { SetupNotice, Skeleton, SkeletonRail, WatchedPill } from "@/components/ui";
 import { TitleMenu } from "@/components/title-menu";
 import { TitleReviews } from "@/components/title-reviews";
+import { TitleComments } from "@/components/title-comments";
+import { TitleFeelings } from "@/components/title-feelings";
 import { TitleTrailer } from "@/components/title-trailer";
 import { TrailerButton } from "@/components/trailer-button";
 import { StreamingStrip } from "@/components/where-to-watch";
@@ -345,9 +348,13 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
   // Started together rather than awaited one after another inside the JSX. Both
   // of these belong to the recommendation rail at the very bottom of the page,
   // and awaiting them down there held up everything above it too.
-  const [state, friendReviews, colours] = await Promise.all([
+  const [state, friendReviews, comments, feelings, colours] = await Promise.all([
     trackingState(user, "movie", tmdbId),
     user ? getFriendReviews(user.id, "movie", tmdbId) : Promise.resolve([]),
+    // No `user &&` guard on these two, unlike the reviews above them: they are
+    // the public half of the page and are worth reading signed out.
+    getComments("movie", tmdbId, user?.id ?? null),
+    getFeelings("movie", tmdbId, user?.id ?? null),
     // In here rather than after: it is a second trip to TMDB and a decode, and
     // awaiting it on its own added all of that to the page's critical path for
     // no reason — everything it needs is already known by this point.
@@ -497,6 +504,21 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         friends={friendReviews}
         signedIn={Boolean(user)}
       />
+      {/* Feelings before comments: one is a glance and the other is a read, and
+          the cheap thing belongs above the thing that costs attention. */}
+      <TitleFeelings
+        mediaType="movie"
+        tmdbId={tmdbId}
+        tally={feelings.tally}
+        mine={feelings.mine}
+        signedIn={Boolean(user)}
+      />
+      <TitleComments
+        mediaType="movie"
+        tmdbId={tmdbId}
+        comments={comments}
+        signedIn={Boolean(user)}
+      />
       <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>
         <Recommendations items={recommendations.slice(0, 14)} user={user} />
       </Suspense>
@@ -511,7 +533,7 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
 
   const seasons = show.seasons.filter((s) => s.season_number > 0 && s.episode_count > 0);
 
-  const [state, watchedEpisodes, friendReviews, colours] = await Promise.all([
+  const [state, watchedEpisodes, friendReviews, comments, feelings, colours] = await Promise.all([
     trackingState(user, "tv", tmdbId),
     user
       ? db.watchedEpisode.findMany({
@@ -520,6 +542,10 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
         })
       : Promise.resolve([]),
     user ? getFriendReviews(user.id, "tv", tmdbId) : Promise.resolve([]),
+    // Ungated, unlike the reviews above: the public half of the page is worth
+    // reading signed out.
+    getComments("tv", tmdbId, user?.id ?? null),
+    getFeelings("tv", tmdbId, user?.id ?? null),
     // In here rather than after — see the note in `MovieView`.
     heroColours(show.backdrop_path ?? show.poster_path),
   ]);
@@ -735,6 +761,22 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
               rated={state.rating !== null}
               initialReview={state.rating?.review ?? null}
               friends={friendReviews}
+              signedIn={Boolean(user)}
+            />
+            {/* Both sit inside the details tab on a show, one tap further in
+                than they are on a film. That is where everything else about the
+                show itself lives; the episode list is a different question. */}
+            <TitleFeelings
+              mediaType="tv"
+              tmdbId={tmdbId}
+              tally={feelings.tally}
+              mine={feelings.mine}
+              signedIn={Boolean(user)}
+            />
+            <TitleComments
+              mediaType="tv"
+              tmdbId={tmdbId}
+              comments={comments}
               signedIn={Boolean(user)}
             />
             <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>

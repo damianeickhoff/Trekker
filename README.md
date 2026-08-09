@@ -131,8 +131,17 @@ somewhere the template can pull it from. Start at
   not a friend, and stats and activity to anyone who is. The home feed and the
   profile page's friends list are scoped the same way — there is no
   "everyone on this instance" view of anybody's watch history.
+
+  Two things on a title page are the exception, and deliberately so: **comments
+  and feelings are visible to everyone signed in**. A conversation only your
+  friends can join is a diary with extra steps, and a tally of how a film landed
+  only means something with more than a handful of people in it. Neither says
+  anything about the rest of what you have watched — the history behind them
+  stays private. Reviews are unchanged and still friends-only, which is why the
+  two sit in separate sections, each saying who can read it.
 - `/title/[movie|tv]/[id]` — details, audience score, genres, cast, TMDB
-  reviews, recommendations, a **Trailer** button, and a streaming strip under
+  reviews, **how it felt** and **comments**, recommendations, a **Trailer**
+  button, and a streaming strip under
   the hero (TMDB's JustWatch feed, subscription services only, for the
   configured `WATCH_REGION`) — a different question from the Plex badge beside
   it, that one being "is it already on our server".
@@ -1022,6 +1031,19 @@ they are saved; they keep working unchanged in the meantime.
   headed by TMDB's average across the season next to your own tally of thumbs —
   "is it any good?" and "did I like it?" are different questions, so they are
   not blended.
+- A title carries four separate opinions, and they are separate on purpose. The
+  **score** says how good it was, the **review** says why and stays between
+  friends, a **feeling** says what it was like to sit through, and **comments**
+  are people talking to each other. The last two are public — see the note under
+  `/friends` — and neither earns XP: a badge for commenting would turn a
+  conversation into a scoreboard, which is the one thing that reliably ends one.
+- Feelings are eight fixed answers rather than free emoji, one per person per
+  title, and picking the one you already hold clears it — the same shape as an
+  episode thumb. A fixed set is what makes the tally readable: "four people found
+  this tense" is a fact about the film, where a pile of arbitrary emoji is not.
+- Comments allow one level of replies, enforced in `postComment` rather than by
+  the schema — SQL cannot say "the parent must be a root", and indentation is a
+  rendering decision that should not be the only thing holding the shape.
 - The recap covers the year, or any completed month back to January. The month
   in progress is deliberately excluded: recapping a half-finished month is a
   progress bar. In January there is no completed month, and the picker says so
