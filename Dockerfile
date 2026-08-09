@@ -99,6 +99,18 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+
+# What this build is, for the app to report about itself — see `lib/version.ts`.
+#
+# In the runtime stage rather than in the build one on purpose: consumed before
+# `npm run build` it would change on every commit and invalidate the Next build
+# cache with it, for a value the build does not use. Here it only rewrites the
+# last few small layers.
+#
+# `dev` is the honest answer for an image somebody built themselves, which is
+# what the compose file does.
+ARG TREKKER_VERSION=dev
+ENV TREKKER_VERSION=$TREKKER_VERSION
 # Where the SQLite file lives. Mount a volume here or the database is lost with
 # the container.
 ENV DATABASE_URL="file:/data/trekker.db"

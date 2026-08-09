@@ -67,6 +67,26 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # What the running app reports as its version. The full commit, cut
+          # down for display — the short form matches the `sha-<short>` tag
+          # above, so what the app says can be found in the registry without
+          # translating anything.
+          build-args: |
+            TREKKER_VERSION=${{ github.sha }}
+          # Pushed as a plain image manifest rather than as an index.
+          #
+          # This action turns provenance on by default when pushing, which makes
+          # buildx publish an OCI *index* with an attestation manifest attached —
+          # the `exporting attestation manifest` line in the log. Unraid decides
+          # whether an update exists by comparing the local image digest against
+          # the registry's, and that comparison is unreliable against an index
+          # carrying an extra `unknown/unknown` entry: the update we pushed did
+          # not show up in the Docker tab at all.
+          #
+          # Nothing here consumes the attestation, so it is a straight trade for
+          # an update check that works.
+          provenance: false
+          sbom: false
           # Unraid is x86, and the runtime stage strips sharp's non-musl-x64
           # binaries on the assumption that it is — see the Dockerfile. Building
           # arm64 as well would need that assumption lifted first.

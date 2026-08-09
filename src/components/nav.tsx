@@ -93,6 +93,7 @@ export function Nav({
   season,
   seasonSetting,
   notifications = [],
+  version,
 }: {
   user: NavUser;
   /** Which costume is on, if any. */
@@ -104,6 +105,8 @@ export function Nav({
    * does not get the picker — which is everyone but the instance's admin.
    */
   seasonSetting: SeasonSetting | null;
+  /** Which build is running. Passed straight through to the avatar menu. */
+  version: string;
 }) {
   const SeasonIcon = season ? SEASON_ICON[season] : null;
   const pathname = usePathname();
@@ -240,6 +243,7 @@ export function Nav({
                 avatarUrl={user.avatarUrl}
                 seasonSetting={seasonSetting}
                 canSwitchProfile={user.canSwitchProfile}
+                version={version}
               />
             ) : (
               <Link
