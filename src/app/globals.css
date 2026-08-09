@@ -1747,29 +1747,21 @@ html[data-theme="light"] .season-snow-far {
   }
 
   /*
-   * The primary button, and the one link in the hero.
+   * The primary button used to be overridden to white here.
    *
-   * The accent violet is the app's colour, and this is the one page that has a
-   * colour of its own — a saturated purple pill on artwork sampled from a film
-   * was the only thing on screen belonging to something else. White carries
-   * "primary" perfectly well, and it is what the artwork underneath is already
-   * lighting.
+   * The argument was that the accent violet is the app's colour and this is the
+   * one page with a colour of its own, so a saturated pill on artwork sampled
+   * from the film was the only thing on screen belonging to something else. It
+   * held right up until you saw it next to Save: white at 60% reads as a
+   * disabled control, and a *saved* Save is tinted with the accent, so the
+   * quiet half of the pair was the one wearing the colour and the primary
+   * action was the one that looked switched off.
+   *
+   * So the watch button keeps the accent here like everywhere else, and carries
+   * its two strengths in its own utilities rather than in this file — see
+   * `track-buttons.tsx`. Nothing overrides it any more; the `ios-primary` hook
+   * is gone with these rules rather than left behind to look meaningful.
    */
-  body:has(.title-page) .ios-primary {
-    background-color: rgb(255 255 255 / 0.6);
-    color: #0c0c14;
-    box-shadow: 0 10px 28px -12px rgb(0 0 0 / 0.9);
-  }
-
-  /* Filled once the claim has been made. Both are the same button, at two
-     strengths — a different colour would have made them two buttons. */
-  body:has(.title-page) .ios-primary-on {
-    background-color: rgb(255 255 255 / 0.95);
-  }
-
-  body:has(.title-page) .ios-primary:hover {
-    background-color: #ffffff;
-  }
 
   body:has(.title-page) .ios-link {
     color: #ffffff;
