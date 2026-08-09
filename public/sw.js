@@ -17,7 +17,10 @@
  * That is a feature, not a cache tweak.
  */
 
-const VERSION = "v2";
+// Bumped when a precached asset changes, not only when this file's logic does:
+// `/boot.html` and `/icon.svg` are cached at install, so an installed app goes
+// on drawing the old mark until the cache is named something else.
+const VERSION = "v3";
 const STATIC = `trekker-static-${VERSION}`;
 const SHELL = `trekker-shell-${VERSION}`;
 

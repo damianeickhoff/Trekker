@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import type { FormState } from "@/lib/auth-actions";
 import { AuthBackdrop, type Slide } from "./auth-backdrop";
+import { TrekkerMark } from "./trekker-mark";
 
 type Action = (prev: FormState, formData: FormData) => Promise<FormState>;
 
@@ -33,8 +34,8 @@ export function AuthForm({
             note on it in `nav.tsx`. */}
         {/* The same flat accent as the mark in the header — this is the same
             logo at a different size, so it cannot be a different colour. */}
-        <span className="grid h-11 w-11 place-items-center rounded-xl bg-flare-500 text-lg font-black text-white">
-          T
+        <span className="grid h-11 w-11 place-items-center rounded-xl bg-flare-500 text-white">
+          <TrekkerMark className="h-7 w-auto" />
         </span>
         <span className="text-2xl font-semibold tracking-tight">Trekker</span>
       </Link>

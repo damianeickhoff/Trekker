@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { MARK_ASPECT, markDataUri } from "@/lib/logo";
+
 /**
  * The launch screen iOS shows between the icon being tapped and the app
  * painting.
@@ -59,13 +61,18 @@ export async function GET(request: Request) {
             alignItems: "center",
             justifyContent: "center",
             borderRadius: Math.round(tile * 0.28),
-            background: "linear-gradient(135deg, #8b5cf6 0%, #f59e0b 100%)",
-            color: "#07070c",
-            fontSize: Math.round(tile * 0.64),
-            fontWeight: 900,
+            background: "#8b5cf6",
           }}
         >
-          T
+          {/* Satori lays out its own boxes and rasterises the result;
+              `next/image` has nothing to do here. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={markDataUri()}
+            width={Math.round(tile * 0.62 * MARK_ASPECT)}
+            height={Math.round(tile * 0.62)}
+            alt=""
+          />
         </div>
       </div>
     ),

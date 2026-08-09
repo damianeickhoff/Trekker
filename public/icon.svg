@@ -1,16 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8b5cf6" />
-      <stop offset="1" stop-color="#f59e0b" />
-    </linearGradient>
-  </defs>
+  <!--
+    The PWA icon named by the manifest. Framed rather than full-bleed: an
+    installed app draws this against whatever the launcher's wallpaper is, and
+    the ink border keeps the accent tile from bleeding into a light one.
+
+    One flat accent rather than the violet-to-amber ramp this used to be. The
+    gradient only ever half-answered "what colour is this app" — whatever accent
+    you picked, a third of the mark stayed gold. Matches the header tile, which
+    settled the same question first.
+
+    The geometry is a copy of `MARK_GEOMETRY` in `src/lib/logo.ts`, which a
+    static file cannot import. Change it there and change it here.
+  -->
   <rect width="512" height="512" rx="112" fill="#07070c" />
-  <rect x="56" y="56" width="400" height="400" rx="88" fill="url(#g)" />
-  <path
-    d="M150 186h212M256 186v168"
-    stroke="#07070c"
-    stroke-width="52"
-    stroke-linecap="round"
-  />
+  <rect x="56" y="56" width="400" height="400" rx="88" fill="#8b5cf6" />
+  <svg x="88" y="88" width="336" height="336" viewBox="0 0 533 658" preserveAspectRatio="xMidYMid meet" fill="#ffffff">
+    <path d="M163.763 344H163.785L187.785 636H166.535C154.395 636 144.155 626.96 142.65 614.914L108.848 344.5H50.836C43.2794 344.5 36.9022 338.879 35.9542 331.382L27.419 263.882C26.2862 254.922 33.2699 247 42.3009 247H156.785L163.763 344Z"/>
+    <path d="M375.318 344H375.298L350.785 636H372.035C384.175 636 394.415 626.96 395.92 614.914L429.722 344.5H487.734C495.291 344.5 501.668 338.879 502.616 331.382L511.151 263.882C512.284 254.922 505.3 247 496.269 247H381.785L375.318 344Z"/>
+    <path d="M213.785 246H323.785L306.785 635.5H230.285L213.785 246Z"/>
+    <circle cx="446.785" cy="70" r="22"/>
+    <ellipse cx="445.785" cy="36.5" rx="26" ry="25.5"/>
+    <ellipse cx="477.285" cy="59" rx="24.5" ry="25"/>
+    <path d="M135.696 121.285C82.4962 110.476 70.5295 148.14 71.1962 168.324L83.2986 233H251.299C250.965 219.322 248.496 190.041 241.696 178.832C234.896 167.623 210.196 149.475 198.696 141.802C227.196 88.7577 142.196 74.2454 135.696 121.285Z"/>
+    <path d="M70.7241 168.261C15.3036 165.802 19.3305 226.303 36.2606 232.919C36.7828 233.124 37.3414 233.187 37.9021 233.185L96.2986 233C121.222 187.851 89.4839 171.091 70.7241 168.261Z"/>
+    <path d="M339.696 82.2598C315.696 -13.239 178.196 53.2609 235.696 129.759L323.196 183.761L339.696 82.2598Z"/>
+    <path d="M76.2986 233C83.2986 212.667 105.796 178.162 140.196 203.762C144.863 189.929 162.396 166.462 195.196 183.262C191.196 153.762 231.196 97.2625 287.696 152.762C278.933 59.2868 434.186 52.0871 409.129 156.086C421.848 130.662 478.056 132.417 476.696 177.761C497.297 177.761 523.192 209.038 496.317 231.94C495.298 232.808 493.969 233.26 492.632 233.26L76.2986 233Z"/>
+  </svg>
 </svg>

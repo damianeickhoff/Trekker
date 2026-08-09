@@ -10,6 +10,7 @@ import { useOriginPath } from "./origin";
 import { FLOATING_SURFACE } from "./back-button";
 import { NotificationBell } from "./notification-bell";
 import { SearchOverlay } from "./search-overlay";
+import { TrekkerMark } from "./trekker-mark";
 import { UserMenu } from "./user-menu";
 
 type NavUser = {
@@ -183,16 +184,15 @@ export function Nav({
         <div className="relative mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" className="group flex items-center gap-2.5 font-semibold tracking-tight">
             {/* Explicitly white, not `text-ink-950`: the ink ramp inverts in
-                light mode, so that one drew a near-black T in the dark and a
+                light mode, so that one drew a near-black mark in the dark and a
                 near-white one in the light. The tile underneath is the same
-                violet-to-orange gradient either way, so the letter on it should
-                be too. */}
+                accent either way, so what sits on it should be too. */}
             {/* One flat accent colour rather than the violet-to-amber ramp it
                 used to be. The gradient only ever half-answered "what colour is
                 this app": whatever accent you picked, a third of the mark stayed
                 gold. A single fill says it properly. */}
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-flare-500 text-sm font-black text-white shadow-lg shadow-flare-600/30 ring-1 ring-white/20 transition ring-inset group-hover:shadow-flare-600/50">
-              T
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-flare-500 text-white shadow-lg shadow-flare-600/30 ring-1 ring-white/20 transition ring-inset group-hover:shadow-flare-600/50">
+              <TrekkerMark className="h-5 w-auto" />
             </span>
             <span className="text-lg tracking-tight">Trekker</span>
           </Link>
