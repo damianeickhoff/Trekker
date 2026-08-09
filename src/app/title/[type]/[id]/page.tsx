@@ -518,6 +518,7 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
         tmdbId={tmdbId}
         comments={comments}
         signedIn={Boolean(user)}
+        viewer={user ? { name: user.name, avatar: avatarUrl(user) } : null}
       />
       <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>
         <Recommendations items={recommendations.slice(0, 14)} user={user} />
@@ -778,6 +779,7 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
               tmdbId={tmdbId}
               comments={comments}
               signedIn={Boolean(user)}
+              viewer={user ? { name: user.name, avatar: avatarUrl(user) } : null}
             />
             <Suspense fallback={<SkeletonRail label="Loading recommendations" />}>
               <Recommendations items={recommendations.slice(0, 14)} user={user} />

@@ -67,34 +67,43 @@ export function TitleReviews({
   }
 
   /**
-   * On a phone the write card is the first thing in the section and the last
-   * thing wanted there: a box for something most visits will not do, standing
-   * between the heading and what other people wrote. It collapses to a word in
-   * the heading row instead, and opens on request.
+   * An empty textarea is not worth the room it takes, on any screen.
    *
-   * Desktop keeps the card. There is room for it there, and a control that has
-   * to be found is worse than one that is simply present.
+   * It used to sit at the top of the section on every visit — a box for
+   * something most visits will not do, standing between the heading and what
+   * other people wrote. Now the heading carries a button and the box arrives
+   * when it is asked for.
+   *
+   * It was briefly `sm:hidden`, which was worse than either: the control did
+   * not exist on desktop at all, and on a phone it was a word in a corner that
+   * read as a label. One button, both widths, shaped like something you press.
    */
   const openable = signedIn && rated && !editing && !saved;
 
   return (
     <section className="mt-8">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Reviews</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div>
+          <p className="text-[11px] font-medium tracking-wider text-flare-400 uppercase">
+            In your own words
+          </p>
+          <h2 className="mt-0.5 text-lg font-semibold tracking-tight">Reviews</h2>
+        </div>
 
         {openable && (
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-sm font-medium text-flare-400 transition hover:text-flare-300 sm:hidden"
+            className="ios-surface inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-ink-600/70 bg-ink-900/50 px-3.5 py-2 text-sm font-semibold text-ink-100 backdrop-blur-sm transition active:scale-[0.98] hover:border-flare-500 hover:text-flare-300 light:border-ink-600 light:bg-white/85"
           >
-            Write a review
+            <PenLine size={15} />
+            Add review
           </button>
         )}
       </div>
 
       {signedIn && (
-        <div className={`card p-4 ${openable ? "max-sm:hidden" : ""}`}>
+        <div className={`card p-4 ${openable ? "hidden" : ""}`}>
           {!rated ? (
             <p className="text-sm text-ink-400">
               Give it a score first — the slider is up by the watch button — and you can write
