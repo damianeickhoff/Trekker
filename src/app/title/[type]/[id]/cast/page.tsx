@@ -78,7 +78,12 @@ export default async function CastPage({ params }: { params: Promise<Params> }) 
                     href={`/person/${person.id}`}
                     className="flex items-center gap-3 p-3 transition first:rounded-t-[15px] last:rounded-b-[15px] hover:bg-ink-800/60 max-sm:hover:bg-white/5 sm:gap-4 sm:p-4"
                   >
-                    <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-ink-800 max-sm:bg-white/10">
+                    {/* `data-shared-face`: the avatar travels onto the person
+                        page's portrait when the row is opened. */}
+                    <span
+                      data-shared-face
+                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-ink-800 max-sm:bg-white/10"
+                    >
                       {profile ? (
                         <Image src={profile} alt="" fill sizes="56px" className="object-cover" />
                       ) : (

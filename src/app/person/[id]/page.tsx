@@ -72,7 +72,9 @@ export default async function PersonPage({ params }: Props) {
       <header className="flex flex-col gap-5 pt-2 sm:flex-row sm:gap-6">
         {/* Fixed size, not an aspect ratio: a stretched flex item grows with
             whatever sits beside it and crops the portrait. */}
-        <div className="relative mx-auto h-48 w-32 shrink-0 self-start overflow-hidden rounded-2xl border border-ink-700 bg-ink-800 shadow-2xl shadow-black/50 sm:mx-0 sm:h-60 sm:w-40">
+        {/* `person-art-name` is where a face tapped in a cast rail lands when
+            the route transition morphs it over — see globals.css. */}
+        <div className="person-art-name relative mx-auto h-48 w-32 shrink-0 self-start overflow-hidden rounded-2xl border border-ink-700 bg-ink-800 shadow-2xl shadow-black/50 sm:mx-0 sm:h-60 sm:w-40">
           {profile && <Image src={profile} alt="" fill sizes="160px" className="object-cover" />}
         </div>
 

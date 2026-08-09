@@ -160,20 +160,26 @@ function Transitions() {
        * The name goes on at click time rather than living in the markup
        * because a name must be unique per photograph: a rail full of posters
        * all called `hero-art` would abort the whole transition. Named here,
-       * exactly one poster ever carries it. `data-vt-source` suppresses the
+       * exactly one ever carries it. `data-vt-source` suppresses the
        * *current* page's hero for the outgoing photograph only — following a
        * recommendation from one title to the next, both would otherwise claim
-       * the name at once. Phones sit this out: their hero is a backdrop, not
-       * a poster, and a 2:3 card morphing into a wide still reads as a
-       * mistake rather than continuity.
+       * the name at once.
+       *
+       * Faces are a separate channel from posters, and the separation is
+       * load-bearing. A person's photo and a title's hero both persist in
+       * their pages' markup, so under one shared name, stepping from a person
+       * to a title would pair the photo with the poster and morph somebody's
+       * face into a film — continuity of the wrong thing. Two names mean a
+       * poster can only ever land on a poster and a face on a face; whichever
+       * side has no partner simply fades. A face also needs no
+       * `data-vt-source`: no page puts a named person photo and a cast rail
+       * on screen together, so there is nothing for a clicked face to fight.
        */
-      let art: HTMLElement | null = null;
-      if (window.innerWidth >= 640) {
-        art = anchor.querySelector<HTMLElement>("[data-shared-art]");
-        if (art) {
-          art.style.viewTransitionName = "hero-art";
-          document.documentElement.dataset.vtSource = "card";
-        }
+      const poster = anchor.querySelector<HTMLElement>("[data-shared-art]");
+      const art = poster ?? anchor.querySelector<HTMLElement>("[data-shared-face]");
+      if (art) {
+        art.style.viewTransitionName = poster ? "hero-art" : "person-art";
+        if (poster) document.documentElement.dataset.vtSource = "card";
       }
 
       startPageTransition(() => router.push(href), {

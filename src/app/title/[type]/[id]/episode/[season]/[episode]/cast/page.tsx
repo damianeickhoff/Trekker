@@ -109,7 +109,12 @@ function People({
               href={`/person/${person.id}`}
               className="flex items-center gap-3 p-3 transition first:rounded-t-[15px] last:rounded-b-[15px] hover:bg-ink-800/60 max-sm:hover:bg-white/5 sm:p-4"
             >
-              <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/10">
+              {/* `data-shared-face`: the avatar travels onto the person page's
+                  portrait when the row is opened. */}
+              <span
+                data-shared-face
+                className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-white/10"
+              >
                 {img.profile(person.profile) ? (
                   <Image
                     src={img.profile(person.profile)!}

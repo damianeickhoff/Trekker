@@ -2036,39 +2036,48 @@ html[data-theme="light"] .season-snow-far {
 }
 
 /*
- * The poster's journey from a rail into the hero.
+ * The poster's journey from a rail into the hero, and a face's into a person
+ * page.
  *
- * `hero-art-name` sits on the title page's poster (and on its loading
- * skeleton's, so the morph has somewhere to land while the page is still
- * being fetched). The clicked card's copy of the name is applied from script
- * at click time — see `page-transitions.tsx` for why it cannot live in the
- * markup — and `data-vt-source` silences the page-side name for the outgoing
- * photograph, so a title page's own hero never fights the card that was
- * clicked on it.
+ * `hero-art-name` sits on the title page's poster on desktop and on its hero
+ * plate on a phone — only one of the two is ever rendered — and on the
+ * loading skeleton's stand-ins, so the morph has somewhere to land while the
+ * page is still being fetched. `person-art-name` is the same idea for the
+ * photo at the top of a person page. The clicked card's copy of either name
+ * is applied from script at click time — see `page-transitions.tsx` for why
+ * it cannot live in the markup — and `data-vt-source` silences the page-side
+ * hero name for the outgoing photograph, so a title page's own hero never
+ * fights the card that was clicked on it.
  *
- * Desktop only: a phone's hero is a wide backdrop, and a 2:3 poster stretched
- * into it reads as a glitch rather than as the same artwork moving.
+ * The names never cross: a poster lands on a poster, a face on a face, and
+ * the reasoning for keeping them apart is with the code that assigns them.
  */
-@media (min-width: 640px) {
-  .hero-art-name {
-    view-transition-name: hero-art;
-  }
-
-  html[data-vt-source="card"] .hero-art-name {
-    view-transition-name: none;
-  }
+.hero-art-name {
+  view-transition-name: hero-art;
 }
 
-::view-transition-group(hero-art) {
+html[data-vt-source="card"] .hero-art-name {
+  view-transition-name: none;
+}
+
+.person-art-name {
+  view-transition-name: person-art;
+}
+
+::view-transition-group(hero-art),
+::view-transition-group(person-art) {
   animation-duration: 0.45s;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* The two photographs are different crops of different sizes; `cover` lets
-   them fill the travelling box the way the artwork fills its frames, instead
-   of stretching to fit. */
+/* The two photographs are different crops of different sizes — a 2:3 poster
+   against a wide phone hero, a round avatar against a portrait — so `cover`
+   lets them fill the travelling box the way the artwork fills its frames,
+   instead of stretching to fit. */
 ::view-transition-old(hero-art),
-::view-transition-new(hero-art) {
+::view-transition-new(hero-art),
+::view-transition-old(person-art),
+::view-transition-new(person-art) {
   height: 100%;
   width: 100%;
   object-fit: cover;

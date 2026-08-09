@@ -1197,8 +1197,13 @@ function Cast({
               className="rail-item group w-[104px]"
             >
               {/* The portrait lifts under the pointer, the same gesture as the
-                  posters — one hover language across every card. */}
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-ink-800 md:transition md:duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-lg md:group-hover:shadow-black/40">
+                  posters — one hover language across every card. And like the
+                  posters, `data-shared-face` lets the route transition carry
+                  this face onto the person page it opens. */}
+              <div
+                data-shared-face
+                className="relative aspect-square overflow-hidden rounded-xl bg-ink-800 md:transition md:duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-lg md:group-hover:shadow-black/40"
+              >
                 {src && (
                   <Image
                     src={src}

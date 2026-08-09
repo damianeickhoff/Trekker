@@ -264,7 +264,12 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
                     href={`/person/${person.id}`}
                     className="rail-item w-[124px]"
                   >
-                    <span className="relative block aspect-2/3 overflow-hidden rounded-xl bg-ink-800">
+                    {/* `data-shared-face`: the route transition carries this
+                        portrait onto the person page — see page-transitions. */}
+                    <span
+                      data-shared-face
+                      className="relative block aspect-2/3 overflow-hidden rounded-xl bg-ink-800"
+                    >
                       {img.profile(person.profile) ? (
                         <Image
                           src={img.profile(person.profile)!}

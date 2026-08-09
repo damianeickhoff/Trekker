@@ -35,6 +35,14 @@ export default function Loading() {
           and lands in roughly the place the artwork's fade will.
         */}
         <div className="h-full w-full bg-gradient-to-b from-ink-800 via-ink-800/60 to-transparent" />
+
+        {/* The phone's morph target, in the hero plate's own box — 324px is
+            the wide plate's height in `title-hero-art.tsx`. A tapped poster
+            lands here while the page is fetched, and the real artwork then
+            fades in over the same spot. Painted with the gradient's own top
+            colour so the poster dissolves into the placeholder rather than
+            into a hole. */}
+        <div className="hero-art-name absolute inset-x-0 top-0 h-[324px] bg-gradient-to-b from-ink-800 to-transparent" />
       </div>
 
       <Skeleton className="mb-6 hidden h-72 w-full rounded-2xl sm:block" />

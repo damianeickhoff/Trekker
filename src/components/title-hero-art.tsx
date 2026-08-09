@@ -221,7 +221,16 @@ export function TitleHeroArt({
           </div>
         </div>
 
-        <div className="hero-plate absolute inset-x-0 top-0" style={{ height: plate }}>
+        {/* `hero-art-name` is the phone's landing spot for a poster tapped in
+            a rail — the desktop poster carries the same name, and only one of
+            the two is ever rendered. The tapped card is 2:3 and this is
+            usually wide, so the morph is a reframe rather than a fit: the
+            route transition's `object-fit: cover` crops both towards their
+            shared centre on the way over. */}
+        <div
+          className="hero-plate hero-art-name absolute inset-x-0 top-0"
+          style={{ height: plate }}
+        >
           {/* A 16:9 still cropped to the full height of a phone hero is a 70%
               zoom into the middle of it. Held to a shallower box it stays
               recognisable, and everything below carries its colour on. */}
