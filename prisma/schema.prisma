@@ -8,25 +8,25 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
+  id               String    @id @default(cuid())
+  email            String    @unique
+  name             String
   /// Null for accounts created by signing in with Plex — they have no password
   /// of their own and authenticate through plex.tv every time.
-  passwordHash String?
+  passwordHash     String?
   /// plex.tv account id, set when the account is linked to Plex.
-  plexAccountId String? @unique
+  plexAccountId    String?   @unique
   /// plex.tv auth token for *this* user, from the sign-in flow. Used to read
   /// their personal watchlist, which lives on plex.tv rather than the server.
-  plexAuthToken String?
+  plexAuthToken    String?
   /// Which Plex account is playing, for the "now watching" card. Filled in from
   /// the sign-in flow; settable by hand for accounts that use a password.
-  plexUsername  String?
+  plexUsername     String?
   /// A managed profile in somebody's Plex Home — a partner, a brother, a child.
   /// They have no plex.tv login and no email address of their own, so `email`
   /// on this row is a placeholder that exists only to satisfy the unique index.
   /// Nothing should show it, and nothing should let them sign in with it.
-  plexManaged   Boolean @default(false)
+  plexManaged      Boolean   @default(false)
   /// When this profile was introduced to the rest of its Plex Home — i.e. when
   /// friendships were created with the housemates it shares a Plex login with.
   /// Stamped so it happens exactly once: unfriending someone deletes the row, so
@@ -46,19 +46,19 @@ model User {
   /// Backdrop shown behind the profile header, chosen from a title page.
   coverBackdrop String?
   coverTitle    String?
-  accent       String   @default("violet")
+  accent        String    @default("violet")
   /// What the user picked: "dark" | "light" | "system".
-  theme         String  @default("system")
+  theme         String    @default("system")
   /// What that currently resolves to: "dark" | "light". Stored separately
   /// because only the browser knows what "system" means, and the server has to
   /// put a concrete value on <html> in the very first byte it sends.
-  themeResolved String  @default("dark")
+  themeResolved String    @default("dark")
   /// Avatar is kept in the database and served by /api/avatar/[id], so it does
   /// not depend on writing into the statically-served public folder.
-  avatarData   Bytes?
-  avatarType   String?
-  avatarSetAt  DateTime?
-  createdAt    DateTime  @default(now())
+  avatarData    Bytes?
+  avatarType    String?
+  avatarSetAt   DateTime?
+  createdAt     DateTime  @default(now())
 
   /// Optional Plex Media Server link, e.g. http://192.168.1.10:32400
   plexUrl       String?
@@ -84,8 +84,8 @@ model User {
   /// so they are cached here and refreshed whenever the achievements page
   /// recomputes the board. Everything else the level is made of — episodes,
   /// films, ratings, badges — is counted live, because it is a plain count.
-  levelFinishedShows      Int      @default(0)
-  levelFinishedFranchises Int      @default(0)
+  levelFinishedShows      Int       @default(0)
+  levelFinishedFranchises Int       @default(0)
   levelSyncedAt           DateTime?
 
   /// The starting line. Everyone begins at level 0, so nothing that arrived with
@@ -114,16 +114,16 @@ model User {
   /// than a boolean beside it — "start it after ten minutes" and "never start it
   /// on its own" are one answer to one question, and two columns would let them
   /// disagree. It can always still be started by hand from the account menu.
-  screensaverIdle Int @default(0)
+  screensaverIdle   Int     @default(0)
   /// Which shelf the slideshow draws from — see `SCREENSAVER_SOURCES`.
-  screensaverSource String @default("trending")
+  screensaverSource String  @default("trending")
   /// Where to ask about the weather. The place name is resolved to coordinates
   /// once, when it is chosen, so the screensaver never has to geocode anything
   /// while it is running; the name is kept only to print under the temperature.
   /// All three are null when the weather has been left off, which is the default.
-  screensaverPlace String?
-  screensaverLat   Float?
-  screensaverLon   Float?
+  screensaverPlace  String?
+  screensaverLat    Float?
+  screensaverLon    Float?
 
   /// Every achievement id this account has been measured against, comma
   /// separated. What makes a *newly added* achievement that a years-old imported
@@ -152,13 +152,17 @@ model User {
   /// `getCurrentUser` refuses anything that no longer matches.
   tokenVersion Int @default(0)
 
-  deletedPlays   DeletedPlay[]
+  deletedPlays DeletedPlay[]
 
   sentRequests     Friendship[] @relation("SentFriendRequests")
   receivedRequests Friendship[] @relation("ReceivedFriendRequests")
 
   sentRecommendations     Recommendation[] @relation("SentRecommendations")
   receivedRecommendations Recommendation[] @relation("ReceivedRecommendations")
+
+  comments         Comment[]
+  commentReactions CommentReaction[]
+  feelings         Feeling[]
 }
 
 /// "You should watch this."
@@ -171,11 +175,11 @@ model User {
 /// recommendation renders without a TMDB call — and still reads correctly years
 /// later if the artwork has since changed.
 model Recommendation {
-  id         String   @id @default(cuid())
+  id         String @id @default(cuid())
   fromUserId String
-  fromUser   User     @relation("SentRecommendations", fields: [fromUserId], references: [id], onDelete: Cascade)
+  fromUser   User   @relation("SentRecommendations", fields: [fromUserId], references: [id], onDelete: Cascade)
   toUserId   String
-  toUser     User     @relation("ReceivedRecommendations", fields: [toUserId], references: [id], onDelete: Cascade)
+  toUser     User   @relation("ReceivedRecommendations", fields: [toUserId], references: [id], onDelete: Cascade)
 
   /// "movie" | "tv"
   mediaType String
@@ -244,42 +248,42 @@ model Friendship {
 /// second record of what happened: they answer "have I seen this", while the
 /// play log answers "how often, and when". Only `src/lib/plays.ts` writes them.
 model WatchedEpisode {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   showId        Int
   showName      String
   showPoster    String?
   seasonNumber  Int
   episodeNumber Int
   episodeName   String
-  runtime       Int      @default(42)
+  runtime       Int       @default(42)
   /// The *first* time it was watched — the oldest play. Rewatches move
   /// `lastWatchedAt` instead, so "when did I discover this" survives them.
-  watchedAt     DateTime @default(now())
+  watchedAt     DateTime  @default(now())
   lastWatchedAt DateTime?
   /// How many plays there are. Denormalised so the title page does not need a
   /// GROUP BY, and a free drift check against COUNT(*) on the log.
-  plays         Int      @default(1)
+  plays         Int       @default(1)
 
   @@unique([userId, showId, seasonNumber, episodeNumber])
   @@index([userId, watchedAt])
 }
 
 model WatchedMovie {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  movieId   Int
-  title     String
-  poster    String?
-  runtime   Int      @default(0)
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movieId       Int
+  title         String
+  poster        String?
+  runtime       Int       @default(0)
   /// TMDB audience score (0-100) captured when it was logged.
-  score     Int?
+  score         Int?
   /// The first time it was watched. See `WatchedEpisode.watchedAt`.
-  watchedAt DateTime @default(now())
+  watchedAt     DateTime  @default(now())
   lastWatchedAt DateTime?
-  plays     Int      @default(1)
+  plays         Int       @default(1)
 
   @@unique([userId, movieId])
   @@index([userId, watchedAt])
@@ -331,16 +335,16 @@ model Play {
 /// The one thing that cannot be derived is whether it has been seen, which is
 /// all this table holds.
 model NotificationRead {
-  id     String   @id @default(cuid())
-  userId String
-  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// `friend:<friendshipId>` or `badge:<achievementId>`.
-  key    String
-  readAt DateTime @default(now())
+  key       String
+  readAt    DateTime @default(now())
   /// Cleared away rather than merely seen. A read notification stays on the
   /// list, greyed — a friend request you have read is still one you have not
   /// answered — so "clear" is the separate, deliberate act of getting rid of it.
-  dismissed Boolean @default(false)
+  dismissed Boolean  @default(false)
 
   @@unique([userId, key])
   @@index([userId])
@@ -360,15 +364,15 @@ model WatchlistItem {
 
   /// Filled in lazily so the watchlist can be sorted by length and filtered by
   /// what is streaming. Both go stale, hence the timestamp.
-  runtime    Int?
+  runtime      Int?
   /// Comma-separated streaming provider names for the owner's region, or ""
   /// when nothing streams it. Null means "not looked up yet".
-  streaming  String?
+  streaming    String?
   /// The same offers as TMDB provider ids. Names are what gets shown; ids are
   /// what gets compared, because TMDB lists one service under several of them
   /// and which one a title comes back under varies — see `KNOWN_PROVIDERS`.
   streamingIds String?
-  enrichedAt DateTime?
+  enrichedAt   DateTime?
 
   @@unique([userId, mediaType, tmdbId])
 }
@@ -401,20 +405,20 @@ model Favourite {
 /// (Plex sync reads the watchlist; the calendar and the quiz do too). This table
 /// is only for the lists a user invents, which is what makes deleting one safe.
 model MediaList {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name   String
+  id      String  @id @default(cuid())
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
   /// "manual" — the user adds titles by hand.
   /// "smart"  — the titles are whatever `filters` currently answers.
-  kind   String @default("manual")
+  kind    String  @default("manual")
   /// The smart list's question, as JSON matching `SmartFilters` in
   /// `src/lib/smart-filters.ts`. Null on a manual list. Stored as text because
   /// nothing ever queries *into* it: it is read whole, parsed, and re-run.
   filters String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   /// When a smart list's answers were last rebuilt from TMDB. Null means never,
   /// which is also what a freshly edited list is set back to.
   refreshedAt DateTime?
@@ -425,19 +429,19 @@ model MediaList {
   /// files requests on its own is the one feature here that spends somebody
   /// else's disk, and "top rated films of all time" would ask for four hundred
   /// of them.
-  autoRequest Boolean @default(false)
+  autoRequest         Boolean   @default(false)
   /// "missing" — skip anything already streaming on a service the user pays for.
   /// "all"     — ask for everything the list answers with.
-  autoRequestScope String @default("missing")
+  autoRequestScope    String    @default("missing")
   /// How many titles one run may ask for. Capped again in code, because a
   /// number in a database is not a promise.
-  autoRequestCap Int @default(5)
+  autoRequestCap      Int       @default(5)
   /// When a run last filed anything, for the panel to report.
-  autoRequestedAt DateTime?
+  autoRequestedAt     DateTime?
   /// What that run filed: how many, and the first few titles, comma separated.
   /// Denormalised like every list row, so the bell can say what happened
   /// without asking Overseerr anything.
-  autoRequestedCount  Int     @default(0)
+  autoRequestedCount  Int       @default(0)
   autoRequestedTitles String?
 
   items MediaListItem[]
@@ -466,8 +470,8 @@ model MediaListItem {
   /// Where it sits in the list: insertion order by hand, TMDB's own ranking on
   /// a smart list. Sorting on this is what keeps "best rated first" meaningful
   /// after the rows have been shuffled through the database.
-  position  Int      @default(0)
-  addedAt   DateTime @default(now())
+  position  Int       @default(0)
+  addedAt   DateTime  @default(now())
 
   @@unique([listId, mediaType, tmdbId])
   @@index([listId, position])
@@ -574,22 +578,22 @@ model ChallengeRun {
 /// copied per row, and refreshed only when it ages out — the achievements page
 /// asks about hundreds of titles at once and none of this moves.
 model TitleMeta {
-  id             String   @id @default(cuid())
-  mediaType      String // "movie" | "tv"
-  tmdbId         Int
-  title          String
+  id               String   @id @default(cuid())
+  mediaType        String // "movie" | "tv"
+  tmdbId           Int
+  title            String
   /// Genre names, comma separated. Names rather than ids because TMDB numbers
   /// film and television genres differently for the same idea.
-  genres         String
+  genres           String
   /// ISO 639-1, e.g. "en", "ko".
   originalLanguage String?
   /// YYYY-MM-DD: a film's release, a show's first air date.
-  releaseDate    String?
-  runtime        Int?
+  releaseDate      String?
+  runtime          Int?
   /// TMDB collection ("belongs to" franchise), films only.
-  collectionId   Int?
-  collectionName String?
-  fetchedAt      DateTime @default(now())
+  collectionId     Int?
+  collectionName   String?
+  fetchedAt        DateTime @default(now())
 
   @@unique([mediaType, tmdbId])
 }
@@ -607,4 +611,76 @@ model Rating {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, mediaType, tmdbId])
+}
+
+/// A comment on a title, readable by everyone signed in to this instance.
+///
+/// The first thing here that is not friends-only, and deliberately so. A review
+/// is a paragraph about your own score and stays between friends — see
+/// `lib/reviews.ts`; this is a conversation, and a conversation nobody outside
+/// your friends can join is a diary with extra steps. Watch history and profiles
+/// are unaffected and still private.
+///
+/// One level of replies: `parentId` is null for a comment and set for a reply,
+/// and a reply cannot itself be replied to. That is enforced in `postComment`
+/// rather than by the schema, since SQL cannot express "parent must be a root"
+/// — the check is a read of the parent's own `parentId`.
+model Comment {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType        String
+  tmdbId           Int
+  body             String
+  parentId         String?
+  /// Cascading is what makes deleting a comment take its replies with it.
+  parent           Comment?          @relation("Replies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies          Comment[]         @relation("Replies")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  commentReactions CommentReaction[]
+
+  /// The read the title page makes: everything said about one title, in order.
+  @@index([mediaType, tmdbId, createdAt])
+  @@index([parentId])
+  @@index([userId])
+}
+
+/// One emoji from a fixed set, per person per comment.
+///
+/// The unique key is what makes the same emoji twice a toggle rather than two
+/// reactions, while leaving somebody free to add several different ones.
+model CommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+}
+
+/// How a title made somebody feel, from the fixed set in `lib/feelings.ts`.
+///
+/// A score says how good it was and a review says why; neither answers "what was
+/// it like to watch". One per person per title, and picking the one you already
+/// have clears it — the same shape as an episode thumb, for the same reason:
+/// there is no third state to explain and no separate control to find.
+///
+/// Public, like comments and unlike everything older than them.
+model Feeling {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType String
+  tmdbId    Int
+  feeling   String
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mediaType, tmdbId])
+  /// The tally the title page draws.
+  @@index([mediaType, tmdbId])
 }

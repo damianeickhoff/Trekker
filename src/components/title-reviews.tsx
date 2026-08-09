@@ -66,12 +66,35 @@ export function TitleReviews({
     });
   }
 
+  /**
+   * On a phone the write card is the first thing in the section and the last
+   * thing wanted there: a box for something most visits will not do, standing
+   * between the heading and what other people wrote. It collapses to a word in
+   * the heading row instead, and opens on request.
+   *
+   * Desktop keeps the card. There is room for it there, and a control that has
+   * to be found is worse than one that is simply present.
+   */
+  const openable = signedIn && rated && !editing && !saved;
+
   return (
     <section className="mt-8">
-      <h2 className="mb-3 text-lg font-semibold tracking-tight">Reviews</h2>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Reviews</h2>
+
+        {openable && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="text-sm font-medium text-flare-400 transition hover:text-flare-300 sm:hidden"
+          >
+            Write a review
+          </button>
+        )}
+      </div>
 
       {signedIn && (
-        <div className="card p-4">
+        <div className={`card p-4 ${openable ? "max-sm:hidden" : ""}`}>
           {!rated ? (
             <p className="text-sm text-ink-400">
               Give it a score first — the slider is up by the watch button — and you can write
