@@ -64,7 +64,6 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # What the running app reports as its version. The full commit, cut
@@ -73,18 +72,29 @@ jobs:
           # translating anything.
           build-args: |
             TREKKER_VERSION=${{ github.sha }}
-          # Pushed as a plain image manifest rather than as an index.
+          # Pushed as a plain Docker manifest, which is the whole reason Unraid
+          # can see an update at all.
           #
-          # This action turns provenance on by default when pushing, which makes
-          # buildx publish an OCI *index* with an attestation manifest attached —
-          # the `exporting attestation manifest` line in the log. Unraid decides
-          # whether an update exists by comparing the local image digest against
-          # the registry's, and that comparison is unreliable against an index
-          # carrying an extra `unknown/unknown` entry: the update we pushed did
-          # not show up in the Docker tab at all.
+          # Two things had to go. This action turns provenance on by default when
+          # pushing, which makes buildx publish an *index* with an attestation
+          # manifest attached rather than a single image. And buildx defaults to
+          # OCI media types, which GHCR then refuses to serve to a client that
+          # has not asked for them — not with a fallback, with a 404:
           #
-          # Nothing here consumes the attestation, so it is a straight trade for
-          # an update check that works.
+          #   $ curl -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+          #       https://ghcr.io/v2/damianeickhoff/trekker/manifests/latest
+          #   404 {"errors":[{"code":"MANIFEST_UNKNOWN","message":
+          #        "OCI manifest found, but Accept header does not support OCI manifests"}]}
+          #
+          # Unraid asks exactly that way, gets exactly that, and reports "not
+          # available" — it never learns the remote digest, so it can never
+          # compare one. `oci-mediatypes=false` publishes
+          # `application/vnd.docker.distribution.manifest.v2+json` instead, which
+          # every client understands including the ones that also speak OCI.
+          #
+          # `type=registry` is `type=image,push=true`, which is why there is no
+          # `push:` above — setting both would pass two conflicting outputs.
+          outputs: type=registry,oci-mediatypes=false
           provenance: false
           sbom: false
           # Unraid is x86, and the runtime stage strips sharp's non-musl-x64
