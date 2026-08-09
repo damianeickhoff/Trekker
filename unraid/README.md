@@ -45,12 +45,32 @@ Unraid's own update check works against this: it compares the local digest
 against the registry, so "update available" shows up in the Docker tab like any
 other container.
 
-It only works because the workflow sets `provenance: false`. Left at its
-default, `docker/build-push-action` attaches a build-provenance attestation,
-which makes buildx publish an OCI *index* rather than a plain image manifest —
-and Unraid's digest comparison does not cope with the extra `unknown/unknown`
-entry in one. The symptom is the Docker tab insisting there is no update when
-there plainly is. Nothing here consumes the attestation, so it is off.
+It only works because of two settings on the build step, and both were found the
+hard way.
+
+`provenance: false` stops buildx publishing an *index* with a build-provenance
+attestation attached instead of a single image. `oci-mediatypes=false` in
+`outputs` is the one that actually mattered: buildx defaults to OCI media types,
+and GHCR will not serve an OCI manifest to a client that has not explicitly
+asked for one. It does not fall back — it 404s:
+
+```
+$ curl -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+    https://ghcr.io/v2/damianeickhoff/trekker/manifests/latest
+404 {"errors":[{"code":"MANIFEST_UNKNOWN","message":
+     "OCI manifest found, but Accept header does not support OCI manifests"}]}
+```
+
+Unraid asks exactly that way. It never learns the remote digest, so it cannot
+compare one, and the Version column reads **not available** — or, before the
+attestation went, simply never offered the update. Publishing
+`application/vnd.docker.distribution.manifest.v2+json` fixes both; every client
+understands it, including the ones that also speak OCI.
+
+If the Version column ever goes strange again, that `curl` is the test — run it
+from anywhere, no login needed for a public package. A `200` with a
+`docker-content-digest` header means the registry side is fine and the problem
+is Unraid's cache or the local image.
 
 ## Which build am I actually running?
 
