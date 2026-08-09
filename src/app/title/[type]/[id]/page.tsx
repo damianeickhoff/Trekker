@@ -457,14 +457,18 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
           />
         }
         /**
-         * Nothing to rate until you have seen it — but how it felt sits here
-         * too, under the slider, because it is the next sentence in the same
-         * thought rather than a section of its own. The tally is worth reading
-         * before you have watched it, so it is not behind the same gate.
+         * Nothing to rate until you have seen it, and nothing to feel about it
+         * either: a verdict on something you have not watched is not a verdict,
+         * it is a guess — the same rule the episode thumbs already follow.
+         *
+         * So the two travel together, and how it felt sits under the slider
+         * rather than in a section of its own, because it is the next sentence
+         * in the same thought. The cost is that the tally is invisible until you
+         * have seen the thing, including to somebody signed out.
          */
         rating={
-          <>
-            {user && state.watched ? (
+          user && state.watched ? (
+            <>
               <RatingWidget
                 mediaType="movie"
                 tmdbId={tmdbId}
@@ -480,15 +484,15 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
                   Math.round(movie.vote_average * 10) || null,
                 )}
               />
-            ) : null}
-            <TitleFeelings
-              mediaType="movie"
-              tmdbId={tmdbId}
-              tally={feelings.tally}
-              mine={feelings.mine}
-              signedIn={Boolean(user)}
-            />
-          </>
+              <TitleFeelings
+                mediaType="movie"
+                tmdbId={tmdbId}
+                tally={feelings.tally}
+                mine={feelings.mine}
+                signedIn
+              />
+            </>
+          ) : null
         }
         streaming={
           <Suspense fallback={<ChipFallback width="w-48" />}>
@@ -690,10 +694,11 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
           />
         }
         // One episode in is enough to have a view; nothing watched is not. How
-        // it felt sits under it either way — see the note in `MovieView`.
+        // it felt is behind the same gate and sits under the slider — see the
+        // note in `MovieView`.
         rating={
-          <>
-            {user && watchedEpisodes.length > 0 ? (
+          user && watchedEpisodes.length > 0 ? (
+            <>
               <RatingWidget
                 mediaType="tv"
                 tmdbId={tmdbId}
@@ -709,15 +714,15 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
                   Math.round(show.vote_average * 10) || null,
                 )}
               />
-            ) : null}
-            <TitleFeelings
-              mediaType="tv"
-              tmdbId={tmdbId}
-              tally={feelings.tally}
-              mine={feelings.mine}
-              signedIn={Boolean(user)}
-            />
-          </>
+              <TitleFeelings
+                mediaType="tv"
+                tmdbId={tmdbId}
+                tally={feelings.tally}
+                mine={feelings.mine}
+                signedIn
+              />
+            </>
+          ) : null
         }
         streaming={
           <Suspense fallback={<ChipFallback width="w-48" />}>
