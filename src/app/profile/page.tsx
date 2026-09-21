@@ -79,11 +79,18 @@ export default async function ProfilePage({
   const middle = middleTile(rangeKey, stats.last30Minutes, stats.dailyAverage);
 
   return (
-    <div className="rise relative">
+    <>
       {/* The chosen cover is the page's own backdrop, exactly as on a title
-          page — full-bleed, reaching up behind the header and dissolving. */}
+          page — full-bleed, reaching up behind the header and dissolving.
+
+          Outside the `rise` wrapper, which is both positioned and animating a
+          transform: either would make it the box this measures from, and what
+          it has to measure from is the window. Inside it the artwork began
+          below the header and left a band of bare page across the top — white,
+          in the light theme. */}
       {cover?.coverBackdrop && <TitleBackdrop backdrop={cover.coverBackdrop} />}
 
+      <div className="rise relative">
       <ProfileBanner
         name={user.name}
         email={displayEmail(user.email)}
@@ -110,6 +117,9 @@ export default async function ProfilePage({
         the opposite.
       */}
       <div className="fade-in mt-3" style={fadeDelay(1)}>
+        {/* The same panel whether or not a cover is set: a card that changed
+            its material when the page got a picture behind it read as two
+            different cards. */}
         <div className="card relative overflow-hidden bg-gradient-to-br from-flare-600/25 via-transparent to-ember-500/10 p-6 sm:p-8">
           <div
             aria-hidden
@@ -193,7 +203,8 @@ export default async function ProfilePage({
       <RatingsRail ratings={ratings} total={ratingCount} />
 
       <WeekHistory days={week.days} total={playCount} truncated={week.truncated} />
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -243,25 +254,18 @@ function ProfileBanner({
   /** Backdrop chosen from a title page, with the title it came from. */
   cover: { backdrop: string; title: string | null } | null;
 }) {
+  // One card, cover or no cover. It used to step back to a thin frame when a
+  // cover was set, on the reasoning that a card would only fight the artwork —
+  // but what that produced was a profile that looked like a different page
+  // depending on a setting, and the card is the shape everything else here is
+  // made of.
   return (
-    <header
-      // With a cover behind the whole page the card would only fight it, so it
-      // steps back to a thin frame and lets the artwork through.
-      className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 ${
-        cover
-          ? // Heavy enough to read against: a light frame over a bright still
-            // left the email and the "tracking since" line barely legible.
-            "border border-ink-100/10 bg-ink-950/60 backdrop-blur-md"
-          : "card bg-gradient-to-br from-flare-600/20 via-transparent to-ember-500/12"
-      }`}
-    >
+    <header className="card relative overflow-hidden rounded-2xl bg-gradient-to-br from-flare-600/20 via-transparent to-ember-500/12 p-5 sm:p-6">
       {/* Soft light behind the avatar, so the corner is not a flat wash. */}
-      {!cover && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-flare-500/20 blur-3xl"
-        />
-      )}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -left-24 h-64 w-64 rounded-full bg-flare-500/20 blur-3xl"
+      />
 
       {/*
         `break-words` rather than `truncate`: a long name should wrap onto a

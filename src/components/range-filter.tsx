@@ -27,7 +27,17 @@ export function RangeFilter({ active }: { active: RangeKey }) {
     <div
       role="tablist"
       aria-label="Time range"
-      className="rounded-2xl border border-ink-800/80 bg-ink-900/40 p-1 backdrop-blur-sm"
+      /*
+        The page's own card material rather than a lighter one of its own.
+
+        It used to be `bg-ink-900/40`, which is a hint of a surface: enough on
+        the page's flat background, and nothing at all over a profile cover,
+        where the bar read as having no background and the tabs as words
+        floating on a film still. A surface that varies with whether a picture
+        happens to be behind it is two designs; this is the one every other
+        panel on the page is made of, and it holds up over both.
+      */
+      className="card p-1"
     >
       <div
         className="-my-3 flex gap-1 overflow-x-auto py-3 [&::-webkit-scrollbar]:hidden"

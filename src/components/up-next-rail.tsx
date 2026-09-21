@@ -433,7 +433,9 @@ export function UpNextRail({
       setCatchUpFor(episode);
       return;
     }
-    mark(episode);
+    // And with nothing behind it, the other question: when. Nothing is written
+    // until that has an answer — see `mark`.
+    setAskWhen(keyOf(episode));
   }
 
   /**
@@ -507,7 +509,16 @@ export function UpNextRail({
     publishEpisodeChanges(changes.map((change) => ({ showId, ...change })));
   }
 
-  function mark(episode: RailEpisode, when?: Date) {
+  /**
+   * Marks it, at the day the reader chose.
+   *
+   * `when` is not optional any more. Marking used to log at the current time
+   * and then open the menu to offer a correction; it opens the menu first now,
+   * and this is what the answer runs. The row re-sorts itself around what you
+   * have seen, so a mis-tap used to move the rail under your thumb before you
+   * could say it was a mis-tap.
+   */
+  function markAt(episode: RailEpisode, when: Date) {
     // Applied here first: the row re-sorts itself around what you have seen, and
     // waiting for the server to say so would leave it a beat behind your thumb.
     setWatched((prev) => new Set(prev).add(keyOf(episode)));
@@ -519,9 +530,7 @@ export function UpNextRail({
       },
     ]);
 
-    // Logged at the current time, so the only thing left to say about it is
-    // "actually, it was earlier" — which is what this menu is for.
-    setAskWhen(when ? null : keyOf(episode));
+    setAskWhen(null);
 
     startTransition(async () => {
       await toggleEpisodeWatched({
@@ -529,7 +538,7 @@ export function UpNextRail({
         showName,
         showPoster,
         episode: episodeInput(episode),
-        watchedAt: when ? when.toISOString() : undefined,
+        watchedAt: when.toISOString(),
       });
       router.refresh();
     });
@@ -677,10 +686,16 @@ export function UpNextRail({
                   <div className="absolute right-2 bottom-2">
                     <WatchedDateMenu
                       align="right"
+                      // Two questions through one menu: an episode already on
+                      // record is being re-dated, and one that is not is being
+                      // logged for the first time by the answer.
+                      mode={seen ? "correct" : "log"}
                       releaseDate={episode.airDate}
                       onClose={() => setAskWhen(null)}
-                      onPick={(date) => moveTo(episode, date)}
-                      onUnwatch={() => unmark(episode)}
+                      onPick={(date) =>
+                        seen ? moveTo(episode, date) : markAt(episode, date)
+                      }
+                      onUnwatch={seen ? () => unmark(episode) : undefined}
                     />
                   </div>
                 )}
@@ -750,7 +765,9 @@ export function UpNextRail({
           onPick={(choice) => {
             const episode = catchUpFor;
             setCatchUpFor(null);
-            if (choice === "one") mark(episode);
+            // On to the same "when did you watch it?" the tick asks, rather
+            // than skipping it for having come through this dialog.
+            if (choice === "one") setAskWhen(keyOf(episode));
             else catchUp(episode, choice);
           }}
         />

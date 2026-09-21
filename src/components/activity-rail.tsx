@@ -58,9 +58,14 @@ function ActivityCard({
   const Icon = entry.kind === "episode" ? Tv : Film;
 
   return (
-    <Link
-      href={entry.href}
-      title={`${entry.title} — ${entry.subtitle}`}
+    /*
+      A card with two destinations, which is why the link is an overlay rather
+      than a wrapper: the title is what the picture is about, but the pill in the
+      corner names a person, and tapping a person's name should go to that
+      person. An anchor inside an anchor is not something HTML has, so the card's
+      own link is laid over the artwork instead and the pill sits above it.
+    */
+    <div
       className="rail-item fade-in group w-[248px] sm:w-[288px]"
       style={{ "--fade-delay": `${index * 60}ms` } as React.CSSProperties}
     >
@@ -83,9 +88,26 @@ function ActivityCard({
 
         <div className="scrim-b absolute inset-0" />
 
-        <div className="absolute inset-x-2 top-2 flex flex-wrap items-center gap-1.5">
+        {/* Above the artwork and the caption, below the pills. */}
+        <Link
+          href={entry.href}
+          title={`${entry.title} — ${entry.subtitle}`}
+          aria-label={`${entry.title} — ${entry.subtitle}`}
+          className="absolute inset-0 z-10 rounded-xl"
+        />
+
+        {/*
+          The row itself lets clicks through to the card behind it, so the two
+          chips that are only labels still open the title the way they did when
+          the whole card was one link. Only the name takes them back.
+        */}
+        <div className="pointer-events-none absolute inset-x-2 top-2 z-20 flex flex-wrap items-center gap-1.5">
           {showWho && (
-            <span className={`${OVERLAY_PILL} pr-2.5 pl-1 text-white`}>
+            <Link
+              href={`/profiles/${entry.userId}`}
+              title={`${entry.userName}'s profile`}
+              className={`${OVERLAY_PILL} pointer-events-auto pr-2.5 pl-1 text-white transition hover:border-white/40 hover:bg-white/25`}
+            >
               <span className="grid h-4 w-4 shrink-0 place-items-center overflow-hidden rounded-full bg-flare-600 text-[8px] font-bold text-white">
                 {entry.userAvatar ? (
                   <Image
@@ -101,7 +123,7 @@ function ActivityCard({
                 )}
               </span>
               {entry.userName}
-            </span>
+            </Link>
           )}
 
           <span className={`${OVERLAY_PILL} text-white`}>
@@ -124,6 +146,6 @@ function ActivityCard({
           <p className="line-clamp-1 text-xs text-white/70">{entry.subtitle}</p>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

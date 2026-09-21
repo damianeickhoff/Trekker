@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; background: #0b0b0f; color: #f2f1ee; font-family: Geist, system-ui, sans-serif; font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; overflow: auto; }
+    a { color: #a78bfa; text-decoration: none; } a:hover { color: #c4b5fd; }
+    .display { font-family: "Bricolage Grotesque", "Geist", system-ui, sans-serif; font-weight: 600; letter-spacing: -.02em; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .page { min-height: 100%; padding: 0 20px 100px; }
+    .muted { color: #8f8f9c; } .faint { color: #5c5c68; }
+    .label { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #8f8f9c; }
+    .rule { height: 1px; background: #1e1e26; }
+    .reel { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+    .frame { aspect-ratio: 16/9; border-radius: 4px; overflow: hidden; background: #1a1a22; position: relative; }
+    .frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .frame.off img { opacity: .28; filter: grayscale(1); }
+    .frame.next { outline: 2px solid #8b5cf6; outline-offset: -2px; }
+    .btn { display: inline-flex; white-space: nowrap; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 10px; font-weight: 600; font-size: 13px; }
+    .btn-primary { background: #f2f1ee; color: #0b0b0f; }
+    .btn-quiet { border: 1px solid #26262f; color: #f2f1ee; }
+    .btn-icon { width: 44px; padding: 0; }
+    .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat .v { font-family: "Geist Mono", ui-monospace, monospace; font-size: 18px; font-weight: 500; }
+    .season { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; color: #5c5c68; padding: 6px 0; border-bottom: 2px solid transparent; }
+    .season.on { color: #f2f1ee; border-color: #8b5cf6; }
+    .season.done { color: #8f8f9c; }
+    .ep { display: grid; grid-template-columns: 72px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #1e1e26; }
+    .tick { width: 28px; height: 28px; border-radius: 999px; border: 1px solid #26262f; display: grid; place-items: center; color: #5c5c68; }
+    .tick.on { background: #f2f1ee; color: #0b0b0f; border-color: #f2f1ee; }
+    .tab { display: flex; flex-direction: column; align-items: center; gap: 4px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #5c5c68; }
+  </style>
+</helmet>
+
+<div class="page">
+  <div style="display:flex; align-items:center; justify-content:space-between; height:64px;">
+    <div style="display:flex; align-items:center; gap:12px;"><svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;"><path d="M15 6l-6 6 6 6"></path></svg><span class="label">Series</span></div>
+    <div style="display:flex; align-items:center; gap:14px;"><svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;"><path d="M6 3h12v18l-6-4-6 4z"></path></svg><svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></div>
+  </div>
+
+  <!-- Title block on the plain surface: display type does the work the backdrop used to do. -->
+  <div style="display:flex; gap:16px; align-items:flex-start; padding:6px 0 18px;">
+    <div style="flex:1; min-width:0;">
+      <div class="display" style="font-size:36px; line-height:1; margin-bottom:10px;">Game of Thrones</div>
+      <div class="mono muted" style="font-size:12px;">2011 – 2019 · HBO · 8 seasons · 73 episodes</div>
+      <div class="muted" style="font-size:12px; margin-top:4px;">Sci-Fi &amp; Fantasy · Drama · Action &amp; Adventure</div>
+      <div style="display:flex; gap:14px; margin-top:12px;">
+        <div class="stat"><span class="label">IMDb</span><span class="v" style="color:#fbbf24;">9.2</span></div>
+        <div class="stat"><span class="label">Audience</span><span class="v">85</span></div>
+        <div class="stat"><span class="label">You</span><span class="v" style="color:#a78bfa;">100</span></div>
+      </div>
+    </div>
+    <div style="width:96px; flex:none; aspect-ratio:2/3; border-radius:6px; overflow:hidden; background:#1a1a22;"><img src="got-poster.jpg" alt="" style="display:block; width:100%; height:100%; object-fit:cover;"></div>
+  </div>
+
+  <!-- The reel is the hero: this season, frame by frame. -->
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <div style="display:flex; align-items:baseline; justify-content:space-between;"><div class="label">Season 8 · your reel</div><div class="mono muted" style="font-size:12px;"><span style="color:#f2f1ee;">2</span> of 6</div></div>
+    <div class="reel"><div class="frame"><img src="got-s8e2.jpg" alt=""></div><div class="frame"><img src="got-s8e4.jpg" alt=""></div><div class="frame next"><img src="got-s8e3.jpg" alt=""></div><div class="frame off"><img src="got-s8e5.jpg" alt=""></div><div class="frame off"><img src="got-s8e2.jpg" alt=""></div><div class="frame off"><img src="got-s8e4.jpg" alt=""></div></div>
+    <div style="display:flex; align-items:center; gap:12px; padding-top:6px;">
+      <div style="flex:1; min-width:0;"><div class="label" style="color:#c4b5fd;">Next</div><div class="display" style="font-size:18px; line-height:1.1;">The Long Night</div><div class="mono muted" style="font-size:11px; margin-top:2px;">S08E03 · 82 min · 28 Apr 2019</div></div>
+      <div class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>Log it</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; padding:20px 0;">
+    <div class="stat"><span class="label">Watched</span><span class="v">62<span class="faint">/73</span></span></div>
+    <div class="stat"><span class="label">Time</span><span class="v">3d 4h</span></div>
+    <div class="stat"><span class="label">Last</span><span class="v" style="font-size:14px;">15 Oct ’22</span></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div style="font-size:14px; line-height:1.6; color:#c9c8c3; padding:18px 0;">Seven noble families fight for control of the mythical land of Westeros. Friction between the houses leads to full-scale war. All while a very ancient evil awakens in the farthest north… <a>More</a></div>
+
+  <div class="rule"></div>
+
+  <!-- Seasons as a numeric rail; episodes as rows with reel frames. -->
+  <div style="display:flex; flex-direction:column; gap:12px; padding-top:18px;">
+    <div style="display:flex; gap:16px; overflow:hidden;">
+      <span class="season done">S1</span><span class="season done">S2</span><span class="season done">S3</span><span class="season done">S4</span><span class="season done">S5</span><span class="season done">S6</span><span class="season done">S7</span><span class="season on">S8</span>
+    </div>
+    <div>
+      <div class="ep"><div class="frame"><img src="got-s8e2.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500;">Winterfell</div><div class="mono muted" style="font-size:11px;">E01 · 55m · seen 15 Oct ’22</div></div><div class="tick on"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+      <div class="ep"><div class="frame"><img src="got-s8e4.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">A Knight of the Seven Kingdoms</div><div class="mono muted" style="font-size:11px;">E02 · 59m · seen 15 Oct ’22</div></div><div class="tick on"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+      <div class="ep"><div class="frame next"><img src="got-s8e3.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500;">The Long Night</div><div class="mono" style="font-size:11px; color:#a78bfa;">E03 · 82m · next</div></div><div class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+      <div class="ep"><div class="frame off"><img src="got-s8e5.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500;">The Last of the Starks</div><div class="mono muted" style="font-size:11px;">E04 · 79m</div></div><div class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+      <div class="ep"><div class="frame off"><img src="got-s8e2.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500;">The Bells</div><div class="mono muted" style="font-size:11px;">E05 · 80m</div></div><div class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+      <div class="ep" style="border-bottom:0;"><div class="frame off"><img src="got-s8e4.jpg" alt=""></div><div style="min-width:0;"><div style="font-weight:500;">The Iron Throne</div><div class="mono muted" style="font-size:11px;">E06 · 80m · finale</div></div><div class="tick"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+    </div>
+  </div>
+
+  <div style="position:fixed; left:0; right:0; bottom:0; height:64px; padding-bottom:6px; background:rgba(11,11,15,.96); border-top:1px solid #1e1e26; display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); align-items:center;">
+    <div class="tab" style="color:#f2f1ee;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"></path></svg>Tonight</div>
+    <div class="tab"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M15 9l-2 6-4 2 2-6z"></path></svg>Discover</div>
+    <div class="tab"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Calendar</div>
+    <div class="tab"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>Lists</div>
+    <div class="tab"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>Search</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -26,9 +26,20 @@ export default async function HomePage() {
   const user = await getCurrentUser();
   const hasTmdb = tmdbConfigured();
 
-  const trendingItems = hasTmdb ? await trending("all", "week").catch(() => []) : [];
+  /**
+   * Started, not awaited. This is one TMDB call for a rail near the foot of the
+   * page, and awaiting it here put its whole round trip in front of every query
+   * the page actually opens with — nothing on the dashboard could begin until
+   * the trending list had arrived. Held as a promise it runs alongside them, and
+   * is waited for in the two places that need it.
+   */
+  const trendingSoon: Promise<Awaited<ReturnType<typeof trending>>> = hasTmdb
+    ? trending("all", "week").catch(() => [])
+    : Promise.resolve([]);
 
   if (!user) {
+    const trendingItems = await trendingSoon;
+
     return (
       <div className="rise">
         <section className="card relative overflow-hidden px-6 py-12 sm:px-10 sm:py-16">
@@ -76,7 +87,7 @@ export default async function HomePage() {
 
   const today = todayKey();
 
-  const [stats, upNext, statuses, recentPlays, onThisDay, friendActivity, upcoming, month] =
+  const [stats, upNext, statuses, recentPlays, onThisDay, friendActivity, upcoming, month, trendingItems] =
     await Promise.all([
       getStats(user.id),
       getUpNext(user.id, 10),
@@ -116,6 +127,9 @@ export default async function HomePage() {
       // Four indexed reads and no network — see `lib/challenges`. Also what
       // records a challenge as won, so opening the dashboard is enough.
       getMonthlyChallenges(user.id).catch(() => null),
+      // Already in flight since the top of the page, so waiting for it here
+      // costs whatever is left of it rather than all of it.
+      trendingSoon,
     ]);
 
   // Movies logged before scores were stored show "—" until this fills them in.

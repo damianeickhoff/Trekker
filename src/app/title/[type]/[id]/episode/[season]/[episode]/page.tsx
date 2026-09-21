@@ -3,12 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Star, Tv } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { getFeelings } from "@/lib/comments";
 import { db } from "@/lib/db";
 import { getEpisodeDetail, getTv, img, tmdbConfigured } from "@/lib/tmdb";
 import { BackButton } from "@/components/back-button";
 import { EpisodeControls } from "@/components/episode-controls";
 import { EpisodePager } from "@/components/episode-pager";
 import { Rail } from "@/components/rail";
+import { TitleFeelings } from "@/components/title-feelings";
 import { SetupNotice, WatchedPill } from "@/components/ui";
 
 type Params = { type: string; id: string; season: string; episode: string };
@@ -67,7 +69,7 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
 
   if (!detail || !show) notFound();
 
-  const [watched, rating] = user
+  const [watched, rating, feelings] = user
     ? await Promise.all([
         db.watchedEpisode.findUnique({
           where: {
@@ -91,8 +93,12 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
           },
           select: { liked: true },
         }),
+        // How this episode landed, for everybody who has seen it. Read only for
+        // a signed-in reader because the picker below is only drawn for one who
+        // has watched it — the same rule, and the same cost, as a film's.
+        getFeelings("tv", showId, user.id, { seasonNumber, episodeNumber }),
       ])
-    : [null, null];
+    : [null, null, null];
 
   const neighbours = surrounding(show.seasons, seasonNumber, episodeNumber);
   const href = (at: { season: number; episode: number } | null) =>
@@ -243,6 +249,45 @@ export default async function EpisodePage({ params }: { params: Promise<Params> 
               {detail.overview}
             </p>
           )}
+
+          {/*
+            How it felt, asked here rather than on the show.
+
+            It used to sit under the show's own rating slider, where the question
+            had no answer: a series runs for years and does not have *a* feeling,
+            and a tally that mixed the pilot with the finale summarised nothing.
+            An episode is one evening, which is the size of thing this asks
+            about — and the page for it is this one.
+
+            Behind the same gate as everywhere else: an opinion about something
+            you have not watched is a guess.
+
+            On a film that gate hides the section outright, and here it should
+            not. A film's page has a score slider in the same place, so there is
+            visibly *something* that appears once you have seen it; an episode
+            page has only this, so hiding it made the picker look like it had
+            never been moved here at all. One quiet line instead, which says
+            where it went and what brings it back — and still does not let
+            anybody rate an episode they have not watched.
+          */}
+          {user &&
+            feelings &&
+            (watched ? (
+              <div className="max-w-2xl">
+                <TitleFeelings
+                  mediaType="tv"
+                  tmdbId={showId}
+                  episode={{ seasonNumber, episodeNumber }}
+                  tally={feelings.tally}
+                  mine={feelings.mine}
+                  signedIn
+                />
+              </div>
+            ) : aired ? (
+              <p className="mt-5 max-w-2xl text-xs text-ink-400">
+                Mark this episode watched to say how it felt.
+              </p>
+            ) : null)}
           </div>
 
           {people.length > 0 && (

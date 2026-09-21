@@ -206,6 +206,21 @@ export function Nav({
             </span>
           )}
 
+          {/*
+            The desktop row only — the phone's tab bar says where you are with a
+            pill behind the glyph, and deliberately does not use the accent
+            there: four icons in a capsule, one of them filled violet, was one
+            accent too many at that size.
+
+            Here it is the opposite problem. The lit tab was `bg-ink-800/80`, a
+            grey one step off the bar's own grey, and behind glass that has been
+            blurred over the page it all but disappeared — worst on the pages
+            with artwork behind the header. The accent is the one colour on the
+            page that cannot be mistaken for the background, and it is the
+            reader's own: `flare-600` is remapped by `data-accent`, so this is
+            whichever colour they picked, in whichever theme they are in. Every
+            accent's 600 is deep enough in both ramps to carry white text.
+          */}
           <nav className="ml-6 hidden items-center gap-1 md:flex">
             {LINKS.map(({ href, label }) => (
               <Link
@@ -213,7 +228,7 @@ export function Nav({
                 href={href}
                 className={`rounded-lg px-3 py-2 text-sm transition ${
                   isActive(tabPath(pathname, origin), href)
-                    ? "bg-ink-800/80 font-medium text-ink-100 ring-1 ring-white/8 ring-inset"
+                    ? "bg-flare-600 font-semibold text-white shadow-[0_6px_18px_-8px] shadow-flare-600/70"
                     : "text-ink-300 hover:bg-ink-800/60 hover:text-ink-100"
                 }`}
               >

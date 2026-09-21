@@ -1,6 +1,5 @@
 import "server-only";
 
-import { revalidatePath } from "next/cache";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
 import { addToPlexWatchlist, getPlexWatchlist, PlexWatchlistError } from "./plex-watchlist";
@@ -126,7 +125,10 @@ export async function syncPlexWatchlist(userId: string): Promise<PlexSyncState> 
     ...new Set(pushed.filter((p) => !p.ok).map((p) => p.reason ?? "unknown error")),
   ].slice(0, 3);
 
-  revalidatePath("/", "layout");
+  // No `revalidatePath`, for the reason spelled out in `plex-history.ts`: this
+  // runs from the now-playing poll as often as it runs from the Settings
+  // button, and there it emptied the whole TMDB cache on behalf of nobody. The
+  // button refreshes its own page — see `plex-import-actions.ts`.
   return {
     summary: {
       added: rows.length,

@@ -676,11 +676,21 @@ model Feeling {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaType String
+  /// The film's id, or the *show's* id for an episode.
   tmdbId    Int
+  /// Which episode it is about. Zero for a film, and for the show-level rows
+  /// left behind by the version of this that asked on the show's own page.
+  ///
+  /// Zero rather than null, deliberately, and for the reason `WatchedEpisode`
+  /// does the same: SQLite treats NULLs in a unique index as distinct, so a
+  /// nullable column here would let one person hold any number of feelings
+  /// about the same film. Zero is a value, and the index means what it says.
+  seasonNumber  Int @default(0)
+  episodeNumber Int @default(0)
   feeling   String
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, mediaType, tmdbId])
-  /// The tally the title page draws.
-  @@index([mediaType, tmdbId])
+  @@unique([userId, mediaType, tmdbId, seasonNumber, episodeNumber])
+  /// The tally a film's page and an episode's page each draw.
+  @@index([mediaType, tmdbId, seasonNumber, episodeNumber])
 }

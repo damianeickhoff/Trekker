@@ -40,6 +40,16 @@ const react = z.object({
 const feel = z.object({
   mediaType,
   tmdbId: z.number().int().positive(),
+  /**
+   * Which episode. Absent for a film, and stored as zero — the schema comment
+   * on `Feeling` explains why that is not a null.
+   *
+   * Season zero is a real season on TMDB (the specials), so the floor here is
+   * zero rather than one and the two are told apart by `mediaType` instead: a
+   * film never sends either.
+   */
+  seasonNumber: z.number().int().min(0).optional(),
+  episodeNumber: z.number().int().min(0).optional(),
   feeling: z.string().min(1),
 });
 
@@ -176,14 +186,20 @@ export async function toggleReaction(input: {
 }
 
 /**
- * Picks how a title made you feel, or takes the answer back.
+ * Picks how something made you feel, or takes the answer back.
  *
  * Sending the feeling you already hold clears it, exactly as `rateEpisode` does
  * for an episode thumb — one control, two directions, nothing to explain.
+ *
+ * "Something" is a film or one episode. A show as a whole is deliberately not
+ * askable: an eighty-hour run does not have *a* feeling, and the tally is only
+ * worth reading when everyone answering watched the same thing.
  */
 export async function setFeeling(input: {
   mediaType: "movie" | "tv";
   tmdbId: number;
+  seasonNumber?: number;
+  episodeNumber?: number;
   feeling: string;
 }): Promise<CommentState & { feeling?: string | null }> {
   const user = await requireUser();
@@ -193,12 +209,16 @@ export async function setFeeling(input: {
     return { error: "That feeling does not exist" };
   }
   const data = parsed.data;
+  const seasonNumber = data.seasonNumber ?? 0;
+  const episodeNumber = data.episodeNumber ?? 0;
 
   const key = {
-    userId_mediaType_tmdbId: {
+    userId_mediaType_tmdbId_seasonNumber_episodeNumber: {
       userId: user.id,
       mediaType: data.mediaType,
       tmdbId: data.tmdbId,
+      seasonNumber,
+      episodeNumber,
     },
   };
 
@@ -216,6 +236,8 @@ export async function setFeeling(input: {
       userId: user.id,
       mediaType: data.mediaType,
       tmdbId: data.tmdbId,
+      seasonNumber,
+      episodeNumber,
       feeling: data.feeling,
     },
     update: { feeling: data.feeling },

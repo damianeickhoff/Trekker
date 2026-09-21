@@ -1,0 +1,130 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+  <style>
+    html, body { height: 100%; }
+    body { margin: 0; background: #07070c; color: #e6e6f2; font-family: Geist, system-ui, sans-serif; font-size: 14px; line-height: 1.45; -webkit-font-smoothing: antialiased; overflow: auto; }
+    a { color: #a78bfa; text-decoration: none; } a:hover { color: #c4b5fd; }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .page { min-height: 100%; background: radial-gradient(120% 80% at 12% -10%, #2a1d4e 0%, transparent 55%), radial-gradient(90% 60% at 95% 0%, #22193d 0%, transparent 50%), #07070c; padding-bottom: 64px; }
+    .wrap { max-width: 1152px; margin: 0 auto; padding: 0 24px; }
+    .card { background: #11111c; border: 1px solid rgba(35,35,54,.6); border-radius: 16px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(52,52,77,.7); background: rgba(12,12,20,.7); font-size: 11px; color: #9a9ab8; white-space: nowrap; }
+    .chip b { color: #e6e6f2; font-weight: 600; }
+    .pill-watched { display: inline-flex; white-space: nowrap; align-items: center; gap: 5px; height: 20px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(52,211,153,.4); background: rgba(52,211,153,.1); color: #34d399; font-size: 10px; font-weight: 500; }
+    .btn { display: inline-flex; white-space: nowrap; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px; font-weight: 600; font-size: 14px; border: 1px solid transparent; }
+    .btn-primary { background: #7c3aed; color: #fff; }
+    .btn-ghost { background: transparent; border-color: #232336; color: #e6e6f2; }
+    .btn-icon { width: 44px; padding: 0; }
+    .tile { position: relative; overflow: hidden; border-radius: 12px; border: 1px solid rgba(35,35,54,.6); background: #171724; flex: none; }
+    .tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .overlay-pill { position: absolute; display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.12); backdrop-filter: blur(4px); color: #fff; font-size: 10px; font-weight: 700; }
+    .check { width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center; flex: none; border: 1px solid #34344d; color: #9a9ab8; }
+    .check.on { background: #e6e6f2; color: #07070c; border-color: #e6e6f2; }
+    .seg { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid #232336; font-size: 12px; color: #c6c6dc; white-space: nowrap; }
+    .seg.on { background: #7c3aed; border-color: #7c3aed; color: #fff; font-weight: 600; }
+    .eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #6f6f8f; font-weight: 500; }
+    .h2 { font-size: 18px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+    .muted { color: #9a9ab8; } .faint { color: #6f6f8f; }
+    .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav a { color: #9a9ab8; padding: 8px 12px; border-radius: 8px; font-size: 14px; }
+    .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(35,35,54,.6); }
+  </style>
+</helmet>
+
+<div class="page">
+  <!-- The ordinary header. The back button sits in it (left of the logo), exactly as on the phone. -->
+  <div class="wrap" style="display:flex; align-items:center; gap:12px; height:64px;">
+    <div style="width:40px; height:40px; border-radius:12px; border:1px solid #232336; display:grid; place-items:center;"><svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></div>
+    <div style="width:32px; height:32px; border-radius:8px; background:#8b5cf6; display:grid; place-items:center; color:#fff; font-weight:700;">T</div>
+    <div style="font-size:18px; font-weight:600; letter-spacing:-.01em;">Trekker</div>
+    <div class="nav" style="display:flex; gap:4px; margin-left:16px;"><a>Home</a><a>Discover</a><a>Calendar</a><a>Lists</a><a>Profile</a></div>
+    <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+      <div style="width:40px; height:40px; display:grid; place-items:center; color:#9a9ab8;"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></div>
+      <div style="width:40px; height:40px; display:grid; place-items:center; color:#9a9ab8;"><svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10 21h4"></path></svg></div>
+      <div style="width:32px; height:32px; border-radius:999px; background:#7c3aed; display:grid; place-items:center; color:#fff; font-weight:700; font-size:13px;">F</div>
+    </div>
+  </div>
+
+  <div class="wrap" style="padding-top:20px; display:flex; flex-direction:column; gap:24px;">
+
+    <!-- Hero card: wide art, the poster tucked into it, the same rounded card as the home hero. -->
+    <div style="position:relative; border-radius:16px; overflow:hidden; height:400px; background:#000; box-shadow:0 40px 80px -40px rgba(120,130,160,.55), 0 0 0 1px rgba(255,255,255,.06);">
+      <img src="got-backdrop.jpg" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+      <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(0,0,0,.85) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.05) 100%), linear-gradient(to top, rgba(0,0,0,.8), transparent 50%);"></div>
+      <div style="position:absolute; left:32px; bottom:32px; right:32px; display:flex; gap:28px; align-items:flex-end;">
+        <div class="tile" style="width:180px; aspect-ratio:2/3; border-radius:14px; box-shadow:0 20px 40px -16px rgba(0,0,0,.9);"><img src="got-poster.jpg" alt=""></div>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; padding-bottom:4px;">
+          <div class="eyebrow" style="color:#c4b5fd;">Series · HBO</div>
+          <div style="font-size:52px; font-weight:700; letter-spacing:-.025em; line-height:1; color:#fff;">Game of Thrones</div>
+          <div style="font-size:15px; color:rgba(255,255,255,.72); font-style:italic;">Winter is coming.</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;">
+            <span class="chip">2011 – 2019</span><span class="chip">8 seasons</span><span class="chip">73 episodes</span><span class="chip">Ended</span>
+            <span class="chip"><span>IMDb</span><b class="mono" style="color:#fbbf24;">9.2</b></span>
+            <span class="chip"><span>Audience</span><b class="mono" style="color:#34d399;">85%</b></span>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:6px;">
+            <div class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>Mark S08E03 watched</div>
+            <div class="btn btn-ghost" style="background:rgba(0,0,0,.35); backdrop-filter:blur(8px);"><svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"></path></svg>Save</div>
+            <div class="btn btn-ghost btn-icon" style="background:rgba(0,0,0,.35); backdrop-filter:blur(8px);"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"></path></svg></div>
+            <div class="btn btn-ghost btn-icon" style="background:rgba(0,0,0,.35); backdrop-filter:blur(8px);"><svg class="icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two columns: progress + synopsis left, seasons right. Everything on the page surface. -->
+    <div style="display:grid; grid-template-columns: 5fr 7fr; gap:24px; align-items:start;">
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div class="card" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:baseline; justify-content:space-between;"><div class="eyebrow">Your progress</div><div class="mono" style="font-size:12px; color:#c6c6dc;">62 / 73</div></div>
+          <div style="height:6px; border-radius:999px; background:#232336; overflow:hidden;"><div style="width:85%; height:100%; background:linear-gradient(90deg,#8b5cf6,#fbbf24);"></div></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px;" class="muted"><span>3d 4h watched · 11 episodes left</span><span>Last watched 15 Oct ’22</span></div>
+          <div style="display:flex; align-items:center; gap:12px; padding-top:12px; border-top:1px solid rgba(35,35,54,.6);">
+            <div class="tile" style="width:128px; aspect-ratio:16/9;"><img src="got-s8e3.jpg" alt=""><span class="overlay-pill mono" style="left:6px; bottom:6px;">S08E03</span></div>
+            <div style="min-width:0; flex:1;"><div class="eyebrow" style="color:#a78bfa;">Up next</div><div style="font-weight:600;">The Long Night</div><div style="font-size:12px;" class="muted">28 Apr 2019 · 82 min · at your pace, done in 2 weeks</div></div>
+            <div class="check"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div>
+          </div>
+        </div>
+        <div style="font-size:14px; line-height:1.6; color:#c6c6dc;">Seven noble families fight for control of the mythical land of Westeros. Friction between the houses leads to full-scale war. All while a very ancient evil awakens in the farthest north. Amidst the war, a neglected military order of misfits, the Night’s Watch, is all that stands between the realms of men and icy horrors beyond.</div>
+        <div style="display:flex; align-items:center; gap:10px;"><span class="eyebrow">Streaming on</span><span class="chip"><b>HBO Max</b></span><span class="chip"><b>Sky</b></span><span class="chip" style="margin-left:auto; color:#34d399; border-color:rgba(52,211,153,.4);">On Plex</span></div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <h2 class="h2">Cast <span class="faint" style="font-weight:400;">›</span></h2>
+          <div style="display:flex; gap:10px; overflow:hidden;">
+            <div style="width:92px;"><div class="tile" style="aspect-ratio:1/1.15;"><img src="cast-1.jpg" alt=""></div><div style="font-size:12px; font-weight:500; margin-top:6px;">Peter Dinklage</div><div class="faint" style="font-size:11px;">Tyrion</div></div>
+            <div style="width:92px;"><div class="tile" style="aspect-ratio:1/1.15;"><img src="cast-2.jpg" alt=""></div><div style="font-size:12px; font-weight:500; margin-top:6px;">Kit Harington</div><div class="faint" style="font-size:11px;">Jon Snow</div></div>
+            <div style="width:92px;"><div class="tile" style="aspect-ratio:1/1.15;"><img src="cast-3.jpg" alt=""></div><div style="font-size:12px; font-weight:500; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Nikolaj Coster-Waldau</div><div class="faint" style="font-size:11px;">Jaime</div></div>
+            <div style="width:92px;"><div class="tile" style="aspect-ratio:1/1.15;"><img src="cast-4.jpg" alt=""></div><div style="font-size:12px; font-weight:500; margin-top:6px;">Lena Headey</div><div class="faint" style="font-size:11px;">Cersei</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;"><h2 class="h2">Episodes</h2><span class="faint mono" style="font-size:12px;">Season 8 · 2 / 6 · <a>Mark season</a></span></div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="seg">S1 <span class="mono" style="color:#34d399;">10/10</span></span><span class="seg">S2 <span class="mono" style="color:#34d399;">10/10</span></span><span class="seg">S3 <span class="mono" style="color:#34d399;">10/10</span></span><span class="seg">S4 <span class="mono" style="color:#34d399;">10/10</span></span><span class="seg">S5</span><span class="seg">S6</span><span class="seg">S7</span><span class="seg on">S8 <span class="mono">2/6</span></span>
+        </div>
+        <div class="card" style="padding:4px 14px;">
+          <div class="row"><div class="tile" style="width:128px; aspect-ratio:16/9;"><img src="got-s8e2.jpg" alt=""><span class="overlay-pill mono" style="left:6px; bottom:6px;">E01</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">Winterfell</div><div style="display:flex; gap:8px; align-items:center; font-size:12px;" class="muted"><span>14 Apr 2019 · 55m</span><span class="pill-watched">Watched 15 Oct ’22</span></div></div><div class="check on"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+          <div class="row"><div class="tile" style="width:128px; aspect-ratio:16/9;"><img src="got-s8e4.jpg" alt=""><span class="overlay-pill mono" style="left:6px; bottom:6px;">E02</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">A Knight of the Seven Kingdoms</div><div style="display:flex; gap:8px; align-items:center; font-size:12px;" class="muted"><span>21 Apr 2019 · 59m</span><span class="pill-watched">Watched 15 Oct ’22</span></div></div><div class="check on"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+          <div class="row" style="margin:0 -14px; padding-left:14px; padding-right:14px; background:linear-gradient(90deg, rgba(124,58,237,.1), transparent);"><div class="tile" style="width:128px; aspect-ratio:16/9;"><img src="got-s8e3.jpg" alt=""><span class="overlay-pill mono" style="left:6px; bottom:6px;">E03</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">The Long Night</div><div style="font-size:12px;" class="muted">28 Apr 2019 · 82m · <span style="color:#a78bfa;">Up next</span></div></div><div class="check"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+          <div class="row"><div class="tile" style="width:128px; aspect-ratio:16/9;"><img src="got-s8e5.jpg" alt=""><span class="overlay-pill mono" style="left:6px; bottom:6px;">E04</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">The Last of the Starks</div><div style="font-size:12px;" class="muted">5 May 2019 · 79m</div></div><div class="check"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+          <div class="row"><div class="tile" style="width:128px; aspect-ratio:16/9;"><span class="overlay-pill mono" style="left:6px; bottom:6px;">E05</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">The Bells</div><div style="font-size:12px;" class="muted">12 May 2019 · 80m</div></div><div class="check"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+          <div class="row" style="border-bottom:0;"><div class="tile" style="width:128px; aspect-ratio:16/9;"><span class="overlay-pill mono" style="left:6px; bottom:6px;">E06</span><span class="overlay-pill" style="right:6px; top:6px; color:#fbbf24;">Finale</span></div><div style="min-width:0; flex:1;"><div style="font-weight:500;">The Iron Throne</div><div style="font-size:12px;" class="muted">19 May 2019 · 80m</div></div><div class="check"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="faint" style="font-size:12px; text-align:center;">What people are saying · Reviews · Comments · You might also like — unchanged below.</div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -44,6 +44,8 @@ beforeEach(async () => {
 });
 
 const film = { mediaType: "movie" as const, tmdbId: 550 };
+/** The same shape for a show, whose feelings are asked per episode. */
+const show = { mediaType: "tv" as const, tmdbId: 1399 };
 
 describe("who can read a comment", () => {
   it("shows strangers to each other", async () => {
@@ -232,5 +234,48 @@ describe("feelings", () => {
 
     expect(refused.error).toBe("That feeling does not exist");
     expect(await db.feeling.count()).toBe(0);
+  });
+
+  /**
+   * The identity includes the episode, so two evenings with the same show are
+   * two answers. Worth pinning: the columns behind this are zero-defaulted
+   * rather than nullable precisely because SQLite counts NULLs in a unique
+   * index as distinct, and a nullable pair would let one person hold any number
+   * of feelings about the same film without anything failing.
+   */
+  it("keeps one show's episodes apart", async () => {
+    await setFeeling({ ...show, seasonNumber: 1, episodeNumber: 1, feeling: "tense" });
+    await setFeeling({ ...show, seasonNumber: 1, episodeNumber: 2, feeling: "bored" });
+
+    const first = await getFeelings("tv", 1399, alice, { seasonNumber: 1, episodeNumber: 1 });
+    const second = await getFeelings("tv", 1399, alice, { seasonNumber: 1, episodeNumber: 2 });
+
+    expect(first.mine).toBe("tense");
+    expect(first.tally).toEqual([{ feeling: "tense", count: 1 }]);
+    expect(second.mine).toBe("bored");
+    expect(second.tally).toEqual([{ feeling: "bored", count: 1 }]);
+  });
+
+  it("still allows only one answer per person per episode", async () => {
+    const episode = { ...show, seasonNumber: 2, episodeNumber: 9 };
+
+    await setFeeling({ ...episode, feeling: "tense" });
+    await setFeeling({ ...episode, feeling: "moved" });
+
+    const seen = await getFeelings("tv", 1399, alice, { seasonNumber: 2, episodeNumber: 9 });
+    expect(seen.tally).toEqual([{ feeling: "moved", count: 1 }]);
+    expect(await db.feeling.count()).toBe(1);
+  });
+
+  // A film sends no episode and is stored at 0/0, which must not collide with
+  // an episode of a show that happens to share the id.
+  it("keeps a film apart from an episode with the same id", async () => {
+    await setFeeling({ mediaType: "movie", tmdbId: 1399, feeling: "loved" });
+    await setFeeling({ ...show, seasonNumber: 1, episodeNumber: 1, feeling: "scared" });
+
+    expect((await getFeelings("movie", 1399, alice)).mine).toBe("loved");
+    expect(
+      (await getFeelings("tv", 1399, alice, { seasonNumber: 1, episodeNumber: 1 })).mine,
+    ).toBe("scared");
   });
 });

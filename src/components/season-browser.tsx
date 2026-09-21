@@ -413,11 +413,14 @@ export function SeasonBrowser({
   );
 
   /**
-   * @param prompt Whether to follow up with the row's "when did you watch it?"
-   *   menu. The dialog passes false: it carries a date menu of its own, and the
-   *   row's would open silently behind it, since the dialog sits above it.
+   * The tick. Both directions open the menu; neither writes anything by itself.
+   *
+   * Marking used to log at the current time and then offer the menu to correct
+   * it. Asking first is the same number of taps for somebody who watched it
+   * just now — "Now" is the first answer — and it makes a mis-tap free, where
+   * before it was a viewing in the log to be noticed and taken back.
    */
-  function toggleOne(ep: Episode, prompt = true) {
+  function toggleOne(ep: Episode) {
     // Nothing to log until it has aired.
     if (!hasAired(ep.airDate) && !watched.has(ep.episodeNumber)) return;
 
@@ -425,7 +428,6 @@ export function SeasonBrowser({
     // Unmarking on a single tap was too easy to do by accident, and the menu is
     // where both the date and "unwatch" now live.
     if (watched.has(ep.episodeNumber)) {
-      if (!prompt) return;
       // A fresh open is a fresh question, about the latest viewing again rather
       // than about whatever the last visit to this menu logged.
       setRewatchId(null);
@@ -450,23 +452,23 @@ export function SeasonBrowser({
       return;
     }
 
-    markOne(ep, prompt);
+    // Nothing written yet: the menu is the question, and answering it is what
+    // marks the episode. `existing: false` is what tells it so.
+    setAskWhen({ episode: ep.episodeNumber, existing: false });
   }
 
-  /** The plain version: one episode, logged now. */
-  function markOne(ep: Episode, prompt = true) {
+  /** The plain version: one episode, at the day the reader chose. */
+  function markOne(ep: Episode, when: Date) {
     const next = new Set(watched);
     const dates = { ...watchedAt };
     const counts = { ...plays };
 
     next.add(ep.episodeNumber);
-    dates[ep.episodeNumber] = new Date().toISOString();
+    dates[ep.episodeNumber] = when.toISOString();
     counts[ep.episodeNumber] = 1;
 
+    setAskWhen(null);
     setWatched(next, dates, counts);
-    // Already logged at the current time; the menu only exists to correct it.
-    // Just logged, so there is nothing to take back — only a date to correct.
-    if (prompt) setAskWhen({ episode: ep.episodeNumber, existing: false });
 
     startTransition(async () => {
       await toggleEpisodeWatched({
@@ -480,6 +482,7 @@ export function SeasonBrowser({
           runtime: ep.runtime,
           airDate: ep.airDate,
         },
+        watchedAt: when.toISOString(),
       });
     });
   }
@@ -1000,22 +1003,28 @@ export function SeasonBrowser({
 
                 </div>
 
-                {signedIn && (
+                {/*
+                  No control at all for an episode that has not aired, rather
+                  than a dead one.
+
+                  It used to render disabled, with a tooltip explaining why. On
+                  a season of a running show that is a column of greyed circles
+                  down the whole unaired half of the list — offering something
+                  and then refusing it, once per row. The air date is already on
+                  every row and says the same thing without a control that does
+                  nothing. Anything already on record keeps its tick, since an
+                  episode watched early still has to be correctable.
+                */}
+                {signedIn && (aired || isWatched) && (
                   <div className="flex shrink-0 items-center gap-1.5 self-center">
 
                     <div className="relative">
                     <button
                       onClick={() => toggleOne(ep)}
-                      disabled={!aired && !isWatched}
                       aria-label={
-                        !aired && !isWatched
-                          ? "Not aired yet"
-                          : isWatched
-                            ? "Change when you watched it, or unwatch"
-                            : "Mark watched"
+                        isWatched ? "Change when you watched it, or unwatch" : "Mark watched"
                       }
                       aria-pressed={isWatched}
-                      title={!aired && !isWatched ? "This episode has not aired yet" : undefined}
                       className={`grid h-7 w-7 place-items-center rounded-full border transition ${
                         isWatched
                           ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
@@ -1028,9 +1037,19 @@ export function SeasonBrowser({
                     {askWhen?.episode === ep.episodeNumber && (
                       <WatchedDateMenu
                         align="right"
+                        // `existing` is the difference between the two
+                        // questions this menu asks. False means nothing has
+                        // been logged and picking a date is what logs it; true
+                        // means the episode was already on record when the
+                        // menu opened, so a date moves it.
+                        mode={askWhen.existing ? "correct" : "log"}
                         releaseDate={ep.airDate}
                         onClose={() => setAskWhen(null)}
-                        onPick={(date) => correctDate(ep.episodeNumber, date)}
+                        onPick={(date) =>
+                          askWhen.existing
+                            ? correctDate(ep.episodeNumber, date)
+                            : markOne(ep, date)
+                        }
                         // Only for an episode that was already on record when
                         // the menu opened — one ticked a second ago has nothing
                         // to watch again or take back yet.
@@ -1099,7 +1118,10 @@ export function SeasonBrowser({
           onPick={(choice) => {
             const episode = catchUpFor;
             setCatchUpFor(null);
-            if (choice === "one") markOne(episode);
+            // "Just this one" goes on to the same question the tick asks, so
+            // the answer to "when did you watch it?" is not skipped by having
+            // come through the catch-up dialog.
+            if (choice === "one") setAskWhen({ episode: episode.episodeNumber, existing: false });
             else catchUp(episode, choice);
           }}
         />

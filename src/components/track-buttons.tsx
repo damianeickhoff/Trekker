@@ -64,6 +64,49 @@ export function TrackButtons({
   const released =
     Boolean(item.releaseDate) && item.releaseDate! <= new Date().toISOString().slice(0, 10);
 
+  /**
+   * Logs the film, at the day the reader chose in the menu.
+   *
+   * The state moves before the answer comes back — the one control the whole
+   * page is about should not sit still through a round trip. Safe to assume:
+   * the only thing that can refuse is an unreleased film, and the button is not
+   * offered for one. The answer is still applied, so a refusal corrects itself
+   * rather than being believed.
+   */
+  function logAt(date: Date) {
+    setWatched(true);
+    setWatchedAt(date);
+    setPlays(1);
+    setWatchlistCleared(true);
+
+    const write = toggleMovieWatched({
+      movieId: item.tmdbId,
+      title: item.title,
+      poster: item.poster,
+      runtime: item.runtime ?? 0,
+      score: item.score,
+      watchedAt: date.toISOString(),
+      releaseDate: item.releaseDate,
+    });
+
+    startTransition(async () => {
+      const res = await write;
+      setWatched(res.watched);
+      setWatchedAt(res.watched ? date : null);
+      setPlays(res.watched ? 1 : 0);
+      setWatchlistCleared(res.watched);
+    });
+
+    /**
+     * The date under the synopsis is rendered by the server, so it only moves
+     * when the server is asked again — but deliberately outside the transition
+     * above. Inside it, `pending` stayed true until a whole title page had been
+     * re-rendered, and the button sat disabled and greyed for the duration of a
+     * second round trip that nothing on screen was waiting for.
+     */
+    void write.then(() => router.refresh());
+  }
+
   if (!signedIn) {
     return (
       <button
@@ -138,51 +181,17 @@ export function TrackButtons({
               }
 
               /**
-               * Marked before it is confirmed. The episode list has always
-               * worked this way and the film button did not: it waited for the
-               * round trip before anything moved, which on the one control the
-               * whole page is about reads as the press not having registered.
+               * Nothing is written by the press itself. The menu opens and asks
+               * when, and answering it is what logs the film — see `logAt`.
                *
-               * Safe to assume: the only thing that can refuse is an unreleased
-               * film, and the button is not offered for one — `released` gates
-               * it. The answer is still applied below, so a refusal corrects
-               * itself rather than being believed.
+               * This used to log at the current time and then offer the menu as
+               * a correction, which read well until it was wrong: a mis-tap was
+               * a viewing on record, off the watchlist and into the history, to
+               * be noticed and taken back. "Now" is the first answer in the
+               * menu, so it is the same number of taps for the ordinary case,
+               * and dismissing it costs nothing.
                */
-              setWatched(true);
-              setWatchedAt(new Date());
-              setPlays(1);
-              // Already logged at the current time; the menu is only there in
-              // case that is wrong.
-              setAskWhen(true);
-              setWatchlistCleared(true);
-
-              const write = toggleMovieWatched({
-                movieId: item.tmdbId,
-                title: item.title,
-                poster: item.poster,
-                runtime: item.runtime ?? 0,
-                score: item.score,
-                releaseDate: item.releaseDate,
-              });
-
-              startTransition(async () => {
-                const res = await write;
-                setWatched(res.watched);
-                setWatchedAt(res.watched ? new Date() : null);
-                setPlays(res.watched ? 1 : 0);
-                setAskWhen(res.watched);
-                setWatchlistCleared(res.watched);
-              });
-
-              /**
-               * The date under the synopsis is rendered by the server, so it
-               * only moves when the server is asked again — but deliberately
-               * outside the transition above. Inside it, `pending` stayed true
-               * until a whole title page had been re-rendered, and the button
-               * sat disabled and greyed for the duration of a second round trip
-               * that nothing on screen was waiting for.
-               */
-              void write.then(() => router.refresh());
+              setAskWhen((v) => !v);
             }}
             // Weight rather than decoration: a soft vertical gradient, a
             // hairline of light along the inside of the top edge, and a shadow
@@ -235,11 +244,22 @@ export function TrackButtons({
 
           {askWhen && (
             <WatchedDateMenu
+              // Unwatched, this menu is the whole act of marking it — nothing
+              // has been written, and the date picked is the date it is logged
+              // at. Watched, it is the older question: move the viewing that is
+              // already there, add another, or take one back.
+              mode={watched ? "correct" : "log"}
               releaseDate={item.releaseDate}
               onClose={() => setAskWhen(false)}
               onPick={(date) => {
                 setAskWhen(false);
                 setWatchedAt(date);
+
+                if (!watched) {
+                  logAt(date);
+                  return;
+                }
+
                 startTransition(async () => {
                   const res = await setMovieWatchedAt(
                     item.tmdbId,
@@ -254,7 +274,9 @@ export function TrackButtons({
                   if (res.lastWatchedAt) setWatchedAt(new Date(res.lastWatchedAt));
                 });
               }}
-              onWatchAgain={async () => {
+              onWatchAgain={
+                watched
+                  ? async () => {
                 // The menu deliberately stays open: it becomes the "when was
                 // it?" question for the viewing this just added.
                 const res = await logRewatch({
@@ -273,26 +295,33 @@ export function TrackButtons({
                 setWatchedAt(new Date(res.lastWatchedAt));
                 setRewatchId(res.playId);
                 return { created: res.created };
-              }}
+                    }
+                  : undefined
+              }
               unwatchLabel={plays > 1 ? "Remove last watch" : "Unwatch"}
-              onUnwatch={() => {
-                setAskWhen(false);
-                startTransition(async () => {
-                  const res = await removeWatch({
-                    mediaType: "movie",
-                    tmdbId: item.tmdbId,
-                    mode: "last",
-                  });
-                  setPlays(res.plays);
-                  setWatched(res.watched);
-                  // Falls back to the viewing before the one just removed, so
-                  // the pill stops showing a date that no longer exists.
-                  setWatchedAt(res.lastWatchedAt ? new Date(res.lastWatchedAt) : null);
-                });
-              }}
+              onUnwatch={
+                watched
+                  ? () => {
+                      setAskWhen(false);
+                      startTransition(async () => {
+                        const res = await removeWatch({
+                          mediaType: "movie",
+                          tmdbId: item.tmdbId,
+                          mode: "last",
+                        });
+                        setPlays(res.plays);
+                        setWatched(res.watched);
+                        // Falls back to the viewing before the one just
+                        // removed, so the pill stops showing a date that no
+                        // longer exists.
+                        setWatchedAt(res.lastWatchedAt ? new Date(res.lastWatchedAt) : null);
+                      });
+                    }
+                  : undefined
+              }
               unwatchAllLabel={`Remove all ${plays} watches`}
               onUnwatchAll={
-                plays > 1
+                watched && plays > 1
                   ? () => {
                       setAskWhen(false);
                       startTransition(async () => {

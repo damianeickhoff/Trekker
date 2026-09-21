@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh } from "next/cache";
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -26,7 +26,29 @@ const mediaType = z.enum(["movie", "tv"]);
 
 /** Anything that changes tracking data touches these views. */
 function revalidateTracking(userId?: string) {
-  revalidatePath("/", "layout");
+  /**
+   * `refresh`, not `revalidatePath("/", "layout")`.
+   *
+   * Both re-render the page the tick came from, which is all this ever wanted:
+   * nothing user-specific is cached on the server — every watched row, play and
+   * rating is read from SQLite on each render — so there is no stale server
+   * copy of any of it to throw away.
+   *
+   * What `revalidatePath` threw away instead was TMDB. Next tags every cached
+   * `fetch` with the layouts above the route that made it, and the root layout
+   * is above all of them, so `"/"` plus `"layout"` does not name a page — it
+   * names every cached response in the app. One tick emptied the lot, and the
+   * re-render that comes back in the *same response* as the tick then had to
+   * ask TMDB for the title again over the network before the button could stop
+   * spinning. That is where the several seconds went, and why a film was worse
+   * than an episode: the page being re-rendered is the film's own, which pulls
+   * credits, images, videos and recommendations, against the far thinner one an
+   * episode is ticked from.
+   *
+   * It reached further than the button, too. The next visit to any page — the
+   * home screen the installed app opens on — also started from an empty cache.
+   */
+  refresh();
 
   /**
    * Logging something is the only thing that can earn a badge, so this is the

@@ -40,12 +40,23 @@ const TILE_ON =
 export function TitleFeelings({
   mediaType,
   tmdbId,
+  episode,
   tally,
   mine,
   signedIn,
 }: {
   mediaType: "movie" | "tv";
+  /** The film's id, or the *show's* id when an episode is given. */
   tmdbId: number;
+  /**
+   * Which episode this is asking about. Films leave it out.
+   *
+   * There is no third case: a show as a whole cannot be asked. This used to sit
+   * on the show's page, where the question had no answer — a series is not an
+   * evening, and eighty hours of it do not add up to one feeling. It asks on
+   * the episode's page now, which is the page about a thing somebody watched.
+   */
+  episode?: { seasonNumber: number; episodeNumber: number };
   /** Only feelings somebody picked; the rest are drawn at zero from `FEELINGS`. */
   tally: FeelingTally[];
   /** The reader's own pick, or null. */
@@ -75,7 +86,13 @@ export function TitleFeelings({
     setPicked(next);
     setCounts(optimistic);
 
-    const write = setFeeling({ mediaType, tmdbId, feeling: id });
+    const write = setFeeling({
+      mediaType,
+      tmdbId,
+      seasonNumber: episode?.seasonNumber,
+      episodeNumber: episode?.episodeNumber,
+      feeling: id,
+    });
     startTransition(async () => {
       const res = await write;
       // The server decides, and it may disagree — a feeling that no longer

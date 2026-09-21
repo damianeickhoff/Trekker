@@ -1,5 +1,4 @@
 import "server-only";
-import { revalidatePath } from "next/cache";
 import { getPlexConnection, getPlexTmdbId, type PlexHistoryEntry } from "./plex";
 import { recordPlay } from "./plays";
 import { getMovie, getTv, tmdbConfigured } from "./tmdb";
@@ -17,6 +16,13 @@ import { getMovie, getTv, tmdbConfigured } from "./tmdb";
  *
  * This is also the path a genuine rewatch arrives on: watch something twice on
  * Plex and it now counts twice.
+ *
+ * Nothing here revalidates. Both callers are route handlers, with no page being
+ * rendered and no client router to tell, so `revalidatePath("/", "layout")` did
+ * nothing for anybody's screen — while emptying the app's entire TMDB cache,
+ * which is what that tag reaches. A scrobble that arrives while you are using
+ * the app is picked up by the next render either way: none of the pages cache
+ * what they read from SQLite.
  */
 export async function logPlexScrobble(
   userId: string,
@@ -71,7 +77,6 @@ export async function logPlexScrobble(
       source: "plex",
     });
 
-    revalidatePath("/", "layout");
     return true;
   }
 
@@ -95,6 +100,5 @@ export async function logPlexScrobble(
     source: "plex",
   });
 
-  revalidatePath("/", "layout");
   return true;
 }

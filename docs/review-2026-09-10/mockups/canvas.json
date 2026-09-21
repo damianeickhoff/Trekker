@@ -1,0 +1,20 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Title pages, within the current design" },
+    { "id": "page-2", "name": "Concept: the reel" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Show · phone", "x": 0, "y": 0, "w": 390, "h": 844, "page": "page-1" },
+    { "file": "Episode.dc.html", "title": "Episode · phone", "x": 480, "y": 0, "w": 390, "h": 844, "page": "page-1" },
+    { "file": "Movie.dc.html", "title": "Film · phone · light theme", "x": 960, "y": 0, "w": 390, "h": 844, "page": "page-1" },
+    { "file": "ShowDesktop.dc.html", "title": "Show · desktop", "x": 0, "y": 980, "w": 1280, "h": 900, "page": "page-1" },
+    { "file": "ConceptHome.dc.html", "title": "Concept · Tonight · phone", "x": 0, "y": 0, "w": 390, "h": 844, "page": "page-2" },
+    { "file": "ConceptShow.dc.html", "title": "Concept · Show · phone", "x": 480, "y": 0, "w": 390, "h": 844, "page": "page-2" },
+    { "file": "ConceptDesktop.dc.html", "title": "Concept · Tonight · desktop", "x": 0, "y": 980, "w": 1440, "h": 900, "page": "page-2" }
+  ],
+  "annotations": [
+    { "id": "note-brief-1", "x": 1440, "y": 0, "w": 300, "page": "page-1", "text": "Page 1 keeps every token the app already has (Geist, ink ramp, violet accent, 12/16px radii, glass tab bar).\n\nWhat changes: the header and tab bar stay on title pages; the hero is the home page's featured card, not a full-bleed page; one meta row, one score row, one action row on every width; the progress card carries the next episode inline; the season list uses the same still tile as everywhere else; 'how did it feel' is a chip row with line icons.\n\nThe film artboard is shown in the light theme on purpose: a title page should simply follow the theme." },
+    { "id": "note-brief-2", "x": 1440, "y": 0, "w": 300, "page": "page-2", "text": "Concept: the reel.\n\nOne risk, taken deliberately: the progress bar is made of the episodes themselves. Watched frames are full colour, unwatched are dimmed, the next one is ringed in the accent. The same strip is the up-next card, the season browser and the calendar row at different sizes.\n\nEverything else gets quieter so artwork is the only colour: no glass, no gradients, one flat ink surface, mono labels, a display face (Bricolage Grotesque) only for titles and the one sentence at the top of Tonight.\n\nTwo alternates not drawn: (A) 'Ledger' — a purely typographic log, dates down the left, artwork only as 1:1 thumbnails; (B) 'Poster wall' — the current app's density with the title world folded into ordinary cards (which is what page 1 already is)." }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

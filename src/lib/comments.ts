@@ -140,20 +140,40 @@ export async function getComments(
  * own row. Feelings that nobody chose are absent rather than zero — the caller
  * draws every option from `FEELINGS` and looks the count up.
  */
+/**
+ * How one thing landed, for everybody who has seen it.
+ *
+ * "One thing" is a film or an *episode*, never a show: a feeling is about an
+ * evening's viewing, and a show is not one of those. Films pass no episode and
+ * are stored at 0/0 — see the schema comment for why that is a zero rather than
+ * a null.
+ */
 export async function getFeelings(
   mediaType: "movie" | "tv",
   tmdbId: number,
   viewerId: string | null,
+  episode?: { seasonNumber: number; episodeNumber: number },
 ): Promise<{ tally: FeelingTally[]; mine: string | null }> {
+  const seasonNumber = episode?.seasonNumber ?? 0;
+  const episodeNumber = episode?.episodeNumber ?? 0;
+
   const [grouped, mine] = await Promise.all([
     db.feeling.groupBy({
       by: ["feeling"],
-      where: { mediaType, tmdbId },
+      where: { mediaType, tmdbId, seasonNumber, episodeNumber },
       _count: { _all: true },
     }),
     viewerId
       ? db.feeling.findUnique({
-          where: { userId_mediaType_tmdbId: { userId: viewerId, mediaType, tmdbId } },
+          where: {
+            userId_mediaType_tmdbId_seasonNumber_episodeNumber: {
+              userId: viewerId,
+              mediaType,
+              tmdbId,
+              seasonNumber,
+              episodeNumber,
+            },
+          },
           select: { feeling: true },
         })
       : Promise.resolve(null),

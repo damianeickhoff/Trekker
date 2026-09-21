@@ -433,6 +433,78 @@
   }
 
   /*
+   * The band the header sits in, once the artwork reaches the top of the window
+   * — see `title-backdrop.tsx`.
+   *
+   * Deliberately faint, and it is the smaller half of a pair. The first attempt
+   * put the whole job here: a short, strong scrim that had to guarantee contrast
+   * on its own, which meant it was dark enough to read as a bar laid across the
+   * top of the picture rather than as part of it. Contrast is now mostly carried
+   * by the header's own text, which is shadowed on these pages — see below — so
+   * this is left doing what it is good at, which is taking the glare off a
+   * bright frame. Tall and multi-stopped so there is no edge where it ends.
+   *
+   * Towards the page colour rather than towards black, and therefore different
+   * per theme: the text it is helping is near-white in the dark and near-black
+   * in the light, and a dark scrim under dark text makes it worse, not better.
+   */
+  .title-backdrop-crown {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(7 7 12 / 0.3) 0%,
+      rgb(7 7 12 / 0.26) 22%,
+      rgb(7 7 12 / 0.16) 48%,
+      rgb(7 7 12 / 0.06) 74%,
+      transparent 100%
+    );
+  }
+
+  html[data-theme="light"] .title-backdrop-crown {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(247 247 251 / 0.44) 0%,
+      rgb(247 247 251 / 0.38) 22%,
+      rgb(247 247 251 / 0.24) 48%,
+      rgb(247 247 251 / 0.09) 74%,
+      transparent 100%
+    );
+  }
+
+  /*
+   * The other half: the header's own text, on any page with artwork behind it.
+   *
+   * A shadow travels with the letters, so it only darkens the few hundred pixels
+   * that actually need darkening rather than a band across the picture — which
+   * is what lets the scrim above be as faint as it is. It costs nothing when the
+   * glass has faded in on scroll, and nothing at all on a page with no backdrop,
+   * since `.page-backdrop` is only mounted by `TitleBackdrop`.
+   *
+   * `text-shadow` reaches the words; the icons are strokes rather than glyphs,
+   * so they need the filter. Both are scoped away from the accent tile and the
+   * avatar, which are opaque objects with their own edges and do not want one.
+   */
+  body:has(.page-backdrop) > header {
+    text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+  }
+
+  body:has(.page-backdrop) > header svg {
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.5));
+  }
+
+  body:has(.page-backdrop) > header :where(.bg-flare-500, img) {
+    text-shadow: none;
+    filter: none;
+  }
+
+  html[data-theme="light"] body:has(.page-backdrop) > header {
+    text-shadow: 0 1px 3px rgb(255 255 255 / 0.7);
+  }
+
+  html[data-theme="light"] body:has(.page-backdrop) > header svg {
+    filter: drop-shadow(0 1px 2px rgb(255 255 255 / 0.65));
+  }
+
+  /*
    * The typeset heading, sitting on the sharp part of the artwork rather than on
    * the blur below it — so it is the one piece of text with nothing behind it.
    *

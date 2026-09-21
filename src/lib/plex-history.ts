@@ -1,5 +1,4 @@
 import "server-only";
-import { revalidatePath } from "next/cache";
 import { mapLimit } from "./concurrency";
 import { db } from "./db";
 import {
@@ -391,7 +390,21 @@ export async function syncPlexHistory(userId: string): Promise<PlexHistoryState>
     else already += 1;
   }
 
-  revalidatePath("/", "layout");
+  /**
+   * No `revalidatePath` here, on purpose.
+   *
+   * This runs from the now-playing poll — a route handler, on a ten-minute
+   * throttle — where there is no page being rendered and no client router
+   * listening, so the only thing it ever did was empty the app's whole TMDB
+   * cache (`"/"` plus `"layout"` is a tag every cached fetch carries). It did
+   * that whether or not the sync had found anything, which left every page in
+   * the app fetching TMDB from cold a few times an hour for as long as a tab
+   * was open. Nothing here is cached server-side to begin with: the pages read
+   * plays and watched rows from SQLite every time.
+   *
+   * The Settings button that runs the same sync refreshes the page it was
+   * pressed on — see `plex-history-actions.ts`, which can, being an action.
+   */
   return {
     summary: {
       movies: movieCount,

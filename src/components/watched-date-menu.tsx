@@ -5,12 +5,18 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 
 /**
- * "When did you watch it?", asked without ever making anybody answer.
+ * "When did you watch it?" — the one question, asked two ways.
  *
- * The button that opens this has already logged the thing at the current time,
- * so this is a correction rather than a required step: it opens automatically,
- * offers the three answers people actually give, and closes itself if ignored.
- * Picking one overwrites the timestamp.
+ * For a film (`mode: "correct"`) the button that opens this has already logged
+ * the thing at the current time, so this is a correction rather than a required
+ * step: it opens automatically, offers the answers people actually give, and
+ * closes itself if ignored. Picking one overwrites the timestamp.
+ *
+ * For an episode (`mode: "log"`) nothing has been written when this opens, and
+ * picking a date is what writes it — which is why that mode offers "Now" and
+ * this one does not. Marking used to work the film's way there too, and the
+ * cost was that every mis-tap was a real viewing in the log that had to be
+ * found and taken back. Asking first makes the dismissal free.
  *
  * "Watch again" works the same way round, and for the same reason — it logs the
  * viewing now and then stays open on the dates, so a rewatch of something seen
@@ -40,6 +46,7 @@ function atNoon(daysAgo: number) {
  * rather than on whatever the last use left behind.
  */
 export function WatchedDateMenu({
+  mode = "correct",
   onPick,
   onClose,
   onWatchAgain,
@@ -50,6 +57,19 @@ export function WatchedDateMenu({
   releaseDate,
   align = "left",
 }: {
+  /**
+   * Which question this is asking.
+   *
+   * `correct` is the original one: something has already been logged at the
+   * current time and this offers to move it. `log` is the one an episode asks
+   * now — nothing has been written yet, and picking a date is what writes it.
+   *
+   * The difference matters beyond the wording. In `log` mode the menu is open
+   * with no server write behind it, so nothing can re-render the list it was
+   * opened from and take the card away underneath it; and "Now" has to be on
+   * offer, because in this mode it is an answer rather than a no-op.
+   */
+  mode?: "log" | "correct";
   onPick: (date: Date) => void;
   onClose: () => void;
   /**
@@ -162,6 +182,13 @@ export function WatchedDateMenu({
   }, [onClose, picking]);
 
   const options: WatchedChoice[] = [
+    // Only where nothing has been logged yet. In the correcting menu the
+    // viewing already carries the current time, so "Now" would be an option
+    // that does nothing — and an option that does nothing reads as a fault.
+    //
+    // The real clock rather than midday: the others are date-only answers being
+    // parked away from a day boundary, and this one is a time.
+    ...(mode === "log" ? [{ label: "Now", date: new Date() }] : []),
     { label: "Yesterday", date: atNoon(1) },
     { label: "2 days ago", date: atNoon(2) },
   ];
@@ -201,7 +228,7 @@ export function WatchedDateMenu({
         <p className="ios-bright border-b border-white/10 light:border-ink-800 px-3 py-2 text-[11px] text-ink-400">
           {again === "logged"
             ? "Logged another viewing. Watched it on another day?"
-            : onUnwatch
+            : mode === "log" || onUnwatch
               ? "When did you watch it?"
               : "Logged just now. Watched it earlier?"}
         </p>

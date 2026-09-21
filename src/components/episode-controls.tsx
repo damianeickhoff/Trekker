@@ -3,7 +3,7 @@
 import { Check, ThumbsDown, ThumbsUp } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { rateEpisode, setEpisodeWatchedAt, toggleEpisodeWatched } from "@/lib/actions";
+import { rateEpisode, toggleEpisodeWatched } from "@/lib/actions";
 import { publishEpisodeChanges } from "@/lib/episode-sync";
 import { WatchedDateMenu } from "./watched-date-menu";
 
@@ -55,40 +55,59 @@ export function EpisodeControls({
     publishEpisodeChanges([{ showId, seasonNumber, episodeNumber, watched: next }]);
   }
 
+  /**
+   * The press. Which of the two things it does depends on where you are.
+   *
+   * Marking asks first: it opens the menu and writes nothing until a date has
+   * been chosen. It used to log at the current time and then offer to correct
+   * it, which made every mis-tap a viewing that really was in the log — one to
+   * be noticed, found and taken back, and one that had already moved the show
+   * to the top of "up next" in the meantime. A menu that can be dismissed for
+   * free is the difference.
+   *
+   * Taking it back is still a single press. There is nothing to ask about it:
+   * "I have not seen this" has no date.
+   */
   function toggle() {
     if (!aired && !watched) return;
 
-    const next = !watched;
-    setWatched(next);
-    announce(next);
-    // Only a fresh mark has a date worth correcting; taking one back is done.
-    setAskWhen(next);
+    if (!watched) {
+      setAskWhen(true);
+      return;
+    }
 
-    /**
-     * `pending` covers the write and nothing else. It used to cover the refresh
-     * too, which meant the control stayed disabled through a second round trip
-     * re-rendering the whole episode page — after the tick above had already
-     * said what happened. The refresh is for the server-rendered detail around
-     * it, and nothing on screen is waiting on it.
-     */
-    const write = toggleEpisodeWatched({ showId, showName, showPoster, episode });
-    startTransition(async () => {
-      await write;
-    });
-    void write.then(() => router.refresh());
+    setWatched(false);
+    announce(false);
+    write();
   }
 
-  function moveTo(date: Date) {
+  /** Marks it, at the day the reader chose. */
+  function log(date: Date) {
     setAskWhen(false);
-    startTransition(async () => {
-      await setEpisodeWatchedAt({
-        showId,
-        seasonNumber,
-        episodeNumber,
-        watchedAt: date.toISOString(),
-      });
-      router.refresh();
+    setWatched(true);
+    announce(true);
+    write(date);
+  }
+
+  /**
+   * `pending` covers the write and nothing else. It used to cover the refresh
+   * too, which meant the control stayed disabled through a second round trip
+   * re-rendering the whole episode page — after the tick above had already said
+   * what happened. The refresh is for the server-rendered detail around it, and
+   * nothing on screen is waiting on it.
+   */
+  function write(watchedAt?: Date) {
+    const sent = toggleEpisodeWatched({
+      showId,
+      showName,
+      showPoster,
+      episode,
+      watchedAt: watchedAt?.toISOString(),
     });
+    startTransition(async () => {
+      await sent;
+    });
+    void sent.then(() => router.refresh());
   }
 
   function rate(liked: boolean) {
@@ -132,7 +151,7 @@ export function EpisodeControls({
           type="button"
           onClick={toggle}
           disabled={pending || (!aired && !watched)}
-          aria-label={watched ? "Watched — change the date" : "Mark watched"}
+          aria-label={watched ? "Watched — press to take it back" : "Mark watched"}
           className={`grid h-9 w-9 place-items-center rounded-full border transition active:scale-95 disabled:opacity-40 ${
             watched
               ? "border-white/25 bg-white/85 text-neutral-900 light:border-neutral-900 light:bg-neutral-900 light:text-white"
@@ -144,9 +163,10 @@ export function EpisodeControls({
 
         {askWhen && (
           <WatchedDateMenu
+            mode="log"
             releaseDate={airDate}
             onClose={() => setAskWhen(false)}
-            onPick={moveTo}
+            onPick={log}
           />
         )}
       </div>

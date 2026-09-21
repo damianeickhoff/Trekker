@@ -6,6 +6,16 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "-H", "0.0.0.0", "--port", "4310"],
       "port": 4310
+    },
+    {
+      "name": "trekker-review",
+      "runtimeExecutable": "pwsh",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-Command",
+        "$env:DATABASE_URL='file:C:/Users/jldei/AppData/Local/Temp/claude/D--Projects-Trekker/1818bdfb-89c8-4aeb-8629-10abc386cf5e/scratchpad/review.db'; npx next dev --port 4311"
+      ],
+      "port": 4311
     }
   ]
 }

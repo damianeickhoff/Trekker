@@ -204,7 +204,30 @@ export default async function RootLayout({
         page with two lines on it still fills the window and nothing below the
         content sits higher than the bottom of the screen.
       */}
-      <body className="flex min-h-dvh flex-col">
+      {/*
+        The page's own colour, inline, before a stylesheet has been asked for.
+
+        A stylesheet is a second request, and in the installed app it is a second
+        request on a radio that has just woken up. Until it lands the document
+        has no `background` at all and the browser paints its own canvas, which
+        is white — so the launch went dark splash, white, then the app, and the
+        white was long enough to look like a fault rather than a load.
+
+        On `body` rather than on `<html>` on purpose. An `<html>` with a
+        background of its own stops the body's from propagating to the canvas,
+        and the body's is not a flat colour — it is two fixed radial gradients
+        over this same value, which would then have stopped short of the
+        overscroll edges. An inline value here is simply the colour layer of
+        that shorthand, arriving earlier; the gradients paint over it when the
+        stylesheet does turn up, and nothing moves.
+
+        Both themes, because the resolved one is already known here — the same
+        read that sets `data-theme` above.
+      */}
+      <body
+        className="flex min-h-dvh flex-col"
+        style={{ backgroundColor: resolved === "light" ? "#f7f7fb" : "#07070c" }}
+      >
         <ThemeSync theme={theme} />
         <ServiceWorkerRegistration />
         <OriginProvider>

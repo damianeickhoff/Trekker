@@ -370,6 +370,14 @@ async function MovieView({ tmdbId, user }: { tmdbId: number; user: SessionUser }
   return (
     <>
       <PageTint colour={colours?.tint ?? null} />
+
+      {/* Desktop's backdrop. Out here because it measures from the top of the
+          window, which it can only do with nothing positioned above it — see
+          `TitleBackdrop`. The phone has its own treatment inside the hero. */}
+      <div className="hidden sm:block">
+        <TitleBackdrop backdrop={movie.backdrop_path} />
+      </div>
+
       {/*
         Outside the `rise` article, on purpose, and above it in the tree.
 
@@ -543,7 +551,9 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
 
   const seasons = show.seasons.filter((s) => s.season_number > 0 && s.episode_count > 0);
 
-  const [state, watchedEpisodes, friendReviews, comments, feelings, colours] = await Promise.all([
+  // No feelings here, unlike the film view: they belong to an episode now, and
+  // are read on the episode's own page.
+  const [state, watchedEpisodes, friendReviews, comments, colours] = await Promise.all([
     trackingState(user, "tv", tmdbId),
     user
       ? db.watchedEpisode.findMany({
@@ -555,7 +565,6 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
     // Ungated, unlike the reviews above: the public half of the page is worth
     // reading signed out.
     getComments("tv", tmdbId, user?.id ?? null),
-    getFeelings("tv", tmdbId, user?.id ?? null),
     // In here rather than after — see the note in `MovieView`.
     heroColours(show.backdrop_path ?? show.poster_path),
   ]);
@@ -618,6 +627,12 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
   return (
     <>
       <PageTint colour={colours?.tint ?? null} />
+
+      {/* Desktop's backdrop — see the note in the film view. */}
+      <div className="hidden sm:block">
+        <TitleBackdrop backdrop={show.backdrop_path} />
+      </div>
+
       {/* Outside the `rise` article — see the note in the film view. */}
       <BackButton
         actions={
@@ -693,35 +708,31 @@ async function TvView({ tmdbId, user }: { tmdbId: number; user: SessionUser }) {
             }}
           />
         }
-        // One episode in is enough to have a view; nothing watched is not. How
-        // it felt is behind the same gate and sits under the slider — see the
-        // note in `MovieView`.
+        // One episode in is enough to have a view; nothing watched is not.
+        //
+        // The feelings picker used to be under this slider too, and is not any
+        // more: a score for a whole show is a fair question — it is a verdict,
+        // and a verdict can be about a body of work — but "how did it feel" is
+        // about an evening, and a show is not one. It asks on the episode page
+        // instead, where the thing being asked about is a thing somebody sat
+        // down and watched.
         rating={
           user && watchedEpisodes.length > 0 ? (
-            <>
-              <RatingWidget
-                mediaType="tv"
-                tmdbId={tmdbId}
-                title={show.name}
-                poster={show.poster_path}
-                initialScore={state.rating?.score ?? null}
-                initialReview={state.rating?.review ?? null}
-                signedIn
-                context={await getRatingContext(
-                  user.id,
-                  "tv",
-                  tmdbId,
-                  Math.round(show.vote_average * 10) || null,
-                )}
-              />
-              <TitleFeelings
-                mediaType="tv"
-                tmdbId={tmdbId}
-                tally={feelings.tally}
-                mine={feelings.mine}
-                signedIn
-              />
-            </>
+            <RatingWidget
+              mediaType="tv"
+              tmdbId={tmdbId}
+              title={show.name}
+              poster={show.poster_path}
+              initialScore={state.rating?.score ?? null}
+              initialReview={state.rating?.review ?? null}
+              signedIn
+              context={await getRatingContext(
+                user.id,
+                "tv",
+                tmdbId,
+                Math.round(show.vote_average * 10) || null,
+              )}
+            />
           ) : null
         }
         streaming={
@@ -1037,12 +1048,11 @@ function Hero({
     <header className="relative max-sm:flex max-sm:flex-col max-sm:gap-5 max-sm:pt-3 max-sm:pb-5">
       {/* Two treatments, because the two layouts are doing different jobs.
           Desktop puts the text beside the artwork, where a wide backdrop
-          dissolving into the page is exactly right and always was. A phone puts
-          the text on the artwork, which is what the colour-matched fade, the
-          blur and the parallax are all for. */}
-      <div className="hidden sm:block">
-        <TitleBackdrop backdrop={backdrop} />
-      </div>
+          dissolving into the page is exactly right and always was — that one is
+          mounted at the top of the view rather than here, since it has to
+          measure from the window rather than from this header. A phone puts the
+          text on the artwork, which is what the colour-matched fade, the blur
+          and the parallax are all for. */}
       <TitleHeroArt backdrop={backdrop} poster={poster} colours={colours} />
 
       {/*

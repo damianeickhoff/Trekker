@@ -12,22 +12,34 @@ import { WatchedDateMenu } from "./watched-date-menu";
 /**
  * The logging half of an up-next card, shared by the hero and the rail tile.
  *
- * Marking something watched from here used to be a one-way button with nothing
- * behind it — no way to say "actually I saw that on Sunday", and no date shown
- * afterwards, which made it the only place in the app where logging an episode
- * behaved differently from everywhere else. This is the same arrangement the
- * title pages use: log at the current time, then offer the menu to correct it.
+ * Marking asks when, and writes nothing until it has an answer.
+ *
+ * It used to log at the current time and then offer the menu as a correction,
+ * which is how the film button still works — and here that was wrong twice
+ * over. A mis-tap was a real viewing in the log, to be noticed and taken back.
+ * And "up next" is ordered most-recently-watched first, so the write moved the
+ * show to the front of the list and the front of the list is the hero rather
+ * than a tile: the tile was unmounted mid-answer, taking the open menu with it.
+ * That is why marking from the rail appeared never to ask at all.
+ *
+ * Asking first removes both. Nothing is written while the menu is open, so
+ * nothing can reorder the list underneath it, and dismissing it costs nothing.
  */
 function useLogEpisode(item: UpNext) {
-  // Keyed by episode: once the server hands us the *next* episode, the button
-  // resets itself rather than staying stuck on "Logged".
-  const [loggedKey, setLoggedKey] = useState<string | null>(null);
-  const [watchedAt, setWatchedAt] = useState<Date | null>(null);
+  /**
+   * The episode this card logged, if it is still the one on show.
+   *
+   * Keyed by episode because the server hands back the *next* one: once the
+   * list catches up, this card is about something else and the button goes back
+   * to offering to mark it. Until then the date is the confirmation that the
+   * press landed.
+   */
+  const [logged, setLogged] = useState<{ key: string; at: Date } | null>(null);
   const [askWhen, setAskWhen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const episodeKey = `${item.seasonNumber}-${item.episodeNumber}`;
-  const done = loggedKey === episodeKey;
+  const done = logged?.key === episodeKey;
 
   const episode = {
     seasonNumber: item.seasonNumber,
@@ -36,42 +48,54 @@ function useLogEpisode(item: UpNext) {
     runtime: item.runtime,
   };
 
-  function log() {
-    // Already logged: the button reopens the menu rather than logging twice.
+  /** The press: it opens the question rather than answering it. */
+  function ask() {
+    setAskWhen((open) => !open);
+  }
+
+  /**
+   * The answer. Which write it is depends on whether this card has already
+   * logged the episode it is showing — the menu says so too, through `mode`.
+   */
+  function pick(date: Date) {
+    setAskWhen(false);
+
     if (done) {
-      setAskWhen((v) => !v);
+      setLogged({ key: episodeKey, at: date });
+      startTransition(async () => {
+        const res = await setEpisodeWatchedAt({
+          showId: item.showId,
+          seasonNumber: item.seasonNumber,
+          episodeNumber: item.episodeNumber,
+          watchedAt: date.toISOString(),
+        });
+        // The picked date is shown straight away, but it is not always the
+        // answer: dating this viewing behind an older one leaves that one last.
+        if (res.lastWatchedAt) setLogged({ key: episodeKey, at: new Date(res.lastWatchedAt) });
+      });
       return;
     }
 
+    setLogged({ key: episodeKey, at: date });
     startTransition(async () => {
-      await toggleEpisodeWatched({
+      const res = await toggleEpisodeWatched({
         showId: item.showId,
         showName: item.showName,
         showPoster: item.showPoster,
         episode,
-      });
-      setLoggedKey(episodeKey);
-      setWatchedAt(new Date());
-      setAskWhen(true);
-    });
-  }
-
-  function correct(date: Date) {
-    setAskWhen(false);
-    setWatchedAt(date);
-    startTransition(async () => {
-      const res = await setEpisodeWatchedAt({
-        showId: item.showId,
-        seasonNumber: item.seasonNumber,
-        episodeNumber: item.episodeNumber,
         watchedAt: date.toISOString(),
       });
-      if (res.lastWatchedAt) setWatchedAt(new Date(res.lastWatchedAt));
+      // Nothing in this rail is unreleased, so a refusal should not happen —
+      // but showing a date for a viewing that was never written would be worse
+      // than the press appearing to do nothing.
+      if (!res.watched) setLogged(null);
     });
   }
 
+  /** Only offered while this card is still showing what it logged. */
   function undo() {
     setAskWhen(false);
+    setLogged(null);
     startTransition(async () => {
       await toggleEpisodeWatched({
         showId: item.showId,
@@ -79,17 +103,24 @@ function useLogEpisode(item: UpNext) {
         showPoster: item.showPoster,
         episode,
       });
-      setLoggedKey(null);
-      setWatchedAt(null);
     });
   }
 
-  return { done, watchedAt, askWhen, setAskWhen, pending, log, correct, undo };
+  return {
+    done,
+    watchedAt: logged?.at ?? null,
+    askWhen,
+    setAskWhen,
+    pending,
+    ask,
+    pick,
+    undo,
+  };
 }
 
 /** Wide hero treatment for the first thing waiting for you. */
 export function FeaturedUpNext({ item }: { item: UpNext }) {
-  const { done, watchedAt, askWhen, setAskWhen, pending, log, correct, undo } =
+  const { done, watchedAt, askWhen, setAskWhen, pending, ask, pick, undo } =
     useLogEpisode(item);
 
   const still = item.still ? `https://image.tmdb.org/t/p/w780${item.still}` : null;
@@ -142,7 +173,7 @@ export function FeaturedUpNext({ item }: { item: UpNext }) {
           <div className="relative">
             <button
               disabled={pending}
-              onClick={log}
+              onClick={ask}
               className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-black transition hover:bg-white/90 disabled:opacity-70"
             >
               {pending ? (
@@ -156,9 +187,13 @@ export function FeaturedUpNext({ item }: { item: UpNext }) {
 
             {askWhen && (
               <WatchedDateMenu
+                // Asking before anything is written, unless this card has just
+                // logged the episode it is still showing — then it is the older
+                // question, and taking it back is on offer with it.
+                mode={done ? "correct" : "log"}
                 onClose={() => setAskWhen(false)}
-                onPick={correct}
-                onUnwatch={undo}
+                onPick={pick}
+                onUnwatch={done ? undo : undefined}
               />
             )}
           </div>
@@ -176,7 +211,7 @@ export function FeaturedUpNext({ item }: { item: UpNext }) {
 }
 
 export function UpNextCard({ item }: { item: UpNext }) {
-  const { done, watchedAt, askWhen, setAskWhen, pending, log, correct, undo } =
+  const { done, watchedAt, askWhen, setAskWhen, pending, ask, pick, undo } =
     useLogEpisode(item);
 
   const still = item.still ? `https://image.tmdb.org/t/p/w300${item.still}` : null;
@@ -215,7 +250,7 @@ export function UpNextCard({ item }: { item: UpNext }) {
         <div className="relative">
           <button
             disabled={pending}
-            onClick={log}
+            onClick={ask}
             // One colour for both states, as everywhere else something can be
             // marked watched: the tick and the date already carry the state.
             className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-flare-600 py-2 text-xs font-semibold text-white transition hover:bg-flare-500 disabled:opacity-60"
@@ -232,9 +267,11 @@ export function UpNextCard({ item }: { item: UpNext }) {
           {askWhen && (
             <WatchedDateMenu
               align="right"
+              // See the hero's copy of this.
+              mode={done ? "correct" : "log"}
               onClose={() => setAskWhen(false)}
-              onPick={correct}
-              onUnwatch={undo}
+              onPick={pick}
+              onUnwatch={done ? undo : undefined}
             />
           )}
         </div>

@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { syncUnlocks } from "./achievements";
 import { absorbImport } from "./achievements/xp";
 import { requireUser } from "./auth";
@@ -16,6 +17,12 @@ export async function importPlexHistory(): Promise<PlexHistoryState> {
   // same sync deliberately does not do this: an episode scrobbled as you watch
   // it is Trekker doing its job, and should count.
   await absorbImport(user.id, await syncUnlocks(user.id, { carried: true }));
+
+  // The sync itself does not revalidate — it runs from a route handler as well
+  // as from here, where doing so cost the whole TMDB cache for nothing. Pressing
+  // the button is the case where a page really is waiting on the answer, and
+  // `refresh` re-renders it without touching anything cached.
+  refresh();
 
   return result;
 }
