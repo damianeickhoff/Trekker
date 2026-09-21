@@ -3,6 +3,7 @@ import { db } from "./db";
 import { mapLimit } from "./concurrency";
 import { getUserProviders, expandProviders } from "./providers";
 import { regionForUser } from "./region";
+import { forgetRequestMarks } from "./request-marks";
 import { getSeerrConnection, getSeerrStatuses, requestOnSeerr } from "./seerr";
 import { getWatchProviders } from "./tmdb";
 // Shared with the client panel that offers the setting — see the note there.
@@ -137,6 +138,10 @@ export async function autoRequestForList(listId: string): Promise<AutoRequestRes
   }
 
   if (requested.length > 0) {
+    // The held sweep behind the poster marks predates these — see
+    // `request-marks.ts`.
+    forgetRequestMarks();
+
     await db.mediaList.update({
       where: { id: list.id },
       data: {

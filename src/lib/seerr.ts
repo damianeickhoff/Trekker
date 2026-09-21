@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { db } from "./db";
 import { getAdmin } from "./admin";
+import { mapLimit } from "./concurrency";
 import { openSecret } from "./token-vault";
 
 /**
@@ -209,28 +210,88 @@ export const getSeerrState = cache(async function getSeerrState(
   return { ...state, seasons: seasons.length > 0 ? seasons : undefined };
 });
 
+type SeerrMediaPage = {
+  pageInfo?: { pages?: number; results?: number };
+  results?: { tmdbId?: number; mediaType?: string; status?: number }[];
+};
+
+/**
+ * How many media rows to ask for at a time.
+ *
+ * Overseerr's media list holds a row for everything it has ever heard of —
+ * which, once it has scanned the Plex library, is the whole library and not
+ * just the things somebody asked for. So this list is thousands of rows long on
+ * an ordinary instance, and each one is joined to its requests, seasons and
+ * issues on the way out.
+ *
+ * Asking for it in one enormous page had two failure modes and no good one: the
+ * query was slow enough to run past `seerrFetch`'s timeout, which returns null
+ * and takes *every* mark on the page down at once, and anything past the page
+ * simply did not exist as far as the badges were concerned. Several small pages
+ * are the same data, each cheap enough to come back.
+ */
+const MEDIA_PAGE = 200;
+
+/**
+ * The most rows worth sweeping, as a backstop rather than a target — a library
+ * larger than this is somebody's problem to tell us about, and an unbounded
+ * loop against a remote service is not.
+ */
+const MEDIA_CEILING = 10_000;
+
+/** How many pages to have in flight at once. See `concurrency.ts`. */
+const MEDIA_FANOUT = 4;
+
+/**
+ * One page of the media list.
+ *
+ * No `sort`: the default is by row id descending, which is the "newest first"
+ * this wants anyway, and is the only ordering the instance is guaranteed to
+ * understand.
+ */
+function mediaPage(connection: SeerrConnection, page: number) {
+  return seerrFetch<SeerrMediaPage>(
+    connection,
+    `/api/v1/media?take=${MEDIA_PAGE}&skip=${page * MEDIA_PAGE}&filter=all`,
+  );
+}
+
+function absorb(page: SeerrMediaPage, into: Map<string, SeerrState>) {
+  for (const row of page.results ?? []) {
+    if (!row.tmdbId || (row.mediaType !== "movie" && row.mediaType !== "tv")) continue;
+    const state = toState(row.status);
+    // "Requestable" is the absence of news; only carry the interesting ones.
+    if (state.kind === "requestable") continue;
+    into.set(`${row.mediaType}-${row.tmdbId}`, state);
+  }
+}
+
 /**
  * Every title Overseerr knows about, keyed `${mediaType}-${tmdbId}`.
  *
- * One call for a whole page of posters. Asking per title would be a request per
- * card, which is why the poster badges use this and the title page — where
- * there is exactly one — uses {@link getSeerrState}.
+ * One sweep for a whole page of posters. Asking per title would be a request
+ * per card, which is why the poster marks use this and the title page — where
+ * there is exactly one — uses {@link getSeerrState}. The sweep is worth
+ * holding on to; `request-marks.ts` is what does that.
+ *
+ * The first page says how many there are, and the rest are fetched together. A
+ * page that fails costs its own marks and no more: half the badges is a better
+ * answer than none, and the alternative is one slow title blanking the lot.
  */
 export async function getSeerrStatuses(
   connection: SeerrConnection,
 ): Promise<Map<string, SeerrState>> {
   const statuses = new Map<string, SeerrState>();
 
-  const data = await seerrFetch<{
-    results?: { tmdbId?: number; mediaType?: string; status?: number }[];
-  }>(connection, "/api/v1/media?take=500&skip=0&filter=all&sort=added");
+  const first = await mediaPage(connection, 0);
+  if (!first) return statuses;
+  absorb(first, statuses);
 
-  for (const row of data?.results ?? []) {
-    if (!row.tmdbId || (row.mediaType !== "movie" && row.mediaType !== "tv")) continue;
-    const state = toState(row.status);
-    // "Requestable" is the absence of news; only carry the interesting ones.
-    if (state.kind === "requestable") continue;
-    statuses.set(`${row.mediaType}-${row.tmdbId}`, state);
+  const pages = Math.min(first.pageInfo?.pages ?? 1, Math.ceil(MEDIA_CEILING / MEDIA_PAGE));
+  const rest = Array.from({ length: Math.max(pages - 1, 0) }, (_, index) => index + 1);
+
+  for (const page of await mapLimit(rest, MEDIA_FANOUT, (page) => mediaPage(connection, page))) {
+    if (page) absorb(page, statuses);
   }
 
   return statuses;
