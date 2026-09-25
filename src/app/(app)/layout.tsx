@@ -29,18 +29,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           column does not become a scroller and nothing sticky inside it stops
           sticking.
         */}
-        <main className="min-w-0 grow pt-(--safe-top) pb-(--tab-bar-clearance) lg:overflow-x-clip lg:pt-0 lg:pb-10">
+        <main className="min-w-0 grow pb-(--tab-bar-clearance) lg:overflow-x-clip lg:pb-10">
           <div className="lg:mx-auto lg:max-w-(--column-w)">
             {children}
           </div>
         </main>
-        {/*
-          Behind the clock and the notch, so the page scrolls under a steady dark
-          bar rather than under the time. Always the night colour: the bar's text
-          is white in the installed app, whatever the theme. No height where
-          there is no status bar, and none on a desktop.
-        */}
-        <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-(--z-tab-bar) h-(--safe-top) bg-night lg:hidden" />
         <TabBar />
         <WarmHome />
         <CacheRefresher />

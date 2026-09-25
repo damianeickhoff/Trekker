@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   title: { default: "Trekker", template: "%s · Trekker" },
   description: "A self-hosted tracker for what the household watches.",
   applicationName: "Trekker",
-  appleWebApp: { capable: true, title: "Trekker", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Trekker", statusBarStyle: "black" },
   icons: {
     icon: [{ url: "/icons/32", type: "image/png", sizes: "32x32" }],
     apple: [{ url: "/icons/180", sizes: "180x180" }],
