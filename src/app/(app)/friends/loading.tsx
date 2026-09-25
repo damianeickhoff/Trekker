@@ -7,7 +7,7 @@ export default function FriendsLoading() {
     <SkeletonScreen label="Friends">
       <div className="flex flex-col gap-[18px] px-5 lg:gap-[26px] lg:px-10 lg:pt-7">
         <div className="flex flex-col gap-2 lg:gap-4">
-          <div className="flex h-[66px] items-center justify-between pt-[22px] lg:h-auto lg:pt-0">
+          <div className="flex h-[71px] items-center justify-between pt-[27px] lg:h-auto lg:pt-0">
             <Bone className="size-10 rounded-full lg:hidden" />
             <Bone className="hidden h-4 w-20 rounded lg:block" />
             <Bone className="size-10 rounded-full lg:hidden" />

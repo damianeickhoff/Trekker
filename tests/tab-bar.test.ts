@@ -33,7 +33,7 @@ describe("the tab bar", () => {
     const baseline = slots("/");
     expect(baseline).toHaveLength(5);
 
-    for (const [i, pathname] of ["/", "/discover", "/calendar", "/lists", "/badges"].entries()) {
+    for (const [i, pathname] of ["/", "/discover", "/calendar", "/lists", "/news"].entries()) {
       const now = slots(pathname);
       expect(now.map((s) => s.current)).toEqual([0, 1, 2, 3, 4].map((n) => n === i));
       expect(now.map((s) => s.grow)).toEqual([0, 1, 2, 3, 4].map((n) => (n === i ? ["grow-[2.4]"] : ["grow"])));

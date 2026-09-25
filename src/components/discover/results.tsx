@@ -149,7 +149,7 @@ export async function ResultsScreen({ search }: { search: Record<string, string 
       {/* Phones */}
       <div className="relative flex min-h-[470px] flex-col lg:hidden">
         <HeroArt path={item.backdrop} />
-        <header className="relative z-(--z-top-row) flex h-[66px] shrink-0 items-center justify-between px-5 pt-[22px]">
+        <header className="relative z-(--z-top-row) flex h-[71px] shrink-0 items-center justify-between px-5 pt-[27px]">
           <Link href={change} aria-label="Change answers" className={iconButtonClass("glass", "sm")}>
             <Icon name="chevL" size={20} />
           </Link>

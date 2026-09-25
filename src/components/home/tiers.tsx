@@ -27,6 +27,8 @@ import { newsFor } from "@/lib/news";
 import { artKey, titleArt } from "@/lib/news-page";
 import { newsPrefs } from "@/lib/news-settings";
 import { HomeNewsCard } from "../news/your-cards";
+import { HomePressCard } from "../news/press-cards";
+import { pressForReader } from "@/lib/news-page";
 import { FirstRun } from "./first-run";
 import { BackfillCard } from "./backfill-card";
 import { ImportCard } from "./import-card";
@@ -143,21 +145,40 @@ export async function NowWatchingTier() {
  * there is none, so it has no bones. Headlines from feeds never come here.
  */
 const NEWS_RAIL = 5;
+/** How many cards the rail holds once headlines fill in behind your own news. */
+const NEWS_RAIL_FULL = 8;
 
 export async function NewsTier() {
   const user = await requireUser();
   const [news, prefs] = await Promise.all([newsFor(user.id), newsPrefs(user.id)]);
-  if (news.length === 0) return null;
-  const unread = news.filter((n) => !n.read).length;
+  // Your own news leads; the latest headlines from your sources fill the rest,
+  // so the section is there whenever there is news at all, not only when
+  // something you follow changed (a fresh install has none of that yet).
+  // Rows only: the feeds are read by News and the nightly pass, never here.
   const rows = news.slice(0, NEWS_RAIL);
-  const art = await titleArt(rows.map((r) => ({ mediaType: r.mediaType, tmdbId: r.tmdbId })));
+  const press = rows.length < NEWS_RAIL_FULL ? (await pressForReader(user.id, prefs.keepDays)).slice(0, NEWS_RAIL_FULL - rows.length) : [];
+  if (rows.length === 0 && press.length === 0) return null;
+  const unread = news.filter((n) => !n.read).length;
+  const art = await titleArt([
+    ...rows.map((r) => ({ mediaType: r.mediaType, tmdbId: r.tmdbId })),
+    ...press.flatMap((p) => (p.match ? [{ mediaType: p.match.mediaType, tmdbId: p.match.tmdbId }] : [])),
+  ]);
   const now = new Date();
+  const meta = unread ? `${unread} unread · about what you follow` : rows.length ? "about what you follow" : "latest headlines";
   return (
     <section aria-labelledby="home-news" className="order-6 flex flex-col gap-3 lg:gap-3.5">
-      <SectionHead id="home-news" title="News" meta={unread ? `${unread} unread · about what you follow` : "about what you follow"} href="/news" />
+      <SectionHead id="home-news" title="News" meta={meta} href="/news" />
       <Rail label="News">
         {rows.map((row) => (
           <HomeNewsCard key={row.id} row={row} art={art.get(artKey(row.mediaType, row.tmdbId))} age={shortAgo(row.at, now)} markOnOpen={prefs.markOnOpen} />
+        ))}
+        {press.map((row) => (
+          <HomePressCard
+            key={row.id}
+            row={row}
+            art={row.match ? art.get(artKey(row.match.mediaType, row.match.tmdbId)) : undefined}
+            age={shortAgo(row.at, now)}
+          />
         ))}
       </Rail>
     </section>

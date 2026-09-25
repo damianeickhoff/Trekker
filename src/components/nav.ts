@@ -10,7 +10,16 @@ export const NAV: { href: string; label: string; icon: IconName }[] = [
 ];
 
 /** The sidebar's one entry beyond the tabs: News, under Calendar, with its unread count (T2). A phone reaches it from Home. */
-export const SIDEBAR_NEWS = { href: "/news", label: "News", icon: "clapperboard" as IconName, after: "/calendar" };
+export const SIDEBAR_NEWS = { href: "/news", label: "News", icon: "newspaper" as IconName, after: "/calendar" };
+
+/**
+ * The phone's tab bar: the five tabs with News in Badges' place, since a phone
+ * has no sidebar to reach News from. Badges is in the account menu there.
+ */
+export const PHONE_TABS: { href: string; label: string; icon: IconName }[] = [
+  ...NAV.filter((n) => n.href !== "/badges"),
+  { href: "/news", label: "News", icon: "newspaper" },
+];
 
 export function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -30,5 +39,6 @@ export function showsTabBar(pathname: string) {
   // results, which the mockups draw full-screen with their own way out.
   if (pathname.startsWith("/discover/")) return false;
   // The profile itself, not what is below it (editing it has its own Save).
-  return NAV.some((n) => isActive(pathname, n.href)) || pathname === "/profile";
+  // Badges keeps the bar though it left it: it is still a top-level page, reached from the account menu.
+  return [...NAV, ...PHONE_TABS].some((n) => isActive(pathname, n.href)) || pathname === "/profile";
 }

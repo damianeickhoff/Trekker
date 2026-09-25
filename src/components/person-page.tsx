@@ -172,8 +172,8 @@ export async function PersonPage({ id, filter }: { id: number; filter: PersonFil
       <div className="lg:hidden">
         <div className="relative flex flex-col">
           <HeroArt path={row?.knownForBackdrop ?? null} />
-          <div aria-hidden="true" className="h-[66px] shrink-0" />
-          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[66px] items-center justify-between px-5 pt-[22px] *:pointer-events-auto lg:hidden">{topRow}</header>
+          <div aria-hidden="true" className="h-[71px] shrink-0" />
+          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[71px] items-center justify-between px-5 pt-[27px] *:pointer-events-auto lg:hidden">{topRow}</header>
           <div className="relative z-(--z-lift) px-5 pb-6 pt-3">{header(false)}</div>
         </div>
         <div className="flex flex-col gap-4 px-5 pt-1">

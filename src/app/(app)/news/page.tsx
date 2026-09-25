@@ -139,9 +139,11 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
     <NewsRefresh>
       <ChipMemory chip={chip} named={named !== null} openLast={prefs.openOn === "last"} />
       <PageBody className="lg:gap-6">
-        <header className="flex min-h-[66px] items-center gap-3 pt-[22px] lg:min-h-0 lg:items-end lg:pt-0">
+        <header className="flex min-h-[71px] items-center gap-3 pt-[27px] lg:min-h-0 lg:items-end lg:pt-0">
           <div className="flex min-w-0 grow items-center gap-3 lg:flex-col lg:items-start lg:gap-2">
-            <Back href="/" name="Home" />
+            <span className="hidden lg:flex">
+              <Back href="/" name="Home" />
+            </span>
             <div className="flex min-w-0 flex-col gap-px lg:flex-row lg:items-baseline lg:gap-3.5">
               <h1 className="m-0 font-display text-[26px] font-extrabold leading-none tracking-[-0.035em] lg:text-[30px] lg:font-bold lg:leading-[1.05] lg:tracking-[-0.025em]">
                 News
@@ -345,7 +347,7 @@ function Feed({
   if (chip === "for-you") {
     return (
       <EmptyState
-        icon="clapperboard"
+        icon="newspaper"
         title="No news yet"
         action={
           <Link href="/discover" className={buttonClass("ghost", "sm")}>
@@ -360,7 +362,7 @@ function Feed({
   }
   if (chip === "top" && !anyPress && !hadLead) {
     return (
-      <EmptyState icon="clapperboard" title={pressOff ? "Popular news is off" : "No headlines yet"}>
+      <EmptyState icon="newspaper" title={pressOff ? "Popular news is off" : "No headlines yet"}>
         {pressOff
           ? "This instance reads no news feeds. Its admin can set them with NEWS_FEEDS."
           : "Headlines from entertainment sites arrive with the nightly refresh, and shortly after the server starts."}

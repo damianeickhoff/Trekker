@@ -184,7 +184,7 @@ export async function SettingsScreen({
       <div className="flex flex-col gap-2 px-5 pb-10 lg:grid lg:grid-cols-[300px_minmax(0,760px)] lg:items-start lg:gap-12 lg:px-10 lg:pt-7">
         <div className="flex flex-col gap-[18px] lg:sticky lg:top-7">
           <header className="flex flex-col gap-2 lg:gap-4">
-            <div className="flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0">
+            <div className="flex h-[71px] items-center pt-[27px] lg:h-auto lg:pt-0">
               <Back href="/profile" name="Profile" />
             </div>
             <h1 className="m-0 font-display text-[26px] font-extrabold leading-[1.05] tracking-[-0.035em] lg:text-[30px] lg:font-bold lg:tracking-[-0.025em]">
@@ -286,7 +286,7 @@ export async function SettingsScreen({
           </section>
 
           <section id="news" aria-label="News" className={`flex scroll-mt-6 flex-col gap-2 ${section === "news" ? "lg:gap-5" : "lg:hidden"}`}>
-            <Fold icon="clapperboard" title="News" line="news" open={section === "news"} className="min-w-0" bodyClassName="min-w-0 lg:gap-5">
+            <Fold icon="newspaper" title="News" line="news" open={section === "news"} className="min-w-0" bodyClassName="min-w-0 lg:gap-5">
               <NewsSources initialSources={sources.map(({ name, enabled }) => ({ name, enabled }))} initialFeeds={mine} />
               <NewsCard title="Push" meta="This device">
                 <Row label="Push me the big ones" sub="Renewals, cancellations and moved dates for what you watch">

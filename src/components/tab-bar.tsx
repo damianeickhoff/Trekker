@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { Link } from "./link";
-import { NAV, isActive, showsTabBar } from "./nav";
+import { PHONE_TABS, isActive, showsTabBar } from "./nav";
 
 /**
  * Phones: a floating dark pill in both themes, so artwork keeps the whole
@@ -45,7 +45,7 @@ export function TabBar() {
         aria-label="Main"
         className="pointer-events-auto flex h-16 items-center rounded-[32px] bg-pill px-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[16px]"
       >
-        {NAV.map((item) => {
+        {PHONE_TABS.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link

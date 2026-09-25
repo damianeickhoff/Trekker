@@ -5,7 +5,7 @@ export default function ResultsLoading() {
   return (
     <SkeletonScreen label="tonight's pick">
       <div className="relative flex min-h-[470px] flex-col bg-night lg:hidden">
-        <div className="flex h-[66px] items-center justify-between px-5 pt-[22px]">
+        <div className="flex h-[71px] items-center justify-between px-5 pt-[27px]">
           <HeroBone className="size-10 rounded-full" />
           <HeroBone className="size-10 rounded-full" />
         </div>

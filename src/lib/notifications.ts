@@ -41,7 +41,7 @@ export type NoteKind =
   | "auto-request"
   | "arrived";
 
-export type NoteIcon = "bell" | "user" | "sparkle" | "trophy" | "calendar" | "calendarCheck" | "clapperboard" | "clock" | "play";
+export type NoteIcon = "bell" | "user" | "sparkle" | "trophy" | "calendar" | "calendarCheck" | "clapperboard" | "newspaper" | "clock" | "play";
 
 export type Note = {
   /** Stable across reloads: what a read mark is recorded against. */
@@ -299,7 +299,7 @@ export async function deriveNotifications(
       body: n.detail,
       href: titleHref(n.mediaType, n.tmdbId),
       at: n.at,
-      icon: "clapperboard",
+      icon: "newspaper",
     });
   }
 

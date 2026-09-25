@@ -50,7 +50,7 @@ export function ListBones() {
       <div className="relative">
         <div className="absolute inset-x-0 top-0 h-[250px] bg-night lg:bleed lg:h-[320px]" />
         <div className="relative flex flex-col">
-          <div className="flex h-[66px] items-center justify-between px-5 pt-[22px] lg:hidden">
+          <div className="flex h-[71px] items-center justify-between px-5 pt-[27px] lg:hidden">
             <HeroBone className="size-10 rounded-full" />
             <HeroBone className="size-10 rounded-full" />
           </div>
@@ -99,7 +99,7 @@ export function EditorBones() {
       <div className="flex flex-col gap-3 px-5 lg:hidden">
         {/* BackHeader with no meta line, as the editor has it. */}
         <div className="flex flex-col gap-2 pb-2">
-          <div className="flex h-[66px] items-center pt-[22px]">
+          <div className="flex h-[71px] items-center pt-[27px]">
             <Bone className="size-10 rounded-full" />
           </div>
           <Bone className="h-[27px] w-48 rounded-md" />

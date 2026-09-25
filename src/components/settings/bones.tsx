@@ -12,7 +12,7 @@ export function SettingsBones({ current = 0, rows = 3 }: { current?: number; row
       <div className="flex flex-col gap-2 px-5 lg:grid lg:grid-cols-[300px_minmax(0,760px)] lg:items-start lg:gap-12 lg:px-10 lg:pt-7">
         <div className="flex flex-col gap-[18px]">
           <div className="flex flex-col gap-2 lg:gap-4">
-            <div className="flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0">
+            <div className="flex h-[71px] items-center pt-[27px] lg:h-auto lg:pt-0">
               <Bone className="size-10 rounded-full lg:hidden" />
               <Bone className="hidden h-4 w-16 rounded lg:block" />
             </div>

@@ -82,7 +82,7 @@ export default async function ListPage({ params, searchParams }: Params) {
 
       <div className="relative flex flex-col">
         {/* Phones: the way back and the list's buttons on the banner. */}
-        <header className="flex h-[66px] items-center justify-between px-5 pt-[22px] lg:hidden">
+        <header className="flex h-[71px] items-center justify-between px-5 pt-[27px] lg:hidden">
           <Link href="/lists" aria-label="Back to Lists" className={`${PRESS} inline-flex size-10 items-center justify-center rounded-full bg-white/16 text-white backdrop-blur-[10px] hover:bg-white/26`}>
             <Icon name="chevL" size={20} />
           </Link>

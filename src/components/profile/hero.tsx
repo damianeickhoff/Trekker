@@ -91,7 +91,7 @@ export function ProfileHero({
     <div className="relative">
       <HeroArt path={art?.path ?? null} poster={art?.kind === "poster"} />
       <div className="relative text-white">
-        <header className="flex h-[66px] items-center justify-between gap-2 px-5 pt-[22px] lg:px-10 lg:h-[60px] lg:pt-4">
+        <header className="flex h-[71px] items-center justify-between gap-2 px-5 pt-[27px] lg:px-10 lg:h-[60px] lg:pt-4">
           <div className="flex min-w-0 items-center gap-3">
             {topLeft}
             {title && <h1 className="m-0 font-display text-[26px] font-extrabold tracking-[-0.035em]">{title}</h1>}
@@ -143,7 +143,7 @@ export function ProfileHeroBones({ level = true }: { level?: boolean }) {
     <div className="relative">
       <div className="absolute inset-0 bg-night lg:bleed" />
       <div className="relative">
-        <div className="flex h-[66px] items-center justify-between px-5 pt-[22px] lg:px-10 lg:h-[60px] lg:pt-4">
+        <div className="flex h-[71px] items-center justify-between px-5 pt-[27px] lg:px-10 lg:h-[60px] lg:pt-4">
           <HeroBone className="h-7 w-24 rounded-lg" />
           <HeroBone className="size-10 rounded-full lg:h-10 lg:w-56" />
         </div>

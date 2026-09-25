@@ -155,6 +155,7 @@ export function AvatarMenu({ variant }: { variant: Variant }) {
             }`}
           >
             <Item href="/profile" icon="user" label="Profile" onPick={close} />
+            <Item href="/badges" icon="trophy" label="Badges" onPick={close} />
             <Item href="/settings" icon="settings" label="Settings" onPick={close} />
             {/* A link, so the page it starts from is where waking returns. */}
             <Item href={`/screensaver?from=${encodeURIComponent(pathname)}`} icon="tv" label="Screensaver" onPick={close} />

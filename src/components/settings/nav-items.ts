@@ -20,7 +20,7 @@ export const SECTION_COPY: Record<SettingsSection, { label: string; icon: IconNa
   notifications: { label: "Notifications", icon: "bell", lede: "What Trekker pushes, and to this device." },
   news: {
     label: "News",
-    icon: "clapperboard",
+    icon: "newspaper",
     lede: "Where the headlines come from, which ones reach your phone, and how the page reads. Feeds are read when you open News and after five minutes away; people you follow are checked every hour.",
   },
   connections: { label: "Connections", icon: "layers", lede: "The services Trekker reads from and asks on your behalf." },

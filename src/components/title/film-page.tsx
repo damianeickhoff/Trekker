@@ -124,8 +124,8 @@ export async function FilmPage({ id }: { id: number }) {
           ) : (
             <HeroArt path={details.poster_path} />
           )}
-          <div aria-hidden="true" className="h-[66px] shrink-0" />
-          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[66px] items-center justify-between px-5 pt-[22px] *:pointer-events-auto lg:hidden">
+          <div aria-hidden="true" className="h-[71px] shrink-0" />
+          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[71px] items-center justify-between px-5 pt-[27px] *:pointer-events-auto lg:hidden">
             <BackButton kind="glass" />
             <div className="flex gap-2">
               {trailer && (

@@ -11,7 +11,7 @@ export default function NewsLoading() {
   return (
     <SkeletonScreen label="News">
       <PageBody className="lg:gap-6">
-        <div className="flex min-h-[66px] items-center gap-3 pt-[22px] lg:min-h-0 lg:items-end lg:pt-0">
+        <div className="flex min-h-[71px] items-center gap-3 pt-[27px] lg:min-h-0 lg:items-end lg:pt-0">
           <div className="flex grow items-center gap-3 lg:flex-col lg:items-start lg:gap-2">
             <Bone className="size-10 rounded-full lg:hidden" />
             <Bone className="hidden h-4 w-16 rounded lg:block" />

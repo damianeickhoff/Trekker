@@ -46,10 +46,10 @@ describe("hero chips", () => {
 });
 
 describe("the top row on phones", () => {
-  it("sits 22px down, clear of the blur iOS draws along the top edge", () => {
+  it("sits 27px down, clear of the blur iOS draws along the top edge", () => {
     const page = read("src/components/page.tsx");
-    expect(page).toContain("flex h-[66px] shrink-0 items-center justify-between px-5 pt-[22px] lg:hidden");
-    expect(page).toContain("flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0");
+    expect(page).toContain("flex h-[71px] shrink-0 items-center justify-between px-5 pt-[27px] lg:hidden");
+    expect(page).toContain("flex h-[71px] items-center pt-[27px] lg:h-auto lg:pt-0");
     // The profile's rows show on desktop too, and keep their spacing there.
     expect(read("src/components/profile/hero.tsx")).toContain("lg:h-[60px] lg:pt-4");
   });
@@ -57,9 +57,37 @@ describe("the top row on phones", () => {
   it("stays pinned under the status bar on the pages with a hero, with a spacer holding its place", () => {
     for (const file of ["title/film-page", "title/series-page", "title/episode-page", "person-page"]) {
       const src = read(`src/components/${file}.tsx`);
-      expect(src, file).toContain('<div aria-hidden="true" className="h-[66px] shrink-0" />');
+      expect(src, file).toContain('<div aria-hidden="true" className="h-[71px] shrink-0" />');
       expect(src, file).toContain("pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row)");
       expect(src, file).toContain("*:pointer-events-auto lg:hidden");
     }
+  });
+});
+
+describe("the phone's tabs", () => {
+  it("carry News in Badges' place, and Badges moves to the account menu", async () => {
+    const { PHONE_TABS, NAV, showsTabBar } = await import("@/components/nav");
+    expect(PHONE_TABS.map((t) => t.href)).toEqual(["/", "/discover", "/calendar", "/lists", "/news"]);
+    expect(NAV.map((t) => t.href)).toContain("/badges");
+    expect(showsTabBar("/news")).toBe(true);
+    expect(showsTabBar("/badges")).toBe(true);
+    expect(read("src/components/tab-bar.tsx")).toContain("PHONE_TABS.map");
+    expect(read("src/components/avatar-menu.tsx")).toContain('<Item href="/badges" icon="trophy" label="Badges" onPick={close} />');
+  });
+
+  it("draw News as a newspaper wherever it stands for News", () => {
+    expect(read("src/components/nav.ts")).toContain('icon: "newspaper"');
+    expect(read("src/components/settings/nav-items.ts")).toContain('icon: "newspaper"');
+    expect(read("src/components/icon.tsx")).toContain("newspaper:");
+  });
+});
+
+describe("Home's News rail", () => {
+  it("fills with the latest headlines behind your own news, so it is there whenever there is news", () => {
+    const tiers = read("src/components/home/tiers.tsx");
+    expect(tiers).toContain("pressForReader(user.id, prefs.keepDays)");
+    expect(tiers).toContain("if (rows.length === 0 && press.length === 0) return null;");
+    expect(tiers).toContain('"latest headlines"');
+    expect(tiers).toContain("<HomePressCard");
   });
 });

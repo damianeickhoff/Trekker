@@ -8,7 +8,7 @@ import { Link } from "../link";
 import { ZOOM_GROUP, ZOOM_SHADOW } from "../motion";
 import { Poster } from "../poster";
 import { NewsPicture } from "./no-picture";
-import { QuietChip, StateChip } from "../ui";
+import { ArtChip, QuietChip, StateChip } from "../ui";
 
 /*
  * Headlines on the News page (Round 10): the big card (picture on top) and
@@ -149,3 +149,45 @@ export function SmallPressCard({ row, age, art }: { row: PressRow; age: string; 
   );
 }
 
+
+/**
+ * A headline on Home's News rail, shaped like the rail's cards of your own
+ * news (`HomeNewsCard`): the picture at 2:1 with what it is about on it, the
+ * headline in two lines, the source and the age. It opens the article in a new
+ * tab, as every headline does; the rail fills with these once your own news
+ * runs out, so the section is there whenever there is news at all.
+ */
+export function HomePressCard({ row, age, art }: { row: PressRow; age: string; art?: TitleArt }) {
+  return (
+    <a
+      {...out(row.link)}
+      role="listitem"
+      aria-label={`${row.headline}, ${row.source}`}
+      className={`${ZOOM_GROUP} ${ZOOM_SHADOW} flex w-[220px] shrink-0 flex-col rounded-[14px] bg-surface text-ink shadow-elevation lg:w-[268px]`}
+    >
+      <span className="relative block">
+        <span className="relative block aspect-[2/1] overflow-hidden rounded-t-[14px] bg-surface-2">
+          <NewsPicture
+            imageUrl={row.imageUrl}
+            backdrop={art?.backdrop}
+            poster={art?.poster ?? row.match?.poster}
+            source={row.source}
+            backdropWidth={780}
+            sizes="(min-width: 64rem) 268px, 220px"
+          />
+        </span>
+        {row.tag && (
+          <span className="absolute left-2.5 top-2.5">
+            <ArtChip small>{tagLabel(row.tag)}</ArtChip>
+          </span>
+        )}
+      </span>
+      <span className="flex flex-col gap-1.5 p-3">
+        <span className="line-clamp-2 min-h-[34px] text-[13px] font-semibold leading-[1.3]">{row.headline}</span>
+        <Byline>
+          {row.source} · {age}
+        </Byline>
+      </span>
+    </a>
+  );
+}

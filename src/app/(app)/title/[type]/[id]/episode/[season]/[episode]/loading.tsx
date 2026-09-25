@@ -7,7 +7,7 @@ export default function EpisodeLoading() {
     <SkeletonScreen label="episode">
       <div className="lg:hidden">
         <div className="-mt-(--safe-top) flex h-[calc(296px+var(--safe-top))] flex-col bg-night pt-(--safe-top)">
-          <div className="flex h-[66px] items-center justify-between px-5 pt-[22px]">
+          <div className="flex h-[71px] items-center justify-between px-5 pt-[27px]">
             <HeroBone className="size-10 rounded-full" />
             <div className="flex gap-2">
               <HeroBone className="size-10 rounded-full" />
