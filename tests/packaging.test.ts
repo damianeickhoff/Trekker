@@ -64,3 +64,20 @@ describe("the Unraid template", () => {
     expect(xml).toContain('Target="/data"');
   });
 });
+
+describe("the installed app on a phone with a notch", () => {
+  it("starts every page under the status bar and keeps a band behind the clock", () => {
+    const shell = read("src/app/(app)/layout.tsx");
+    expect(shell).toContain("pt-(--safe-top)");
+    expect(shell).toMatch(/fixed inset-x-0 top-0 z-\(--z-tab-bar\) h-\(--safe-top\) bg-night lg:hidden/);
+    expect(read("src/app/globals.css")).toContain("--safe-top: env(safe-area-inset-top, 0px);");
+    // Sticky headers stop under the bar, not under the clock.
+    expect(read("src/components/lists/smart-editor.tsx")).toContain("sticky top-(--safe-top)");
+  });
+
+  it("asks fresh installs for the see-through bar the existing installs already have", () => {
+    const layout = read("src/app/layout.tsx");
+    expect(layout).toContain('statusBarStyle: "black-translucent"');
+    expect(layout).toContain('viewportFit: "cover"');
+  });
+});

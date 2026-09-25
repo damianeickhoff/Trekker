@@ -138,6 +138,13 @@
  * the padding and the bar cannot drift apart.
  */
 :root {
+  /*
+   * The status bar's height on a phone running the installed app, and 0
+   * everywhere else. iOS keeps the status-bar style an app was installed with,
+   * and the installs made from the old app draw the page under a see-through
+   * bar, so the page has to make the room itself (see `(app)/layout.tsx`).
+   */
+  --safe-top: env(safe-area-inset-top, 0px);
   --tab-bar-clearance: calc(92px + max(18px, env(safe-area-inset-bottom)));
 }
 

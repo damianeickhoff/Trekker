@@ -319,7 +319,7 @@ export function SmartEditor({ listId, initialName, initialFilters, certification
         <div className="px-5 pb-2">
           <BackHeader back={backButton} title={title} />
         </div>
-        <div className="sticky top-0 z-(--z-top-row) flex flex-col gap-2.5 bg-bg px-5 pb-3 pt-1">
+        <div className="sticky top-(--safe-top) z-(--z-top-row) flex flex-col gap-2.5 bg-bg px-5 pb-3 pt-1">
           <div className="flex items-baseline justify-between">
             <span className="mono-label">Preview</span>
             {matched && <span className="mono-label text-accent-text">{matched}</span>}
