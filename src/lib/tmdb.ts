@@ -1,6 +1,47 @@
 import "server-only";
+import { db } from "./db";
+import { gate } from "./gates";
+
+/**
+ * TMDB, read through a cache table on the data volume.
+ *
+ * The database is the cache. There is deliberately no `next: { revalidate }`
+ * here: Next's fetch cache lives in `.next/cache`, which dies with the
+ * container, and it would sit in front of this one answering from a copy the
+ * table knows nothing about. Every response is stored in `TmdbCache` with a
+ * lifetime for its kind of endpoint, served from there until it expires, and
+ * served stale when TMDB cannot be reached.
+ *
+ * Only background jobs, the one title being opened, and the two searches a
+ * person asks for by typing (the smart list editor and a list's Add titles)
+ * should reach the network through this. Pages that list things read rows,
+ * never this module.
+ */
 
 const BASE = "https://api.themoviedb.org/3";
+const TIMEOUT_MS = 10_000;
+
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+/**
+ * How long each kind of answer is good for. Details and people barely move;
+ * a season gains air dates and names as it runs; trending and search are
+ * wanted fresh. Discover backs genre pages and smart lists, which rebuild
+ * daily anyway, and providers are what the daily availability pass reads.
+ */
+export const LIFETIMES = {
+  details: 7 * DAY,
+  season: DAY,
+  trending: HOUR,
+  search: HOUR,
+  person: 7 * DAY,
+  images: 30 * DAY,
+  discover: 12 * HOUR,
+  providers: DAY,
+} as const;
+
+export type CacheKind = keyof typeof LIFETIMES;
 
 export class TmdbNotConfigured extends Error {
   constructor() {
@@ -9,56 +50,126 @@ export class TmdbNotConfigured extends Error {
   }
 }
 
+export class TmdbError extends Error {
+  constructor(
+    readonly status: number,
+    path: string,
+  ) {
+    super(`TMDB ${status} for ${path}`);
+    this.name = "TmdbError";
+  }
+}
+
 export function tmdbConfigured() {
-  return Boolean(process.env.TMDB_API_KEY);
+  return Boolean(process.env.TMDB_API_KEY?.trim());
+}
+
+type Params = Record<string, string | number | undefined>;
+
+/**
+ * The path and its parameters in a fixed order, so one question asked with
+ * its parameters shuffled is one row. The credential is never part of it.
+ */
+export function cacheKey(path: string, params: Params = {}): string {
+  const pairs = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== "")
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return pairs.length ? `${path}?${pairs.join("&")}` : path;
 }
 
 /**
- * Calls TMDB. Accepts either a v3 API key or a v4 read access token
- * (tokens are JWTs, so they contain dots and are sent as a bearer header).
+ * Two callers asking for the same key while it is on its way share one
+ * request. React's fetch dedupe skips fetches that carry their own abort
+ * signal, and never applied across requests or to background jobs anyway.
  */
-async function tmdb<T>(
-  path: string,
-  params: Record<string, string | number | undefined> = {},
-  revalidate = 60 * 60,
-): Promise<T> {
-  const key = process.env.TMDB_API_KEY;
+const inFlight = new Map<string, Promise<string>>();
+
+async function fetchText(path: string, params: Params): Promise<string> {
+  const key = process.env.TMDB_API_KEY?.trim();
   if (!key) throw new TmdbNotConfigured();
 
   const url = new URL(BASE + path);
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "") url.searchParams.set(k, String(v));
   }
+  // A v4 read token is a JWT and goes in a header; a v3 key goes in the query.
+  const bearer = key.split(".").length === 3;
+  if (!bearer) url.searchParams.set("api_key", key);
 
-  const isV4Token = key.split(".").length === 3;
-  if (!isV4Token) url.searchParams.set("api_key", key);
-
+  await gate.take("tmdb");
   const res = await fetch(url, {
-    headers: isV4Token ? { Authorization: `Bearer ${key}` } : {},
-    next: { revalidate },
-    /**
-     * Every other outbound client here has had one of these from the start;
-     * this one had not, and it is the one on the critical path of most pages.
-     * A socket that opens and then says nothing has no timeout of its own, so
-     * a single stalled request held a render open for as long as the process
-     * lived — a page that never arrives rather than one that arrives short of
-     * a rail. Ten seconds is generous for an API that normally answers in
-     * under one, and every caller already fails soft.
-     */
-    signal: AbortSignal.timeout(10_000),
+    headers: bearer ? { Authorization: `Bearer ${key}` } : {},
+    cache: "no-store",
+    // A socket that opens and then says nothing has no timeout of its own.
+    signal: AbortSignal.timeout(TIMEOUT_MS),
   });
-
-  if (!res.ok) {
-    throw new Error(`TMDB ${res.status} for ${path}: ${await res.text()}`);
-  }
-  return res.json() as Promise<T>;
+  if (!res.ok) throw new TmdbError(res.status, path);
+  return res.text();
 }
 
-// Re-exported for server callers; client components must import it from
-// "@/lib/images" directly, since this module is server-only.
-export { img } from "./images";
+export type ReadOptions = {
+  /** Skip a fresh cache entry and ask TMDB. The refresh job uses this. */
+  force?: boolean;
+};
+
+/**
+ * One TMDB answer: from the cache when fresh, otherwise from the network and
+ * then stored. When the network fails, a stale entry is returned rather than
+ * the error; only a miss with nothing cached at all throws.
+ */
+export async function tmdbGet<T>(
+  kind: CacheKind,
+  path: string,
+  params: Params = {},
+  options: ReadOptions = {},
+): Promise<T> {
+  const key = cacheKey(path, params);
+  const cached = await db.tmdbCache.findUnique({ where: { key } });
+  if (cached && !options.force && cached.expiresAt.getTime() > Date.now()) {
+    return JSON.parse(cached.body) as T;
+  }
+
+  let pending = inFlight.get(key);
+  if (!pending) {
+    pending = fetchText(path, params).finally(() => inFlight.delete(key));
+    inFlight.set(key, pending);
+  }
+
+  let body: string;
+  try {
+    body = await pending;
+  } catch (error) {
+    if (cached) return JSON.parse(cached.body) as T;
+    throw error;
+  }
+
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + LIFETIMES[kind]);
+  await db.tmdbCache.upsert({
+    where: { key },
+    create: { key, body, fetchedAt: now, expiresAt },
+    update: { body, fetchedAt: now, expiresAt },
+  });
+  return JSON.parse(body) as T;
+}
+
+/**
+ * Whatever the cache holds for this question, fresh or not, and never the
+ * network. For code that must not wait on TMDB: `title-state` works out a
+ * show's episode list from here after the job has fetched it.
+ */
+export async function tmdbPeek<T>(path: string, params: Params = {}): Promise<T | null> {
+  const row = await db.tmdbCache.findUnique({ where: { key: cacheKey(path, params) } });
+  return row ? (JSON.parse(row.body) as T) : null;
+}
+
+// ---------------------------------------------------------------------------
+// Types
 
 export type MediaType = "movie" | "tv";
+
+type Paged<T> = { page: number; results: T[]; total_pages: number; total_results: number };
 
 export type TmdbListItem = {
   id: number;
@@ -72,32 +183,25 @@ export type TmdbListItem = {
   first_air_date?: string;
   overview?: string;
   genre_ids?: number[];
+  popularity?: number;
 };
 
-export type NormalisedItem = {
+export type ListItem = {
   id: number;
   mediaType: MediaType;
   title: string;
   poster: string | null;
   backdrop: string | null;
+  /** TMDB's audience average as a percentage, the way posters show it. */
   score: number;
   year: string | null;
   overview: string;
-  /**
-   * TMDB's genre ids, as the list endpoints return them. Optional because the
-   * detail endpoints return named genres instead and several callers build one
-   * of these by hand from a database row; only "what to watch" reads it, and
-   * only to judge how well a title matches the mood that was asked for.
-   */
-  genreIds?: number[];
+  genreIds: number[];
 };
 
-export function normalise(item: TmdbListItem, fallbackType?: MediaType): NormalisedItem | null {
-  const mediaType = (item.media_type === "movie" || item.media_type === "tv"
-    ? item.media_type
-    : fallbackType) as MediaType | undefined;
+export function normalise(item: TmdbListItem, fallback?: MediaType): ListItem | null {
+  const mediaType = item.media_type === "movie" || item.media_type === "tv" ? item.media_type : fallback;
   if (!mediaType) return null;
-
   const date = item.release_date || item.first_air_date || "";
   return {
     id: item.id,
@@ -112,167 +216,57 @@ export function normalise(item: TmdbListItem, fallbackType?: MediaType): Normali
   };
 }
 
-type Paged<T> = { page: number; results: T[]; total_pages: number; total_results: number };
-
-export async function trending(mediaType: "all" | MediaType, window: "day" | "week" = "week") {
-  const data = await tmdb<Paged<TmdbListItem>>(`/trending/${mediaType}/${window}`, {}, 60 * 30);
-  return data.results
-    .map((r) => normalise(r, mediaType === "all" ? undefined : mediaType))
-    .filter((r): r is NormalisedItem => r !== null);
+function normaliseAll(items: TmdbListItem[], fallback?: MediaType): ListItem[] {
+  return items.map((i) => normalise(i, fallback)).filter((i): i is ListItem => i !== null);
 }
 
-export async function popular(mediaType: MediaType, page = 1) {
-  const data = await tmdb<Paged<TmdbListItem>>(`/${mediaType}/popular`, { page });
-  return data.results
-    .map((r) => normalise(r, mediaType))
-    .filter((r): r is NormalisedItem => r !== null);
-}
+export type CastMember = { id: number; name: string; character: string; profile_path: string | null; order?: number };
 
-export async function topRated(mediaType: MediaType, page = 1) {
-  const data = await tmdb<Paged<TmdbListItem>>(`/${mediaType}/top_rated`, { page });
-  return data.results
-    .map((r) => normalise(r, mediaType))
-    .filter((r): r is NormalisedItem => r !== null);
-}
+export type CrewMember = { id: number; name: string; job: string; department: string; profile_path: string | null };
 
-export async function searchMulti(query: string, page = 1) {
-  const data = await tmdb<Paged<TmdbListItem>>("/search/multi", { query, page }, 60 * 5);
-  return data.results
-    .filter((r) => r.media_type === "movie" || r.media_type === "tv")
-    .map((r) => normalise(r))
-    .filter((r): r is NormalisedItem => r !== null);
-}
-
-export type PagedItems = {
-  items: NormalisedItem[];
-  page: number;
-  totalPages: number;
-  totalResults: number;
-};
-
-/** Generic paged list fetch, used by the discover category pages. */
-export async function catalogue(
-  path: string,
-  fallbackType: MediaType | undefined,
-  page = 1,
-): Promise<PagedItems> {
-  const data = await tmdb<Paged<TmdbListItem>>(path, { page }, 60 * 30);
-  return {
-    items: data.results
-      .map((r) => normalise(r, fallbackType))
-      .filter((r): r is NormalisedItem => r !== null),
-    page: data.page,
-    // TMDB refuses pages beyond 500.
-    totalPages: Math.min(data.total_pages, 500),
-    totalResults: data.total_results,
-  };
-}
-
-export async function searchPaged(query: string, page = 1): Promise<PagedItems> {
-  const data = await tmdb<Paged<TmdbListItem>>("/search/multi", { query, page }, 60 * 5);
-  return {
-    items: data.results
-      .filter((r) => r.media_type === "movie" || r.media_type === "tv")
-      .map((r) => normalise(r))
-      .filter((r): r is NormalisedItem => r !== null),
-    page: data.page,
-    totalPages: Math.min(data.total_pages, 500),
-    totalResults: data.total_results,
-  };
-}
-
-export type CastSearchResult = {
+type Common = {
   id: number;
-  name: string;
-  profile: string | null;
-  /** "Acting", "Directing" … as TMDB files them. */
-  department: string | null;
-  /** The two things they are best known for, for telling namesakes apart. */
-  knownFor: string;
-};
-
-/**
- * People on TMDB — actors, directors, the rest of the crew.
- *
- * A separate call rather than reading them out of `/search/multi`, which does
- * return people but ranks them against titles and carries none of the detail
- * that makes one Chris Evans distinguishable from another. Cached for five
- * minutes, matching the other searches.
- */
-export async function searchCast(query: string, take = 4): Promise<CastSearchResult[]> {
-  type Raw = {
-    id: number;
-    name: string;
-    profile_path: string | null;
-    known_for_department?: string;
-    known_for?: TmdbListItem[];
-  };
-
-  const data = await tmdb<Paged<Raw>>("/search/person", { query }, 60 * 5);
-
-  return data.results.slice(0, take).map((person) => ({
-    id: person.id,
-    name: person.name,
-    profile: person.profile_path ?? null,
-    department: person.known_for_department ?? null,
-    knownFor: (person.known_for ?? [])
-      .map((item) => item.title || item.name)
-      .filter((title): title is string => Boolean(title))
-      .slice(0, 2)
-      .join(" · "),
-  }));
-}
-
-export type Credits = {
-  cast: { id: number; name: string; character: string; profile_path: string | null }[];
-};
-
-export type Review = {
-  id: string;
-  author: string;
-  content: string;
-  created_at: string;
-  author_details: { rating: number | null; avatar_path: string | null };
-};
-
-export type MovieDetail = {
-  id: number;
-  title: string;
   overview: string;
   poster_path: string | null;
   backdrop_path: string | null;
-  runtime: number | null;
-  release_date: string;
   vote_average: number;
   vote_count: number;
   tagline: string;
   status: string;
   genres: { id: number; name: string }[];
-  /** The franchise this film is part of, when TMDB files it under one. */
-  belongs_to_collection: { id: number; name: string } | null;
-  credits: Credits;
-  reviews: Paged<Review>;
-  recommendations: Paged<TmdbListItem>;
+  original_language?: string;
+  credits?: { cast: CastMember[]; crew?: CrewMember[] };
+  videos?: { results: { key: string; site: string; type: string; official: boolean; name: string }[] };
+  external_ids?: { imdb_id?: string | null };
+  recommendations?: Paged<TmdbListItem>;
 };
 
-export type TvDetail = {
-  id: number;
+export type MovieDetails = Common & {
+  title: string;
+  runtime: number | null;
+  release_date: string;
+  belongs_to_collection: { id: number; name: string } | null;
+};
+
+export type EpisodeRef = {
+  season_number: number;
+  episode_number: number;
+  air_date: string | null;
+  name?: string;
+  runtime?: number | null;
+};
+
+export type TvDetails = Common & {
   name: string;
-  overview: string;
-  poster_path: string | null;
-  backdrop_path: string | null;
   first_air_date: string;
   last_air_date: string | null;
-  vote_average: number;
-  vote_count: number;
-  tagline: string;
-  status: string;
   episode_run_time: number[];
   number_of_seasons: number;
   number_of_episodes: number;
-  last_episode_to_air: { season_number: number; episode_number: number } | null;
-  next_episode_to_air: { season_number: number; episode_number: number; air_date: string } | null;
-  genres: { id: number; name: string }[];
+  last_episode_to_air: EpisodeRef | null;
+  next_episode_to_air: EpisodeRef | null;
+  networks?: { id: number; name: string }[];
+  created_by?: { id: number; name: string; profile_path: string | null }[];
   seasons: {
     id: number;
     season_number: number;
@@ -280,218 +274,63 @@ export type TvDetail = {
     episode_count: number;
     poster_path: string | null;
     air_date: string | null;
-    /** TMDB's audience average for the season, 0–10. Zero where nobody voted. */
-    vote_average?: number;
   }[];
-  credits: Credits;
-  reviews: Paged<Review>;
-  recommendations: Paged<TmdbListItem>;
 };
-
-/**
- * Audience score for a single title, used to backfill rows logged before the
- * score was stored. Cached for a day — these barely move.
- */
-export async function getScore(mediaType: MediaType, id: number): Promise<number | null> {
-  try {
-    const data = await tmdb<{ vote_average?: number }>(
-      `/${mediaType}/${id}`,
-      {},
-      60 * 60 * 24,
-    );
-    return data.vote_average ? Math.round(data.vote_average * 10) : null;
-  } catch {
-    return null;
-  }
-}
-
-export type Video = {
-  id: string;
-  key: string;
-  name: string;
-  site: string;
-  type: string;
-  official: boolean;
-  published_at?: string;
-};
-
-export type Videos = { results: Video[] };
-
-/**
- * The trailer worth linking to: an official YouTube trailer if there is one,
- * then any trailer, then a teaser. TMDB's list is unordered and full of clips,
- * featurettes and behind-the-scenes reels, which are not what anyone means.
- */
-export function pickTrailer(videos: Videos | undefined): Video | null {
-  const youtube = (videos?.results ?? []).filter((v) => v.site === "YouTube" && v.key);
-
-  return (
-    youtube.find((v) => v.type === "Trailer" && v.official) ??
-    youtube.find((v) => v.type === "Trailer") ??
-    youtube.find((v) => v.type === "Teaser") ??
-    null
-  );
-}
-
-export type TmdbImage = {
-  file_path: string;
-  /** `null` means the artwork carries no lettering in any language. */
-  iso_639_1: string | null;
-  vote_average: number;
-  width: number;
-  height: number;
-  aspect_ratio: number;
-};
-
-type Appended = {
-  external_ids?: { imdb_id?: string | null };
-  videos?: Videos;
-  images?: { posters?: TmdbImage[]; backdrops?: TmdbImage[]; logos?: TmdbImage[] };
-};
-
-/** A title treatment: the film's own lettering, ready to stand in for the `h1`. */
-export type TitleLogo = { path: string; ratio: number };
-
-/**
- * The film's own title treatment, when TMDB has one.
- *
- * Coverage is good for anything well known and patchy below that, so every
- * caller has to be ready for `null` and fall back to type — this is the reason
- * the heading stays in the markup either way rather than being replaced.
- *
- * English lettering is preferred over the no-language entries: a logo filed
- * under no language is usually the wordless symbol (the Batman bat, the Star
- * Trek delta), which reads as decoration rather than as the title. Among the
- * candidates, PNG wins over SVG — the SVGs in TMDB's library are inconsistently
- * cropped, and some carry their own padding, which throws the alignment out.
- */
-export function pickLogo(images: Appended["images"]): TitleLogo | null {
-  const ranked = (images?.logos ?? [])
-    .filter((image) => image.aspect_ratio > 0)
-    .sort((a, b) => {
-      const language = score(b) - score(a);
-      if (language !== 0) return language;
-      return b.vote_average - a.vote_average;
-    });
-
-  const best = ranked[0];
-  return best ? { path: best.file_path, ratio: best.aspect_ratio } : null;
-
-  function score(image: TmdbImage) {
-    const png = image.file_path.toLowerCase().endsWith(".svg") ? 0 : 1;
-    return (image.iso_639_1 === "en" ? 2 : 0) + png;
-  }
-}
-
-/**
- * `include_image_language` is what makes the extra artwork show up at all —
- * without it TMDB returns only the images tagged for the request language.
- * `en` brings back the English title treatments the hero prefers, and `null`
- * the wordless ones it falls back to.
- */
-const DETAIL_PARAMS = {
-  append_to_response: "credits,reviews,recommendations,external_ids,videos,images",
-  include_image_language: "null,en",
-};
-
-export function getMovie(id: number) {
-  return tmdb<MovieDetail & Appended>(`/movie/${id}`, DETAIL_PARAMS);
-}
-
-export function getTv(id: number) {
-  return tmdb<TvDetail & Appended>(`/tv/${id}`, DETAIL_PARAMS);
-}
-
-/** Recommendations for a single title, used to build the "you may like" feed. */
-export async function getRecommendations(mediaType: MediaType, id: number) {
-  const data = await tmdb<Paged<TmdbListItem>>(
-    `/${mediaType}/${id}/recommendations`,
-    {},
-    60 * 60 * 6,
-  );
-  return data.results
-    .map((r) => normalise(r, mediaType))
-    .filter((r): r is NormalisedItem => r !== null);
-}
-
-/**
- * How many episodes have actually been released. TMDB's `number_of_episodes`
- * counts everything ordered, including episodes that have not aired, which
- * makes progress read as though you are behind when you are up to date.
- */
-export function countAiredEpisodes(show: TvDetail) {
-  const seasons = show.seasons
-    .filter((s) => s.season_number > 0 && s.episode_count > 0)
-    .sort((a, b) => a.season_number - b.season_number);
-
-  const last = show.last_episode_to_air;
-  if (!last) return 0;
-
-  let total = 0;
-  for (const season of seasons) {
-    if (season.season_number < last.season_number) {
-      total += season.episode_count;
-    } else if (season.season_number === last.season_number) {
-      total += Math.min(last.episode_number, season.episode_count);
-    }
-  }
-  return total;
-}
 
 export type Episode = {
   id: number;
   name: string;
   overview: string;
-  episode_number: number;
   season_number: number;
+  episode_number: number;
   runtime: number | null;
   still_path: string | null;
   air_date: string | null;
   vote_average: number;
-  /**
-   * "standard", "premiere", "finale" or "mid_season". Optional because TMDB
-   * only started filling it in recently and an old season may still have none.
-   */
   episode_type?: string | null;
+  /** Present on a season's episodes, and on an episode read on its own. */
+  guest_stars?: CastMember[];
+  crew?: CrewMember[];
 };
 
-/**
- * Wide artwork for one thing, and nothing else.
- *
- * A still for an episode, a backdrop for a film — whichever the caller has. Both
- * are deliberately lean: no `append_to_response`, and cached for a week, because
- * a feed asks for a dozen of these at once and neither answer ever changes after
- * release. `getMovie` would drag credits, reviews and recommendations along for
- * one string.
- */
-export async function getEpisodeStill(
-  showId: number,
-  seasonNumber: number,
-  episodeNumber: number,
-): Promise<string | null> {
-  const data = await tmdb<{ still_path?: string | null }>(
-    `/tv/${showId}/season/${seasonNumber}/episode/${episodeNumber}`,
-    {},
-    60 * 60 * 24 * 7,
-  ).catch(() => null);
+/** One episode on its own, with the regulars who appear in it. */
+export type EpisodeDetails = Episode & {
+  credits?: { cast: CastMember[]; guest_stars: CastMember[]; crew: CrewMember[] };
+};
 
-  return data?.still_path ?? null;
-}
+/** A show's whole cast and crew across every season, with episode counts. */
+export type AggregateCredits = {
+  cast: {
+    id: number;
+    name: string;
+    profile_path: string | null;
+    roles: { character: string; episode_count: number }[];
+    total_episode_count: number;
+  }[];
+  crew: {
+    id: number;
+    name: string;
+    profile_path: string | null;
+    department: string;
+    jobs: { job: string; episode_count: number }[];
+    total_episode_count: number;
+  }[];
+};
 
-export async function getBackdrop(
-  mediaType: MediaType,
-  id: number,
-): Promise<string | null> {
-  const data = await tmdb<{ backdrop_path?: string | null }>(
-    `/${mediaType}/${id}`,
-    {},
-    60 * 60 * 24 * 7,
-  ).catch(() => null);
+export type Season = { id: number; name: string; season_number: number; episodes: Episode[] };
 
-  return data?.backdrop_path ?? null;
-}
+export type TmdbImage = {
+  file_path: string;
+  iso_639_1: string | null;
+  vote_average: number;
+  aspect_ratio: number;
+};
 
-export type Person = {
+export type Images = { logos?: TmdbImage[]; backdrops?: TmdbImage[]; posters?: TmdbImage[] };
+
+export type TitleLogo = { path: string; ratio: number };
+
+export type PersonDetails = {
   id: number;
   name: string;
   biography: string;
@@ -500,373 +339,277 @@ export type Person = {
   place_of_birth: string | null;
   known_for_department: string;
   profile_path: string | null;
-  combined_credits: {
-    cast: (TmdbListItem & { character?: string; episode_count?: number; popularity?: number })[];
-  };
+  combined_credits?: { cast: PersonCredit[]; crew?: PersonCrewCredit[] };
 };
 
-export function getPerson(id: number) {
-  return tmdb<Person>(`/person/${id}`, { append_to_response: "combined_credits" });
+export type PersonCredit = TmdbListItem & { character?: string; episode_count?: number };
+export type PersonCrewCredit = TmdbListItem & { job?: string; department?: string };
+
+export type ProviderOffer = { provider_id: number; provider_name: string; logo_path: string };
+
+export type RegionOffers = {
+  link?: string;
+  flatrate?: ProviderOffer[];
+  rent?: ProviderOffer[];
+  buy?: ProviderOffer[];
+  free?: ProviderOffer[];
+  ads?: ProviderOffer[];
+};
+
+export type ProvidersAnswer = { results?: Record<string, RegionOffers> };
+
+/** TMDB's release types: 2 limited cinema, 3 cinema, 4 digital, among others. */
+export type ReleaseDatesAnswer = {
+  results?: { iso_3166_1: string; release_dates: { release_date: string; type: number }[] }[];
+};
+
+// ---------------------------------------------------------------------------
+// Endpoints
+
+/**
+ * What a title page needs in one request. Reviews are left out: they were most
+ * of the previous app's 400 KB detail payloads for one rail of one page.
+ * Images are their own request with a longer lifetime.
+ */
+const DETAIL_APPEND = "credits,videos,external_ids,recommendations";
+
+/** Exposed so `title-state` can peek at exactly the key the job wrote. */
+export function tvDetailsKey(id: number) {
+  return { path: `/tv/${id}`, params: { append_to_response: DETAIL_APPEND } };
 }
 
-export function getEpisode(tvId: number, seasonNumber: number, episodeNumber: number) {
-  return tmdb<Episode & { crew: { id: number; name: string; job: string }[] }>(
-    `/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`,
+export function seasonKey(tvId: number, season: number) {
+  return { path: `/tv/${tvId}/season/${season}`, params: {} };
+}
+
+export function getTvDetails(id: number, options?: ReadOptions) {
+  const { path, params } = tvDetailsKey(id);
+  return tmdbGet<TvDetails>("details", path, params, options);
+}
+
+export function getMovieDetails(id: number, options?: ReadOptions) {
+  return tmdbGet<MovieDetails>("details", `/movie/${id}`, { append_to_response: DETAIL_APPEND }, options);
+}
+
+export function getSeason(tvId: number, season: number, options?: ReadOptions) {
+  const { path, params } = seasonKey(tvId, season);
+  return tmdbGet<Season>("season", path, params, options);
+}
+
+/**
+ * One episode with its credits: the regulars who are in it and its guest
+ * stars. Kept like a season, since both move while a show is airing.
+ */
+export function getEpisode(tvId: number, season: number, episode: number, options?: ReadOptions) {
+  return tmdbGet<EpisodeDetails>(
+    "season",
+    `/tv/${tvId}/season/${season}/episode/${episode}`,
+    { append_to_response: "credits" },
+    options,
   );
 }
 
-export type EpisodePerson = {
-  id: number;
-  name: string;
-  character: string;
-  profile: string | null;
-};
-
-export type EpisodeDetail = {
-  episodeNumber: number;
-  seasonNumber: number;
-  name: string;
-  overview: string;
-  runtime: number | null;
-  airDate: string | null;
-  still: string | null;
-  score: number;
-  votes: number;
-  /**
-   * TMDB's own label for where this sits in the run: "premiere", "finale",
-   * "mid_season" or "standard". Worth showing because it is the one fact about
-   * an episode that changes how you feel about watching it tonight.
-   */
-  episodeType: string | null;
-  /** Series regulars in this episode, then whoever guest starred in it. */
-  cast: EpisodePerson[];
-  guests: EpisodePerson[];
-  directors: string[];
-  writers: string[];
-};
+/** Everyone who was ever in a show, with how many episodes each. The cast page reads this. */
+export function getAggregateCredits(tvId: number, options?: ReadOptions) {
+  return tmdbGet<AggregateCredits>("details", `/tv/${tvId}/aggregate_credits`, {}, options);
+}
 
 /**
- * One episode, with who was in it.
- *
- * `credits` is appended rather than taken from the endpoint's own `guest_stars`
- * alone: that field holds only the people brought in for this episode, and a
- * cast list that omits the series regulars is a strange thing to show. Both are
- * returned separately so the dialog can say which is which.
+ * Artwork, title treatments included. `include_image_language` is what makes
+ * TMDB return logos at all: `en` for lettered ones, `null` for the wordless.
  */
-export async function getEpisodeDetail(
-  tvId: number,
-  seasonNumber: number,
-  episodeNumber: number,
-): Promise<EpisodeDetail | null> {
-  type Raw = Episode & {
-    vote_count?: number;
-    crew?: { id: number; name: string; job: string }[];
-    episode_type?: string | null;
-    guest_stars?: { id: number; name: string; character: string; profile_path: string | null }[];
-    credits?: {
-      cast?: { id: number; name: string; character: string; profile_path: string | null }[];
-      guest_stars?: { id: number; name: string; character: string; profile_path: string | null }[];
-      crew?: { id: number; name: string; job: string }[];
-    };
-  };
+export function getImages(mediaType: MediaType, id: number, options?: ReadOptions) {
+  return tmdbGet<Images>("images", `/${mediaType}/${id}/images`, { include_image_language: "en,null" }, options);
+}
 
-  const data = await tmdb<Raw>(
-    `/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}`,
-    { append_to_response: "credits" },
-    60 * 60 * 24,
-  ).catch(() => null);
+/**
+ * The title's own lettering, when TMDB has one. English lettering beats the
+ * no-language symbol, which reads as decoration rather than as the title; PNG
+ * beats SVG, because TMDB's SVGs are inconsistently cropped.
+ */
+export function pickLogo(images: Images | null | undefined): TitleLogo | null {
+  const rank = (i: TmdbImage) =>
+    (i.iso_639_1 === "en" ? 2 : 0) + (i.file_path.toLowerCase().endsWith(".svg") ? 0 : 1);
+  const best = (images?.logos ?? [])
+    .filter((i) => i.aspect_ratio > 0)
+    .sort((a, b) => rank(b) - rank(a) || b.vote_average - a.vote_average)[0];
+  return best ? { path: best.file_path, ratio: best.aspect_ratio } : null;
+}
 
-  if (!data) return null;
+/** Details and the title treatment together, for a title page's hero. */
+export async function getDetailsWithLogo(mediaType: MediaType, id: number) {
+  const [details, images] = await Promise.all([
+    mediaType === "tv" ? getTvDetails(id) : getMovieDetails(id),
+    getImages(mediaType, id).catch(() => null),
+  ]);
+  return { details, logo: pickLogo(images) };
+}
 
-  const person = (p: {
-    id: number;
-    name: string;
-    character: string;
-    profile_path: string | null;
-  }): EpisodePerson => ({
-    id: p.id,
-    name: p.name,
-    character: p.character,
-    profile: p.profile_path,
-  });
+export async function getTrending(mediaType: "all" | MediaType, window: "day" | "week" = "week") {
+  const data = await tmdbGet<Paged<TmdbListItem>>("trending", `/trending/${mediaType}/${window}`);
+  return normaliseAll(data.results, mediaType === "all" ? undefined : mediaType);
+}
 
-  const crew = data.credits?.crew ?? data.crew ?? [];
-
+export async function searchMulti(query: string, page = 1) {
+  const data = await tmdbGet<Paged<TmdbListItem>>("search", "/search/multi", { query: query.trim(), page });
   return {
-    episodeNumber: data.episode_number,
-    seasonNumber: data.season_number,
-    name: data.name,
-    overview: data.overview,
-    runtime: data.runtime,
-    airDate: data.air_date,
-    still: data.still_path,
-    score: Math.round((data.vote_average ?? 0) * 10),
-    votes: data.vote_count ?? 0,
-    episodeType: data.episode_type ?? null,
-    cast: (data.credits?.cast ?? []).slice(0, 12).map(person),
-    guests: (data.credits?.guest_stars ?? data.guest_stars ?? []).slice(0, 12).map(person),
-    directors: crew.filter((c) => c.job === "Director").map((c) => c.name),
-    writers: crew
-      .filter((c) => c.job === "Writer" || c.job === "Screenplay" || c.job === "Story")
-      .map((c) => c.name),
+    items: normaliseAll(data.results.filter((r) => r.media_type === "movie" || r.media_type === "tv")),
+    page: data.page,
+    totalPages: Math.min(data.total_pages, 500),
   };
 }
 
-export type WatchProvider = { provider_id: number; provider_name: string; logo_path: string };
+/** People by name, for a smart list's People section. Actors and directors, most known first. */
+export async function searchPeople(query: string) {
+  const data = await tmdbGet<Paged<{ id: number; name: string; profile_path: string | null; known_for_department?: string; popularity?: number }>>(
+    "search",
+    "/search/person",
+    { query: query.trim() },
+  );
+  return data.results
+    .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+    .map((p) => ({ id: p.id, name: p.name, profilePath: p.profile_path, department: p.known_for_department ?? null }));
+}
 
-export type WatchOffers = {
-  /** Where TMDB's data says these offers apply, e.g. "NL". */
-  region: string;
-  /** Deep link into JustWatch for the full, always-current listing. */
-  link: string | null;
-  stream: WatchProvider[];
-  rent: WatchProvider[];
-  buy: WatchProvider[];
-  free: WatchProvider[];
-};
+export async function discover(mediaType: MediaType, params: Params = {}) {
+  const data = await tmdbGet<Paged<TmdbListItem>>("discover", `/discover/${mediaType}`, params);
+  return {
+    items: normaliseAll(data.results, mediaType),
+    page: data.page,
+    // TMDB refuses pages past 500.
+    totalPages: Math.min(data.total_pages, 500),
+    totalResults: data.total_results ?? 0,
+  };
+}
+
+/** Every region's offers in one answer; `offersFor` picks one region. */
+export function getWatchProviders(mediaType: MediaType, id: number, options?: ReadOptions) {
+  return tmdbGet<ProvidersAnswer>("providers", `/${mediaType}/${id}/watch/providers`, {}, options);
+}
 
 /**
- * Where a title can legally be watched, from TMDB's JustWatch feed.
- *
- * The data is per country, and TMDB's terms require linking back to JustWatch
- * rather than presenting the listing as ours. Cached for six hours — catalogues
- * move, but not by the minute.
+ * One region's offers. Free and ad-supported are one answer to a viewer: it
+ * can be watched without paying.
  */
-export async function getWatchProviders(
-  mediaType: MediaType,
-  id: number,
-  region: string,
-): Promise<WatchOffers | null> {
-  type Offers = {
-    link?: string;
-    flatrate?: WatchProvider[];
-    rent?: WatchProvider[];
-    buy?: WatchProvider[];
-    free?: WatchProvider[];
-    ads?: WatchProvider[];
-  };
-
-  const data = await tmdb<{ results?: Record<string, Offers> }>(
-    `/${mediaType}/${id}/watch/providers`,
-    {},
-    60 * 60 * 6,
-  ).catch(() => null);
-
-  const offers = data?.results?.[region];
+export function offersFor(all: ProvidersAnswer | null, region: string) {
+  const offers = all?.results?.[region];
   if (!offers) return null;
-
   return {
-    region,
     link: offers.link ?? null,
     stream: offers.flatrate ?? [],
     rent: offers.rent ?? [],
     buy: offers.buy ?? [],
-    // TMDB splits genuinely free from ad-supported; for a viewer they are the
-    // same answer — you can watch it without paying.
     free: [...(offers.free ?? []), ...(offers.ads ?? [])],
   };
 }
 
-/**
- * Just the length, without the credits/reviews/videos payload the full detail
- * calls drag along — this runs once per watchlist row.
- *
- * For a show it is the length of one episode, since "how long is this?" for
- * something you have not started is really "have I got an evening for it?".
- */
-export async function getRuntime(mediaType: MediaType, id: number): Promise<number | null> {
-  const data = await tmdb<{
-    runtime?: number | null;
-    episode_run_time?: number[];
-    last_episode_to_air?: { runtime?: number | null } | null;
-    next_episode_to_air?: { runtime?: number | null } | null;
-  }>(`/${mediaType}/${id}`, {}, 60 * 60 * 24 * 7).catch(() => null);
+/** Every country's release dates for a film. Settled facts; kept like details. */
+export function getReleaseDates(id: number, options?: ReadOptions) {
+  return tmdbGet<ReleaseDatesAnswer>("details", `/movie/${id}/release_dates`, {}, options);
+}
 
-  if (mediaType === "movie") {
-    return data?.runtime && data.runtime > 0 ? data.runtime : null;
+/**
+ * When a film reaches cinemas and streaming in one region, as YYYY-MM-DD.
+ *
+ * The cinema date is the earliest wide release there, then a limited one, then
+ * the film's own primary date, which is what TMDB shows everywhere and is
+ * usually the home market's opening. There is no such fallback for streaming:
+ * an unknown digital date is left unknown rather than guessed.
+ */
+export function releaseDatesFor(
+  answer: ReleaseDatesAnswer | null,
+  region: string,
+  primary: string | null | undefined,
+): { releaseDate: string | null; streamingDate: string | null } {
+  const dates = answer?.results?.find((r) => r.iso_3166_1 === region)?.release_dates ?? [];
+  const earliest = (...types: number[]) =>
+    dates
+      .filter((d) => types.includes(d.type) && d.release_date)
+      .map((d) => d.release_date.slice(0, 10))
+      .sort()[0] ?? null;
+  return {
+    releaseDate: earliest(3) ?? earliest(2) ?? (primary || null),
+    streamingDate: earliest(4),
+  };
+}
+
+/**
+ * A person, and their `Person` row: the cast rail and the actor page read
+ * that row, and the actor hero uses the backdrop of what they are best known for.
+ */
+export async function getPerson(id: number, options?: ReadOptions) {
+  const person = await tmdbGet<PersonDetails>(
+    "person",
+    `/person/${id}`,
+    { append_to_response: "combined_credits" },
+    options,
+  );
+
+  const weight = (c: PersonCredit) => (c.popularity ?? 0) + (c.episode_count ?? 0);
+  const known = (person.combined_credits?.cast ?? [])
+    .filter((c) => c.backdrop_path && (c.media_type === "movie" || c.media_type === "tv"))
+    // Popularity with a nudge for long runs, so a lead in a long show outranks
+    // a one-episode cameo in something briefly famous.
+    .sort((a, b) => weight(b) - weight(a))[0];
+
+  const row = {
+    name: person.name,
+    profilePath: person.profile_path,
+    knownForMediaType: known?.media_type ?? null,
+    knownForTitleId: known?.id ?? null,
+    knownForBackdrop: known?.backdrop_path ?? null,
+    bio: person.biography || null,
+    fetchedAt: new Date(),
+  };
+  await db.person.upsert({ where: { tmdbId: id }, create: { tmdbId: id, ...row }, update: row });
+  return person;
+}
+
+/**
+ * Whatever the cache holds for a person, and never the network: following
+ * someone from their page draws the line from the answer that page just read.
+ */
+export function peekPerson(id: number) {
+  return tmdbPeek<PersonDetails>(`/person/${id}`, { append_to_response: "combined_credits" });
+}
+
+/** TMDB's status words, folded into the four `TitleState` understands. */
+export function showStatus(status: string | undefined): "returning" | "ended" | "cancelled" | "upcoming" {
+  switch (status) {
+    case "Ended":
+      return "ended";
+    case "Canceled":
+    case "Cancelled":
+      return "cancelled";
+    case "In Production":
+    case "Planned":
+    case "Pilot":
+      return "upcoming";
+    default:
+      return "returning";
   }
-
-  // `episode_run_time` is the obvious field and increasingly an empty array:
-  // TMDB has been retiring it, and a lot of shows now carry the length on the
-  // episodes instead. Falling back to an actual episode is what stops a show
-  // showing no length at all while its neighbours show one.
-  const candidates = [
-    data?.episode_run_time?.[0],
-    data?.last_episode_to_air?.runtime,
-    data?.next_episode_to_air?.runtime,
-  ];
-
-  return candidates.find((minutes) => typeof minutes === "number" && minutes > 0) ?? null;
 }
 
-/**
- * What a full-screen slide needs on top of what a list row already carries.
- *
- * The same trick as `getTitleFacts` below, for the same reason: the screensaver
- * asks about a dozen titles at a time and wants the title treatment, the
- * tagline and the genres — three small fields out of a detail payload that also
- * contains every credit, every review and every trailer. `images` is appended
- * because the lettering is the whole point of the slide; `include_image_language`
- * is what makes TMDB return any of it, for the reason `DETAIL_PARAMS` explains.
- *
- * Cached for a day rather than the week the other lean calls use — a slideshow
- * built from "trending" turns over faster than that, and a stale logo for a
- * title that has since dropped off the list is a wasted request either way.
- */
-export type SlideFacts = {
-  title: string;
-  logo: TitleLogo | null;
-  tagline: string | null;
-  genres: string[];
-  /** Minutes: the film's length, or one episode of a show. */
-  runtime: number | null;
-  /** Shows only. Null for a film, so the caller need not ask what it is. */
-  seasons: number | null;
-  /**
-   * The four fields a list row would already have carried. Repeated here because
-   * one caller — a slideshow built from the watchlist — starts from a database
-   * row rather than from a TMDB list, and a watchlist row knows what you meant
-   * to watch, not what it looks like.
-   */
-  backdrop: string | null;
-  year: string | null;
-  score: number;
-  overview: string;
-};
-
-export async function getSlideFacts(
-  mediaType: MediaType,
-  id: number,
-): Promise<SlideFacts | null> {
-  type Lean = Appended & {
-    title?: string;
-    name?: string;
-    tagline?: string;
-    overview?: string;
-    backdrop_path?: string | null;
-    vote_average?: number;
-    release_date?: string;
-    first_air_date?: string;
-    genres?: { id: number; name: string }[];
-    runtime?: number | null;
-    episode_run_time?: number[];
-    number_of_seasons?: number;
-  };
-
-  const data = await tmdb<Lean>(
-    `/${mediaType}/${id}`,
-    { append_to_response: "images", include_image_language: "null,en" },
-    60 * 60 * 24,
-  ).catch(() => null);
-
-  if (!data) return null;
-
-  const runtime = mediaType === "movie" ? data.runtime : data.episode_run_time?.[0];
-  const date = data.release_date || data.first_air_date || "";
-
-  return {
-    title: data.title || data.name || "Untitled",
-    logo: pickLogo(data.images),
-    tagline: data.tagline?.trim() || null,
-    // Two is as many as fits on one line beside a year and a length, and the
-    // first two TMDB lists are the two it considers primary.
-    genres: (data.genres ?? []).slice(0, 2).map((genre) => genre.name),
-    runtime: runtime && runtime > 0 ? runtime : null,
-    seasons:
-      mediaType === "tv" && data.number_of_seasons && data.number_of_seasons > 0
-        ? data.number_of_seasons
-        : null,
-    backdrop: data.backdrop_path ?? null,
-    year: date ? date.slice(0, 4) : null,
-    score: Math.round((data.vote_average ?? 0) * 10),
-    overview: data.overview ?? "",
-  };
-}
-
-/**
- * The handful of facts the achievements need — genre, language, age, franchise
- * — without the credits, reviews and video payloads the full detail calls drag
- * along. Hundreds of titles get asked about at once, so the difference matters.
- * Cached for a week: none of this changes after release.
- */
-export type TitleFacts = {
-  title: string;
-  genres: string[];
-  originalLanguage: string | null;
-  releaseDate: string | null;
-  runtime: number | null;
-  collection: { id: number; name: string } | null;
-};
-
-export async function getTitleFacts(
-  mediaType: MediaType,
-  id: number,
-): Promise<TitleFacts | null> {
-  type Lean = {
-    title?: string;
-    name?: string;
-    genres?: { id: number; name: string }[];
-    original_language?: string;
-    release_date?: string;
-    first_air_date?: string;
-    runtime?: number | null;
-    episode_run_time?: number[];
-    belongs_to_collection?: { id: number; name: string } | null;
-  };
-
-  const data = await tmdb<Lean>(`/${mediaType}/${id}`, {}, 60 * 60 * 24 * 7).catch(() => null);
-  if (!data) return null;
-
-  const runtime = mediaType === "movie" ? data.runtime : data.episode_run_time?.[0];
-
-  return {
-    title: data.title || data.name || "Untitled",
-    genres: (data.genres ?? []).map((g) => g.name),
-    originalLanguage: data.original_language ?? null,
-    releaseDate: data.release_date || data.first_air_date || null,
-    runtime: runtime && runtime > 0 ? runtime : null,
-    collection: data.belongs_to_collection ?? null,
-  };
-}
-
-export type CollectionParts = {
+export type CollectionAnswer = {
   id: number;
   name: string;
-  parts: { id: number; title: string; releaseDate: string | null }[];
+  parts?: { id: number; title?: string; release_date?: string }[];
 };
 
 /**
- * Every film in a franchise. Used to answer "have I seen all of them?", so
- * unreleased entries are dropped — an announced sequel should not make a
- * finished collection read as incomplete.
+ * A franchise as TMDB groups it. Kept like details: a collection gains an
+ * entry a year at most. Only the badges page asks, for collections someone
+ * has two films of.
  */
-export async function getCollection(id: number): Promise<CollectionParts | null> {
-  type Raw = {
-    id: number;
-    name: string;
-    parts?: { id: number; title?: string; name?: string; release_date?: string }[];
-  };
-
-  const data = await tmdb<Raw>(`/collection/${id}`, {}, 60 * 60 * 24).catch(() => null);
-  if (!data) return null;
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  return {
-    id: data.id,
-    name: data.name,
-    parts: (data.parts ?? [])
-      .filter((p) => p.release_date && p.release_date <= today)
-      .map((p) => ({
-        id: p.id,
-        title: p.title || p.name || "Untitled",
-        releaseDate: p.release_date ?? null,
-      })),
-  };
+export function collectionKey(id: number) {
+  return { path: `/collection/${id}`, params: {} };
 }
 
-export function getSeason(tvId: number, seasonNumber: number) {
-  return tmdb<{ id: number; name: string; episodes: Episode[] }>(
-    `/tv/${tvId}/season/${seasonNumber}`,
-  );
+export function getCollection(id: number, options?: ReadOptions) {
+  return tmdbGet<CollectionAnswer>("details", `/collection/${id}`, {}, options);
+}
+
+/** The details keys a film's and a show's pages read, for peeking at facts without the network. */
+export function movieDetailsKey(id: number) {
+  return { path: `/movie/${id}`, params: { append_to_response: DETAIL_APPEND } };
 }

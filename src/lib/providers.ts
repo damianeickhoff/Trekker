@@ -1,22 +1,16 @@
-import "server-only";
-import { db } from "./db";
-
 /**
- * The streaming services a user pays for.
+ * The streaming services a person pays for, and the region they watch in.
  *
- * Stored as TMDB provider ids, which is what the "where to watch" data is keyed
- * by — so "can I already watch this?" is a set lookup rather than a name match
- * against whatever JustWatch happens to call a service this week.
+ * Stored on `User.providers` as TMDB provider ids, comma separated, by the
+ * current app's settings page. Plain functions with no database, so the rules
+ * can be tested and shared by the title page and the request button alike.
  */
 
 /**
- * The services worth offering. TMDB has hundreds; these are the ones people
- * have.
- *
- * Each entry carries every provider id that means the same subscription. TMDB
- * lists a service under several ids — "Amazon Prime Video" and "Prime Video"
- * are different rows, and which one a title comes back under varies by title
- * and region — so one id per service silently missed half the matches.
+ * The services worth offering, each with every TMDB id that means the same
+ * subscription: TMDB lists one service under several ids, and which one a
+ * title comes back under varies by title and region, so one id per service
+ * silently missed half the matches. Carried over from the current app.
  */
 export type Provider = { id: number; name: string; ids: number[] };
 
@@ -37,19 +31,6 @@ export const KNOWN_PROVIDERS: Provider[] = [
   { id: 11, name: "MUBI", ids: [11] },
 ];
 
-/** Every id that counts as "the user subscribes to this", flattened. */
-export function expandProviders(chosen: number[]): Set<number> {
-  const wanted = new Set(chosen);
-  const all = new Set<number>();
-
-  for (const provider of KNOWN_PROVIDERS) {
-    if (!wanted.has(provider.id)) continue;
-    for (const id of provider.ids) all.add(id);
-  }
-
-  return all;
-}
-
 export function parseProviders(raw: string | null | undefined): number[] {
   if (!raw) return [];
   return raw
@@ -58,10 +39,63 @@ export function parseProviders(raw: string | null | undefined): number[] {
     .filter((id) => Number.isInteger(id) && id > 0);
 }
 
-export async function getUserProviders(userId: string): Promise<number[]> {
-  const user = await db.user.findUnique({
-    where: { id: userId },
-    select: { providers: true },
-  });
-  return parseProviders(user?.providers);
+/** Every id that counts as "subscribes to this", flattened. */
+export function expandProviders(chosen: number[]): Set<number> {
+  const wanted = new Set(chosen);
+  const all = new Set<number>();
+  for (const provider of KNOWN_PROVIDERS) {
+    if (!wanted.has(provider.id)) continue;
+    for (const id of provider.ids) all.add(id);
+  }
+  // An id the list above does not know still matches itself.
+  for (const id of chosen) all.add(id);
+  return all;
+}
+
+/**
+ * The services among `offers` that this person pays for, once each and by the
+ * service's own name: TMDB lists "Netflix" and "Netflix Standard with Ads" as
+ * two offers, and both are the one subscription. This is the request warning:
+ * a title already here is one worth asking about before spending the server's
+ * disk on it.
+ */
+export function subscribedAmong(chosen: number[], offers: { id: number; name: string }[]): string[] {
+  if (chosen.length === 0) return [];
+  const subscribed = expandProviders(chosen);
+  const wanted = new Set(chosen);
+  const names = offers
+    .filter((o) => subscribed.has(o.id))
+    .map((o) => KNOWN_PROVIDERS.find((p) => wanted.has(p.id) && p.ids.includes(o.id))?.name ?? o.name);
+  return [...new Set(names)];
+}
+
+/** Whether to ask before requesting: only when something they pay for already has it. */
+export function requestNeedsConfirming(alreadyOn: string[]): boolean {
+  return alreadyOn.length > 0;
+}
+
+/** The person's own region, else the instance's, else the US, as TMDB keys them. */
+export function regionFor(own: string | null | undefined): string {
+  const pick = (v: string | null | undefined) => {
+    const code = v?.trim().toUpperCase();
+    return code && /^[A-Z]{2}$/.test(code) ? code : null;
+  };
+  return pick(own) ?? pick(process.env.WATCH_REGION) ?? "US";
+}
+
+/** The Availability row's `providers` JSON, one region of it. */
+export type RegionSummary = {
+  link: string | null;
+  stream: { id: number; name: string }[];
+  free: { id: number; name: string }[];
+};
+
+export function summaryFor(json: string | null | undefined, region: string): RegionSummary | null {
+  if (!json) return null;
+  try {
+    const all = JSON.parse(json) as Record<string, RegionSummary>;
+    return all[region] ?? { link: null, stream: [], free: [] };
+  } catch {
+    return null;
+  }
 }

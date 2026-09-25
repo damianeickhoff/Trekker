@@ -1,35 +1,34 @@
-import type { Tier } from "./achievements/catalogue";
-
 /**
- * The level behind the profile card.
+ * The level: the XP table, the curve and the rank names, carried over from the
+ * current app unchanged so a level means the same thing in both.
  *
- * A plain module with no server imports, so the bar and the breakdown panel can
- * share the arithmetic with whatever computes it.
+ * Pure, so the sidebar's line, the profile hero, the badges card and the
+ * unlock toast all do the same arithmetic, and the tests can check it without
+ * a database.
  *
- * Three decisions shape the whole thing. Watching is the floor and finishing is
- * the reward: an episode is worth very little on its own, and the bonuses for
- * seeing a show through to its end, completing a franchise or earning a badge
- * are worth hundreds of them. The curve steepens, so a level is always a bigger
- * ask than the one before it — the numbers below are deliberately slow. And
- * everybody starts at level 0: an imported history sets a starting line rather
- * than a starting level, so the bar measures time spent with Trekker. What that
- * history was worth is still worked out, and shown beside the rank as a lifetime
- * level. See `achievements/xp.ts`.
+ * Three decisions shape it. Watching is the floor and finishing is the reward:
+ * an episode is worth very little on its own, and seeing a show through, a
+ * franchise complete or a badge earned is worth hundreds of them. The curve
+ * steepens, so every level is a bigger ask than the one before. And everybody
+ * starts at level 0: an imported history draws a starting line rather than
+ * handing out levels (see `achievements/xp.ts`).
  */
+
+export type Tier = "bronze" | "silver" | "gold" | "legend";
 
 /** What each thing is worth. */
 export const XP = {
   /** Per episode watched, rewatches included. */
   episode: 12,
-  /** Per film watched. Longer, rarer, and worth about four episodes. */
+  /** Per film watched: longer, rarer, about four episodes' worth. */
   film: 45,
   /** Per show watched to the end of a finished run. */
   finishedShow: 300,
-  /** Per franchise with every film seen. The hardest thing to do by accident. */
+  /** Per franchise with every film seen: the hardest thing to do by accident. */
   franchise: 750,
-  /** Per title scored. */
+  /** Per title rated. */
   rating: 8,
-  /** Extra, on top of the rating, for actually writing something. */
+  /** On top of the rating, for writing something. */
   review: 25,
 } as const;
 
@@ -44,21 +43,16 @@ export const BADGE_XP: Record<Tier, number> = {
 export const MAX_LEVEL = 50;
 
 /**
- * Total XP needed to *reach* a level. Level 0 is where everyone starts, and the
- * exponent is what makes each level cost more than the last: level 1 is 400 XP,
- * level 10 is 20,047, level 25 about 100,000 and level 50 — the top — a little
- * under 300,000. At twelve XP an episode that is not something anyone reaches
- * by the weekend.
+ * Total XP needed to reach a level. Level 1 is 400, level 10 is 20,047, level
+ * 25 about 100,000, and the cap a little under 300,000: at twelve XP an
+ * episode, not something anyone reaches by the weekend.
  */
 export function xpForLevel(level: number): number {
   if (level <= 0) return 0;
   return Math.round(400 * Math.pow(level, 1.7));
 }
 
-/**
- * Rank bands. Five levels each, so the title changes often enough to be worth
- * chasing but not so often that it stops meaning anything.
- */
+/** Five levels a rank: often enough to chase, rarely enough to mean something. */
 const RANKS: { from: number; title: string }[] = [
   { from: 0, title: "Rookie" },
   { from: 5, title: "Novice" },
@@ -75,13 +69,11 @@ const RANKS: { from: number; title: string }[] = [
 
 export function rankFor(level: number): string {
   let title = RANKS[0].title;
-  for (const rank of RANKS) {
-    if (level >= rank.from) title = rank.title;
-  }
+  for (const rank of RANKS) if (level >= rank.from) title = rank.title;
   return title;
 }
 
-/** The level after this one that carries a new title, for "next up" copy. */
+/** The next level that carries a new title. */
 export function nextRank(level: number): { title: string; level: number } | null {
   const current = rankFor(level);
   const upcoming = RANKS.find((rank) => rank.from > level && rank.title !== current);
@@ -92,45 +84,42 @@ export type LevelProgress = {
   level: number;
   rank: string;
   xp: number;
-  /** XP at which this level started, and at which the next one begins. */
+  /** XP at which this level began, and at which the next begins. */
   floor: number;
   ceiling: number;
-  /** How far into the current level, and how much is left of it. */
-  intoLevel: number;
-  levelSpan: number;
   toNextLevel: number;
-  /** 0-100 through the current level. 100 at the cap. */
+  /** 0 to 100 through the current level; 100 at the cap. */
   percent: number;
   maxed: boolean;
 };
 
 export function levelFromXp(xp: number): LevelProgress {
   const total = Math.max(0, Math.round(xp));
-
   let level = 0;
   while (level < MAX_LEVEL && total >= xpForLevel(level + 1)) level += 1;
 
   const floor = xpForLevel(level);
   const maxed = level >= MAX_LEVEL;
   const ceiling = maxed ? floor : xpForLevel(level + 1);
-  const levelSpan = Math.max(1, ceiling - floor);
-  const intoLevel = total - floor;
-
+  const span = Math.max(1, ceiling - floor);
   return {
     level,
     rank: rankFor(level),
     xp: total,
     floor,
     ceiling,
-    intoLevel,
-    levelSpan,
     toNextLevel: maxed ? 0 : ceiling - total,
-    percent: maxed ? 100 : Math.min(100, Math.floor((intoLevel / levelSpan) * 100)),
+    percent: maxed ? 100 : Math.min(100, Math.floor(((total - floor) / span) * 100)),
     maxed,
   };
 }
 
-/** "12,480 XP" — the same shape everywhere it appears. */
-export function formatXp(xp: number) {
-  return `${Math.round(xp).toLocaleString("en-GB")} XP`;
+/** "12,660", the way every XP figure is printed. */
+export function formatNumber(n: number) {
+  return Math.round(n).toLocaleString("en-GB");
+}
+
+/** "2,340 XP to 15", or "Top level" at the cap: the right-hand half of the level line. */
+export function toNextLabel(p: Pick<LevelProgress, "level" | "toNextLevel" | "maxed">) {
+  return p.maxed ? "Top level" : `${formatNumber(p.toNextLevel)} XP to ${p.level + 1}`;
 }

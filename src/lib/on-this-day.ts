@@ -1,95 +1,54 @@
 import "server-only";
 import { db } from "./db";
+import { titleKey } from "./marks";
 
 /**
- * The "this time last year" card on the home page.
+ * What this person watched on today's date in earlier years, for Home.
  *
- * Reads the play log rather than the watched tables, which is the point: this is
- * a question about days, and a day someone spent rewatching something is still a
- * day they spent watching.
+ * The play log rather than the watched tables: this is a question about days,
+ * and a day spent rewatching something is still a day spent watching. Nothing
+ * at all on most days, and the section hides rather than saying so.
  */
 
-export type OnThisDayEntry = {
-  key: string;
-  yearsAgo: number;
+export type OnThisDayItem = {
+  mediaType: "movie" | "tv";
+  tmdbId: number;
   title: string;
-  subtitle: string;
   poster: string | null;
-  href: string;
+  year: number;
 };
 
-/**
- * What was being watched on today's date in earlier years.
- *
- * Returns nothing at all rather than an empty state: on most days there is no
- * answer, and a card that spends the rest of the year saying "nothing" is worse
- * than one that only appears when it has something to say.
- */
-export async function getOnThisDay(userId: string, limit = 6): Promise<OnThisDayEntry[]> {
-  const today = new Date();
-  const month = today.getMonth();
-  const date = today.getDate();
-
+export async function getOnThisDay(userId: string, now = new Date(), take = 14): Promise<OnThisDayItem[]> {
   const first = await db.play.aggregate({ where: { userId }, _min: { watchedAt: true } });
   const firstYear = first._min.watchedAt?.getFullYear();
-  if (firstYear === undefined || firstYear >= today.getFullYear()) return [];
+  if (firstYear === undefined || firstYear >= now.getFullYear()) return [];
 
-  // One range per earlier year rather than a scan of the whole history with the
-  // month and day picked out in JS. Each range is a plain window on `watchedAt`,
-  // so the [userId, watchedAt] index covers all of them — and building them from
-  // local dates keeps "this day" meaning the viewer's day, which no amount of
-  // SQL date arithmetic on a stored instant would.
+  // One window per earlier year, built from the server's local calendar so "this
+  // day" is the household's day; each is a plain range on (userId, watchedAt),
+  // which the index covers, where picking month and day out in SQL would scan.
   const windows = [];
-  for (let year = firstYear; year < today.getFullYear(); year++) {
-    const start = new Date(year, month, date);
-    const end = new Date(year, month, date + 1);
-    windows.push({ watchedAt: { gte: start, lt: end } });
+  for (let year = firstYear; year < now.getFullYear(); year++) {
+    windows.push({
+      watchedAt: { gte: new Date(year, now.getMonth(), now.getDate()), lt: new Date(year, now.getMonth(), now.getDate() + 1) },
+    });
   }
 
   const plays = await db.play.findMany({
     where: { userId, OR: windows },
     orderBy: { watchedAt: "desc" },
-    select: {
-      id: true,
-      mediaType: true,
-      tmdbId: true,
-      title: true,
-      poster: true,
-      seasonNumber: true,
-      episodeNumber: true,
-      watchedAt: true,
-    },
+    select: { mediaType: true, tmdbId: true, title: true, poster: true, watchedAt: true },
   });
 
-  const entries: OnThisDayEntry[] = [];
+  // One poster per title per year: four episodes of one show in a night is one memory.
   const seen = new Set<string>();
-
-  for (const play of plays) {
-    // One entry per title per year: a night spent on four episodes of the same
-    // show is one memory, not four.
-    const year = play.watchedAt.getFullYear();
-    const fingerprint = `${year}-${play.mediaType}-${play.tmdbId}`;
-    if (seen.has(fingerprint)) continue;
-    seen.add(fingerprint);
-
-    const yearsAgo = today.getFullYear() - year;
-    const isEpisode = play.mediaType === "tv";
-
-    entries.push({
-      key: `otd-${play.id}`,
-      yearsAgo,
-      title: play.title,
-      subtitle: isEpisode
-        ? `S${String(play.seasonNumber ?? 0).padStart(2, "0")}E${String(
-            play.episodeNumber ?? 0,
-          ).padStart(2, "0")}`
-        : "Movie",
-      poster: play.poster,
-      href: isEpisode ? `/title/tv/${play.tmdbId}` : `/title/movie/${play.tmdbId}`,
-    });
-
-    if (entries.length >= limit) break;
+  const out: OnThisDayItem[] = [];
+  for (const p of plays) {
+    const year = p.watchedAt.getFullYear();
+    const key = `${year}:${titleKey(p.mediaType, p.tmdbId)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ mediaType: p.mediaType === "tv" ? "tv" : "movie", tmdbId: p.tmdbId, title: p.title, poster: p.poster, year });
+    if (out.length === take) break;
   }
-
-  return entries;
+  return out;
 }

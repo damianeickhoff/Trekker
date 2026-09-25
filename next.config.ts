@@ -3,33 +3,45 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /**
    * Traces the server and its dependencies into `.next/standalone`, so the
-   * runtime image can be the built output plus a Node runtime — no
-   * `node_modules`, no source, no build tools. Without this a container has to
-   * carry the whole dependency tree to run one server.
+   * runtime image is the built output plus Node and nothing else.
    */
   output: "standalone",
+  poweredByHeader: false,
+  /**
+   * Gzip is the production server's to do (or the proxy in front of it). The
+   * dev server wraps every streamed action response in one Gzip stream and
+   * Next attaches a drain listener per write, which trips Node's listener
+   * warning on a busy page; nothing on localhost needs compressing anyway.
+   */
+  compress: process.env.NODE_ENV !== "development",
 
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" },
-      // Trailer stills. The player itself is only loaded once it is asked for,
-      // so the resting state of a trailer is one of these.
-      { protocol: "https", hostname: "i.ytimg.com", pathname: "/vi/**" },
-      // Plex Home profile pictures, on the "who's watching?" screen. plex.tv
-      // serves them from a couple of hosts depending on how the avatar was set.
-      { protocol: "https", hostname: "plex.tv" },
-      { protocol: "https", hostname: "**.plex.tv" },
-      { protocol: "https", hostname: "**.gravatar.com" },
-    ],
-    /**
-     * TMDB already serves pre-sized images (w185/w342/w780/w1280) from a CDN,
-     * and the code picks the right size per surface. Re-optimising them adds a
-     * server round trip per image with a bounded worker pool: a screen that
-     * mounts twenty posters at once can exhaust it, and the ones that time out
-     * render as broken images. Going straight to the CDN removes that whole
-     * failure mode.
-     */
-    unoptimized: true,
+    // TMDB's own sizes, not the optimiser's: see the loader for why.
+    loader: "custom",
+    loaderFile: "./src/lib/tmdb-image-loader.ts",
+    // Every width in a srcset is one TMDB already serves, so each candidate the
+    // browser weighs is a real file at its real width, and the loader never
+    // has to round one to another. Which the browser picks is `sizes` times
+    // the screen density: a 108px phone rail at 2x takes w342, a 112px desktop
+    // rail at 1x takes w154.
+    imageSizes: [92, 154, 185, 342],
+    deviceSizes: [500, 780, 1280],
+    remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org", pathname: "/t/p/**" }],
+  },
+
+  async headers() {
+    return [
+      {
+        // The worker decides what every later launch paints, so the browser
+        // must always ask for a fresh copy. Its version string changes per
+        // build, which is what retires the old caches.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
   },
 };
 

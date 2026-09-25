@@ -1,15 +1,7 @@
 /**
- * Bounded fan-out.
- *
- * A plain `Promise.all` over a few hundred TMDB lookups opens a few hundred
- * simultaneous HTTPS requests. Node's fetch decompresses each response through
- * its own zlib stream, and once the sockets start applying backpressure those
- * streams accumulate `drain` listeners — which is where the
- * "MaxListenersExceededWarning ... drain listeners added to [Gzip]" warning
- * comes from. Capping how many requests are in flight keeps that under control
- * and is kinder to TMDB's rate limit besides.
- *
- * Results come back in input order, exactly like `Promise.all`.
+ * Bounded fan-out. A plain `Promise.all` over a few hundred lookups opens a few
+ * hundred sockets at once, which is unkind to TMDB's rate limit and to Node's
+ * zlib streams alike. Results come back in input order, like `Promise.all`.
  */
 export async function mapLimit<T, R>(
   items: readonly T[],
@@ -27,8 +19,6 @@ export async function mapLimit<T, R>(
     }
   }
 
-  const workers = Array.from({ length: Math.min(limit, items.length) }, worker);
-  await Promise.all(workers);
-
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
   return results;
 }

@@ -1,223 +1,202 @@
-import Link from "next/link";
-import { Eye } from "lucide-react";
-import { formatWatchedShort } from "@/lib/dates";
+import type { ComponentProps, ReactNode } from "react";
+import { Icon, type IconName } from "./icon";
+import { Link } from "./link";
+import { PRESS } from "./motion";
+import { TrekkerMark } from "./trekker-mark";
+
+/*
+ * The component library the mockups established. Styles are exported as class
+ * builders as well as components, because the same button is sometimes a
+ * <button>, sometimes a link and sometimes a form submit.
+ */
+
+// ---------- buttons ----------
 
 /**
- * "👁 3 Aug ’26 · 2×".
- *
- * The one way the app says you have seen something and when. It started on the
- * episode page and is now on every row of a season as well, which is exactly
- * why it is a component rather than a class list copied twice: two chips saying
- * the same thing in two slightly different greens is worse than either.
- *
- * The eye is the word. "Watched" in front of the date was the icon said twice,
- * and it was the longest part of a chip that has to sit inline beside an episode
- * title — so the glyph carries the meaning and the date gets the room. Screen
- * readers still hear the word, because an eye is not one.
- *
- * The count only appears once it is more than one. "1×" is what the pill
- * already means.
+ * Primary is ink-on-bg and inverts per theme; on a hero it is white. Glass is
+ * for hero buttons only, and is one of the two places `backdrop-filter` is
+ * allowed; everywhere else the secondary button is a plain surface, whose
+ * fill lifts one step under a pointer. Every kind presses (`PRESS`).
  */
-export function WatchedPill({
-  at,
-  plays = 1,
-  /** Sized down for a list row, where the pill sits beside a title rather than
-      on a line of its own. */
-  compact = false,
-}: {
-  at: Date | string;
-  plays?: number;
-  compact?: boolean;
-}) {
+export type ButtonKind = "primary" | "white" | "amber" | "glass" | "ghost";
+export type ButtonSize = "sm" | "md" | "lg";
+
+const BUTTON_KIND: Record<ButtonKind, string> = {
+  primary: "bg-primary text-on-primary",
+  white: "bg-white text-black",
+  amber: "bg-accent text-black",
+  glass: "bg-white/16 text-white backdrop-blur-[10px]",
+  ghost: "bg-surface text-ink shadow-elevation hover:bg-surface-2",
+};
+
+const BUTTON_SIZE: Record<ButtonSize, string> = {
+  sm: "h-10 px-[18px]",
+  md: "h-11 px-[18px]",
+  lg: "h-12 px-5",
+};
+
+const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: "size-10", md: "size-11", lg: "size-12" };
+
+export function buttonClass(kind: ButtonKind = "primary", size: ButtonSize = "md", extra = "") {
+  return `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-0 text-sm font-semibold disabled:opacity-60 ${PRESS} ${BUTTON_KIND[kind]} ${BUTTON_SIZE[size]} ${extra}`;
+}
+
+export function iconButtonClass(kind: ButtonKind = "ghost", size: ButtonSize = "md", extra = "") {
+  return `inline-flex shrink-0 items-center justify-center rounded-full border-0 ${PRESS} ${BUTTON_KIND[kind]} ${ICON_BUTTON_SIZE[size]} ${extra}`;
+}
+
+export function IconLink({
+  icon,
+  label,
+  kind = "ghost",
+  size = "sm",
+  ...props
+}: { icon: IconName; label: string; kind?: ButtonKind; size?: ButtonSize } & Omit<
+  ComponentProps<typeof Link>,
+  "children"
+>) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-fresh-500/40 bg-fresh-500/10 font-medium whitespace-nowrap text-fresh-500 ${
-        compact ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]"
-      }`}
-    >
-      <Eye size={compact ? 11 : 12} className="shrink-0" />
-      <span className="sr-only">Watched </span>
-      {formatWatchedShort(at)}
-      {plays > 1 && <span className="font-mono tabular-nums">· {plays}×</span>}
+    <Link aria-label={label} className={iconButtonClass(kind, size)} {...props}>
+      <Icon name={icon} size={20} />
+    </Link>
+  );
+}
+
+// ---------- chips ----------
+
+const CHIP_BASE =
+  "inline-flex items-center whitespace-nowrap rounded-md font-mono font-semibold uppercase tracking-[0.05em]";
+const CHIP_SIZE = { sm: "h-5 px-[7px] text-[10px] gap-[5px]", md: "h-6 px-[9px] text-[11px] gap-[5px]" };
+
+/** Amber is state: up next, today, earned, in cinemas. Nothing else is amber. */
+export function StateChip({ children, small }: { children: ReactNode; small?: boolean }) {
+  return <span className={`${CHIP_BASE} ${CHIP_SIZE[small ? "sm" : "md"]} bg-accent text-black`}>{children}</span>;
+}
+
+/** White with a play mark: the play mark only ever means Plex. */
+export function PlexChip({ small }: { small?: boolean }) {
+  return (
+    <span className={`${CHIP_BASE} ${CHIP_SIZE[small ? "sm" : "md"]} bg-white text-black`}>
+      <Icon name="play" size={small ? 11 : 12} />
+      On Plex
     </span>
   );
 }
 
-export function StatTile({
-  label,
-  value,
-  sub,
-  icon,
-  accent = false,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  icon?: React.ReactNode;
-  accent?: boolean;
-}) {
+/**
+ * A pending Overseerr request: state, so amber, with the clock the poster
+ * mark uses for the same thing. Only where the title is not on Plex yet.
+ */
+export function RequestedChip({ small }: { small?: boolean }) {
   return (
-    <div
-      className={`card p-3 sm:p-4 ${
-        accent ? "bg-gradient-to-br from-flare-600/25 to-transparent" : ""
-      }`}
-    >
-      <p className="flex items-start gap-1.5 text-[11px] leading-tight font-medium tracking-wide text-ink-400 uppercase sm:tracking-wider">
-        {icon}
-        {label}
-      </p>
-      <p className="mt-1.5 text-lg font-semibold tracking-tight tabular-nums sm:text-3xl">
-        {value}
-      </p>
-      {sub && <p className="mt-0.5 text-xs text-ink-400">{sub}</p>}
-    </div>
+    <StateChip small={small}>
+      <Icon name="clock" size={small ? 11 : 12} />
+      Requested
+    </StateChip>
   );
 }
 
 /**
- * Busy indicator for work that runs server-side in one call. There is no honest
- * percentage to show for that, so it sweeps rather than fills.
+ * Facts: network, runtime, schedule. On a hero they take a translucent fill so
+ * they read over any artwork.
  */
-export function BusyBar({ label }: { label?: string }) {
+export function QuietChip({ children, onHero }: { children: ReactNode; onHero?: boolean }) {
+  const tone = onHero ? "border-white/28 bg-black/38 text-white/78" : "border-line text-ink-2";
   return (
-    <div role="status" aria-live="polite" className="w-full">
-      {label && <p className="mb-1.5 text-xs text-ink-400">{label}</p>}
-      <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
-        <div className="progress-sweep h-full rounded-full bg-gradient-to-r from-flare-500 to-ember-400" />
-      </div>
-    </div>
+    <span className={`${CHIP_BASE} h-6 border px-[9px] text-[11px] font-medium ${tone}`}>{children}</span>
   );
 }
 
-export function SectionTitle({
-  children,
-  href,
-  cta = "See all",
-}: {
-  children: React.ReactNode;
-  href?: string;
-  cta?: string;
-}) {
-  return (
-    <div className="mt-8 mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="text-lg font-semibold tracking-tight">{children}</h2>
-      {href && (
-        <Link href={href} className="text-sm text-flare-400 hover:text-flare-500">
-          {cta}
-        </Link>
-      )}
-    </div>
-  );
+/** A label on artwork, such as a score. No blur: it sits on scrolling rails. */
+export function ArtChip({ children, small }: { children: ReactNode; small?: boolean }) {
+  return <span className={`${CHIP_BASE} ${CHIP_SIZE[small ? "sm" : "md"]} bg-black/55 text-white`}>{children}</span>;
 }
 
-export function EmptyState({
-  title,
-  body,
-  href,
-  cta,
-}: {
-  title: string;
-  body: string;
-  href?: string;
-  cta?: string;
-}) {
+/** The rounded filter and season chip. It presses, and an unchosen one lifts its fill under a pointer, as a ghost button does. */
+export function filterChipClass(on: boolean) {
+  return `inline-flex h-[34px] shrink-0 items-center whitespace-nowrap rounded-full border-0 px-3.5 text-[13px] font-semibold ${PRESS} ${
+    on ? "bg-primary text-on-primary" : "bg-surface text-ink shadow-elevation hover:bg-surface-2"
+  }`;
+}
+
+/**
+ * The amber switch from the mockups, as a track and a knob. The knob slides
+ * by `translate` rather than `left`, so it moves without laying anything out,
+ * and the amber fades in over the same `--fast`, so on and off read as one
+ * motion.
+ */
+export function switchTrackClass(on: boolean) {
+  return `relative inline-block h-[26px] w-11 shrink-0 rounded-full border-0 p-0 transition-colors duration-(--fast) ease-out ${on ? "bg-accent" : "bg-surface-2"}`;
+}
+
+export function switchKnobClass(on: boolean) {
+  return `absolute left-[3px] top-[3px] size-5 rounded-full transition-[translate,background-color] duration-(--fast) ease-out ${
+    on ? "translate-x-[18px] bg-black" : "translate-x-0 bg-ink-3"
+  }`;
+}
+
+// ---------- identity ----------
+
+/**
+ * The mark in amber beside the lettering, standing on the baseline at the
+ * lettering's cap height (Bricolage's capitals are 0.72 of the size), so
+ * the two read as one line of type at any size.
+ */
+export function Wordmark({ size = 22, className = "" }: { size?: number; className?: string }) {
   return (
-    <div className="card grid place-items-center px-6 py-12 text-center">
-      <h3 className="text-base font-semibold">{title}</h3>
-      <p className="mt-1.5 max-w-sm text-sm text-ink-400">{body}</p>
-      {href && cta && (
-        <Link
-          href={href}
-          className="mt-5 rounded-xl bg-flare-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-flare-500"
-        >
-          {cta}
-        </Link>
-      )}
-    </div>
+    <span
+      className={`inline-flex items-baseline gap-[0.3em] font-display font-extrabold tracking-[-0.035em] ${className}`}
+      style={{ fontSize: size, lineHeight: 1 }}
+    >
+      <TrekkerMark height={Math.round(size * 0.72)} className="text-accent" />
+      Trekker
+    </span>
   );
 }
 
 /**
- * Placeholders for content still on its way.
- *
- * Every page here fetches TMDB while it renders, so a slow answer used to mean
- * a blank screen and no sign that anything was happening. These stand in for
- * the shape that is coming rather than showing a spinner: the layout does not
- * jump when the real thing lands, which is the whole point of drawing them.
- *
- * The shimmer is a background animation on a plain block. Under
- * `prefers-reduced-motion` the keyframes are dropped in `globals.css` and these
- * settle into flat blocks, which read perfectly well as "not here yet".
+ * Stands in for the user's avatar until profiles are read (step 7): the chrome
+ * does not wait on a user row, so it cannot know a face or initials yet.
  */
-export function Skeleton({ className = "" }: { className?: string }) {
-  return <div aria-hidden className={`skeleton rounded-lg ${className}`} />;
-}
-
-export function SkeletonRail({ count = 6, label }: { count?: number; label?: string }) {
+export function AvatarPlaceholder({ size = 36 }: { size?: number }) {
   return (
-    <section className="mt-8" role="status" aria-label={label ?? "Loading"}>
-      <Skeleton className="mb-3 h-6 w-44" />
-      <div className="flex gap-3 overflow-hidden">
-        {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="w-[152px] shrink-0 sm:w-[184px]">
-            <Skeleton className="aspect-2/3 w-full rounded-xl" />
-            <Skeleton className="mt-2 h-4 w-4/5" />
-            <Skeleton className="mt-1 h-3 w-2/5" />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function SkeletonGrid({ count = 12 }: { count?: number }) {
-  return (
-    <div
-      role="status"
-      aria-label="Loading"
-      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+    <span
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2 shadow-[0_0_0_2px_var(--accent)]"
+      style={{ width: size, height: size }}
     >
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i}>
-          <Skeleton className="aspect-2/3 w-full rounded-xl" />
-          <Skeleton className="mt-2 h-4 w-4/5" />
-        </div>
-      ))}
-    </div>
+      <Icon name="user" size={Math.round(size * 0.5)} />
+    </span>
   );
 }
 
-export function SkeletonTiles({ count = 4 }: { count?: number }) {
+// ---------- type ----------
+
+export function PageTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div role="status" aria-label="Loading" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="card p-4">
-          <Skeleton className="h-3 w-20" />
-          <Skeleton className="mt-2 h-8 w-24" />
-          <Skeleton className="mt-1.5 h-3 w-16" />
-        </div>
-      ))}
-    </div>
+    <h1 className={`m-0 font-display text-[30px] font-bold leading-[1.05] tracking-[-0.025em] ${className}`}>
+      {children}
+    </h1>
   );
 }
 
-export function SetupNotice() {
+export function SectionTitle({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className="card border-ember-500/30 bg-ember-500/10 p-5">
-      <h3 className="text-base font-semibold text-ember-400">Add a TMDB API key</h3>
-      <p className="mt-1.5 text-sm text-ink-300">
-        Trekker pulls catalogue data, artwork, scores and reviews from{" "}
-        <a
-          className="text-flare-400 underline underline-offset-2"
-          href="https://www.themoviedb.org/settings/api"
-          target="_blank"
-          rel="noreferrer"
-        >
-          The Movie Database
-        </a>
-        . Put a free key in <code className="font-mono text-xs">.env</code> as{" "}
-        <code className="font-mono text-xs">TMDB_API_KEY</code> and restart the dev server.
-      </p>
-    </div>
+    <h2 className={`m-0 font-display text-xl font-bold leading-[1.05] tracking-[-0.025em] lg:text-[22px] ${className}`}>
+      {children}
+    </h2>
+  );
+}
+
+// ---------- inputs ----------
+
+export function Field({ label, ...input }: { label: string } & ComponentProps<"input">) {
+  return (
+    <label className="flex w-full flex-col gap-1.5">
+      <span className="mono-label">{label}</span>
+      <input
+        {...input}
+        className="h-[46px] w-full rounded-xl border border-line bg-surface px-3.5 text-[15px] text-ink outline-none focus:border-ink-3"
+      />
+    </label>
   );
 }

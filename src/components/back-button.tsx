@@ -1,158 +1,93 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
-import { useOrigin, useOriginPath } from "./origin";
+import type { MouseEvent } from "react";
+import { useRouter } from "next/navigation";
+import { Icon } from "./icon";
+import { Link } from "./link";
+import { iconButtonClass, type ButtonKind } from "./ui";
 
 /**
- * The look every control floating over the hero artwork shares — the way back,
- * the trailer, the overflow menu.
- *
- * Glass, and it only works because of where these are mounted. `backdrop-filter`
- * samples the *backdrop root* — everything painted beneath the element, but only
- * as far up as the nearest ancestor that establishes one. Any ancestor with a
- * transform, a filter, or an animation touching either becomes that boundary.
- *
- * These used to sit inside `.rise`, the page-entry animation, which animates
- * opacity and transform with `fill-mode: both` — so it is a backdrop root for
- * the life of the page. The artwork blurred (it lives inside the article, at
- * `-z-10`) and everything else did not. Mounting the row *outside* the animated
- * wrapper puts the whole page in the backdrop again, which is what the blur was
- * always meant to see. Keep it that way — see `BackButton`'s note.
- *
- * The blur is deliberately strong: at 12px, text behind a 60% fill is still
- * legible enough to read as a bug rather than as frosting.
+ * Detail pages go back rather than to a fixed parent, so a title opened from
+ * the calendar returns to the calendar. An installed app opened straight onto
+ * a detail page has nothing to go back to, and goes home instead.
  */
-/**
- * The material on its own — fill, border, blur, shadow, text colour — with no
- * radius, no size and no hover. Split out so anything that should be made of the
- * same stuff inherits changes to it rather than copying a class list.
- *
- * The radius is not in here because a panel is not a capsule: the phone's search
- * sheet is this material at `rounded-3xl`, and a `rounded-full` baked in would
- * be a second border-radius utility racing it with nothing to say which wins.
- */
-export const FLOATING_MATERIAL =
-  "ios-surface touch-manipulation border border-ink-600/80 bg-ink-800/60 text-ink-100 shadow-lg shadow-black/40 backdrop-blur-2xl backdrop-saturate-150 light:border-ink-600 light:bg-white/60 light:shadow-black/15";
-
-/** The material as a capsule: the tab bar, and every floating control. */
-export const FLOATING_SURFACE = `${FLOATING_MATERIAL} rounded-full`;
-
-export const FLOATING_CONTROL = `${FLOATING_SURFACE} pointer-events-auto inline-flex h-[42px] items-center gap-1 text-sm transition hover:border-ink-500 hover:bg-ink-700/70 light:hover:bg-white/80`;
-
-/** The same, sized for a single glyph. */
-export const FLOATING_ICON = `${FLOATING_CONTROL} w-[42px] justify-center`;
+export function BackButton({ kind = "ghost" }: { kind?: ButtonKind }) {
+  const router = useRouter();
+  return (
+    <button
+      type="button"
+      aria-label="Back"
+      className={iconButtonClass(kind, "sm")}
+      onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
+    >
+      <Icon name="chevL" size={20} />
+    </button>
+  );
+}
 
 /**
- * Goes back one entry. `router.back()` silently does nothing when there is no
- * entry to return to — which is the normal case for a PWA cold start, or a
- * shared link opened in a new tab — so if the route has not changed shortly
- * after, fall forward to a sensible page instead of appearing broken.
+ * The way back on a page below a tab, by the one rule: below 64rem a round
+ * icon button top-left, where a thumb expects it; from 64rem a text link
+ * naming the destination ("‹ Lists"), above the page title, since a desktop
+ * has room to say where it goes. Both are rendered and one is hidden, so the
+ * server never has to guess the width.
  *
- * Mount this *outside* the page's `.rise` wrapper, not inside it. `.rise`
- * animates transform and opacity with `fill-mode: both`, which makes it a
- * permanent backdrop root — and a backdrop root is the ceiling on what the glass
- * here can see through. Inside it, the blur found the hero artwork and nothing
- * else.
+ * `history` is for pages with more than one way in (Cast, a person): the press
+ * goes back through history, as `BackButton` does, and `href` is only where it
+ * lands when there is no history to go back through. Without it, `href` is a
+ * plain link, for pages reached from one place only (the watchlist from Lists).
+ *
+ * `desktopOnly` draws the text link alone, for a page whose phone button is
+ * drawn elsewhere: the series and film heroes, whose phone top row carries
+ * `BackButton` beside the menus.
  */
-export function BackButton({
-  fallback = "/discover",
-  to = "origin",
-  title,
-  actions,
+export function Back({
+  href,
+  name,
+  history = false,
+  onHero = false,
+  desktopOnly = false,
 }: {
-  fallback?: string;
-  /** Centred in the row, for a page that is one of many under something else. */
-  title?: string;
-  /**
-   * `origin` leaves the whole chain of titles and returns to the page it
-   * started from. `back` is a single step, for a page opened *from* a title —
-   * a cast member, a full cast list — where the thing you want back is the one
-   * you were just reading. `href` always lands on `fallback`, for a page you
-   * can arrive at several ways and leave only one: swiping through six episodes
-   * should still put you back on the show, not on the fifth of them.
-   */
-  to?: "origin" | "back" | "href";
-  /**
-   * Controls for the far end of the row. They belong here rather than down in
-   * the button row because they are chrome for the page, not actions on the
-   * title — and two lonely buttons trailing the watch pair looked like leftovers.
-   */
-  actions?: React.ReactNode;
+  href: string;
+  /** The destination as the link names it: "Lists", "Home", the title's name. */
+  name: string;
+  history?: boolean;
+  /** On a hero, which is dark in both themes: a glass button and white type. */
+  onHero?: boolean;
+  desktopOnly?: boolean;
 }) {
   const router = useRouter();
-  const origin = useOrigin();
-  const originPath = useOriginPath();
-  const pathname = usePathname();
-
-  /**
-   * Back to where the chain started, not back one entry.
-   *
-   * Following a recommendation off one title onto another, and another, used to
-   * mean pressing this three times to get out — through pages already read. The
-   * origin is the last page that was not a title page, which is the place "back"
-   * is actually asking for. `fallback` is what a caller wants when there is no
-   * such place: a cold start on a shared link has no history to return to.
-   *
-   * `push` rather than `back`: the number of entries to unwind is not knowable,
-   * and guessing it wrong navigates somewhere nobody asked for. Going forwards
-   * to a known destination always lands.
-   */
-  function goBack() {
-    if (to === "origin") {
-      /**
-       * The origin is set from the route, and *every* page that is not a title
-       * page becomes it on arrival — so on Review or History the origin is the
-       * page you are standing on, and pushing it navigates nowhere at all. The
-       * button did nothing, which is exactly how it looked.
-       *
-       * Falling through to `fallback` is the honest answer here: a page that is
-       * its own origin has no chain to unwind, so what its caller named as the
-       * way out is the only place left to go.
-       *
-       * Compared by path, because the origin also carries the query string it
-       * was read at: on `/discover/popular-movies?page=7` the full value differs
-       * from the path, and comparing the two would have this push the page you
-       * are already on rather than fall through to `fallback`.
-       */
-      router.push(origin && originPath !== pathname ? origin : fallback);
-      return;
-    }
-
-    if (to === "href") {
-      router.push(fallback);
-      return;
-    }
-
-    // A cold start on a shared link has no entry to go back to, so the history
-    // length is what decides whether `back` means anything here.
-    if (window.history.length > 1) router.back();
-    else router.push(fallback);
-  }
-
+  const onClick = history
+    ? (e: MouseEvent<HTMLAnchorElement>) => {
+        if (window.history.length > 1) {
+          e.preventDefault();
+          router.back();
+        }
+      }
+    : undefined;
+  const label = name === "Back" ? "Back" : `Back to ${name}`;
+  const text = onHero ? "text-white/80 hover:text-white" : "text-ink-2 hover:text-ink";
   return (
-    // Sticks just below the nav so the way out is always to hand, however far
-    // down a title page you have read. The wrapper is transparent and ignores
-    // pointer events, so only the button itself sits over the content.
-    //
-    // `back-row` is the hook a title page uses to pull this up to the top of the
-    // window, where it has no nav to sit under. See the `.title-page` block in
-    // `globals.css`.
-    <div className="back-row pointer-events-none relative sticky top-[4.5rem] z-30 mb-3 flex items-center justify-between gap-2">
-      <button type="button" onClick={goBack} className={`${FLOATING_CONTROL} pr-4 pl-3`}>
-        <ChevronLeft size={16} />
-        Back
-      </button>
-
-      {/* Centred against the row rather than placed between the two controls,
-          so it does not shift when one of them is absent. */}
-      {title && (
-        <span className="pointer-events-none absolute inset-x-0 truncate text-center text-sm font-semibold">
-          {title}
-        </span>
+    <>
+      {!desktopOnly && (
+        <Link
+          href={href}
+          onClick={onClick}
+          aria-label={label}
+          className={iconButtonClass(onHero ? "glass" : "ghost", "sm", "lg:hidden")}
+        >
+          <Icon name="chevL" size={20} />
+        </Link>
       )}
-
-      {actions && <div className="pointer-events-auto flex items-center gap-2">{actions}</div>}
-    </div>
+      <Link
+        href={href}
+        onClick={onClick}
+        aria-label={label}
+        className={`hidden items-center gap-1.5 text-[13px] font-semibold lg:inline-flex ${text}`}
+      >
+        <Icon name="chevL" size={16} />
+        {name}
+      </Link>
+    </>
   );
 }

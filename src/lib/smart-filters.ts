@@ -1,68 +1,49 @@
+import { findGenre } from "./genres";
+import { KNOWN_PROVIDERS } from "./providers";
+
 /**
- * What a smart list is asking for.
+ * What a smart list asks, and how it reads back.
  *
- * Deliberately free of anything server-side — the filter editor is a client
- * component and needs the same type, the same defaults and the same parser as
- * the code that runs the query. Same reasoning as `genres.ts`: the shape of a
- * question has no business being locked to the server just because answering it
- * is. `smart-lists.ts` is the half that talks to TMDB.
- *
- * Everything here is stored as JSON on `MediaList.filters`, so `parseFilters`
- * has to survive reading a blob written by an older version of this file. It
- * repairs rather than rejects: a filter it does not recognise falls back to the
- * default, because a list that has quietly stopped working is worse than one
- * that has quietly lost a checkbox.
+ * Free of anything server-side: the editor is a client component and needs
+ * the same type, defaults and parser as the code that runs the query
+ * (`smart-query.ts` builds it, `smart-lists.ts` runs it). Stored as JSON on
+ * `MediaList.filters`, so `parseFilters` must survive a blob written by an
+ * older version of this file, including the current app's: it repairs rather
+ * than rejects, because a list that has quietly lost a checkbox is far more
+ * use than one that has stopped working.
  */
 
 export type SmartKind = "movie" | "tv" | "both";
 
 /**
- * The shelf the titles come off. These are what the user thinks of as "the
- * state of the thing" — what is hot, what is coming, what is best — and each
- * one is a different way of ordering the same catalogue.
+ * The shelf the titles come off. "Anything" and "Popular" run the same query
+ * bar one thing: popularity is a claim about audience size, so Popular carries
+ * a vote floor and Anything does not. Trending is TMDB's own weekly ranking
+ * and takes no filters at all; see `smart-query.ts`.
  */
-export type SmartSource =
-  | "all"
-  | "popular"
-  | "trending"
-  | "top-rated"
-  | "upcoming"
-  | "newest";
+export type SmartSource = "all" | "popular" | "trending" | "top-rated" | "upcoming" | "newest";
 
 export const SOURCES: { value: SmartSource; label: string; blurb: string }[] = [
-  {
-    value: "all",
-    label: "Anything",
-    blurb: "The whole catalogue, however obscure. Only your other filters narrow it.",
-  },
-  {
-    value: "popular",
-    label: "Popular",
-    blurb: "What most people are watching — titles with a real audience behind them.",
-  },
-  { value: "trending", label: "Trending", blurb: "Moving fastest this week." },
+  { value: "all", label: "Anything", blurb: "The whole catalogue, however obscure." },
+  { value: "popular", label: "Popular", blurb: "Titles with a real audience behind them." },
+  { value: "trending", label: "Trending", blurb: "Moving fastest this week. Takes no length or service filter." },
   { value: "top-rated", label: "Top rated", blurb: "Best scored, with enough votes to mean it." },
   { value: "upcoming", label: "Upcoming", blurb: "Not out yet, soonest first." },
   { value: "newest", label: "Newest", blurb: "Most recently released." },
 ];
 
+export const KINDS: { value: SmartKind; label: string }[] = [
+  { value: "movie", label: "Films" },
+  { value: "tv", label: "Shows" },
+  { value: "both", label: "Both" },
+];
+
 /**
- * Production status, as two separate vocabularies that share one control.
- *
- * A film is out or it is not; a series has five states and TMDB has a query
- * parameter for them. Rather than invent a lowest common denominator, both sets
- * live in the same list and the query builder applies each to the half of the
- * search it means anything for — so "returning series" narrows the TV query and
- * simply does not apply to the film one.
+ * Production status: a film is out or not, a series has five states. Both
+ * vocabularies share one control, and the query builder applies each to the
+ * half of the search it means something for.
  */
-export type StatusSlug =
-  | "released"
-  | "unreleased"
-  | "returning"
-  | "planned"
-  | "in-production"
-  | "ended"
-  | "cancelled";
+export type StatusSlug = "released" | "unreleased" | "returning" | "planned" | "in-production" | "ended" | "cancelled";
 
 export const STATUSES: { value: StatusSlug; label: string; applies: "movie" | "tv" }[] = [
   { value: "released", label: "Released", applies: "movie" },
@@ -74,6 +55,28 @@ export const STATUSES: { value: StatusSlug; label: string; applies: "movie" | "t
   { value: "cancelled", label: "Cancelled", applies: "tv" },
 ];
 
+/** Whether a status describes this medium at all. */
+export function statusApplies(slug: StatusSlug, mediaType: "movie" | "tv"): boolean {
+  return STATUSES.find((s) => s.value === slug)?.applies === mediaType;
+}
+
+/** The statuses the editor offers for a kind: both vocabularies, each marked, when it is both. */
+export function statusesFor(kind: SmartKind) {
+  return STATUSES.filter((s) => kind === "both" || s.applies === kind);
+}
+
+/**
+ * The filters with a new kind, less any status that does not exist for it.
+ * "Released" is a film's state and "Ended" a show's; one left behind by a
+ * switch from films to shows would say "Released" on the folded header while
+ * the query quietly drops the shows half for want of a status that fits it.
+ * Both keeps them all, since both vocabularies are offered there.
+ */
+export function withKind(f: SmartFilters, kind: SmartKind): SmartFilters {
+  const offered = new Set(statusesFor(kind).map((s) => s.value));
+  return { ...f, kind, statuses: f.statuses.filter((s) => offered.has(s)) };
+}
+
 /** TMDB's `with_status` numbers for television. Films have no equivalent. */
 export const TV_STATUS_CODES: Partial<Record<StatusSlug, number>> = {
   returning: 0,
@@ -84,12 +87,9 @@ export const TV_STATUS_CODES: Partial<Record<StatusSlug, number>> = {
 };
 
 /**
- * Age ratings, by the country whose ratings board TMDB is asked about.
- *
- * TMDB only carries certifications for films, and only per country, so this is
- * keyed by `WATCH_REGION` with the American board as the fallback — it is the
- * one TMDB's data is most complete for, and an unknown region showing nothing
- * at all would be worse than showing something recognisable.
+ * Certificates by the board TMDB is asked about, which is the viewer's region.
+ * TMDB carries them for films only. An unknown region falls back to the
+ * American board, the one TMDB's data is most complete for.
  */
 export const CERTIFICATIONS: Record<string, string[]> = {
   US: ["G", "PG", "PG-13", "R", "NC-17"],
@@ -107,17 +107,17 @@ export function certificationsFor(region: string): string[] {
   return CERTIFICATIONS[region] ?? CERTIFICATIONS.US;
 }
 
-/** Decades offered in simple mode. Matches the discover filter bar's list. */
+/** Simple mode's decades. */
 export const DECADES = [2020, 2010, 2000, 1990, 1980, 1970, 1960, 1950];
+/** Simple mode's upper lengths, in minutes. */
+export const MAX_LENGTHS = [90, 120, 150, 180];
 
-/** The bounds the advanced sliders run between. */
+/** The advanced sliders' bounds. The top of each means "and up", not a limit. */
 export const YEAR_FLOOR = 1950;
-export const YEAR_CEILING = new Date().getFullYear() + 5;
-export const RUNTIME_FLOOR = 0;
-/** Anything at the top of the runtime slider means "no upper limit". */
-export const RUNTIME_CEILING = 240;
+export const YEAR_CEILING = new Date().getFullYear() + 1;
+export const RUNTIME_CEILING = 180;
 
-/** One person a smart list insists on, as chosen in the editor. */
+/** Someone a list insists on. The name is stored so nothing has to look it up to say who. */
 export type CastPick = { id: number; name: string };
 
 export type SmartFilters = {
@@ -125,54 +125,35 @@ export type SmartFilters = {
   source: SmartSource;
   /** Genre slugs from `GENRES`. Every one of them must match. */
   genres: string[];
-  /** TMDB provider ids — any one of them will do. */
+  /** Service ids from `KNOWN_PROVIDERS`; any one of them will do. */
   providers: number[];
-
-  /**
-   * People who have to be in it. Every one of them, like genres — "a film with
-   * both of these two" is a question worth being able to ask, and "either of
-   * them" is two lists.
-   *
-   * The name is stored alongside the id rather than looked up, because the
-   * editor, the rail caption and the saved description all need to say who this
-   * is, and none of them is a place to be making a TMDB call to find out.
-   */
+  /** People who must be in it, all of them. Films only: TMDB has no such filter for television. */
   cast: CastPick[];
-  /** Certification labels for the instance's region. Films only. */
+  /** Certificates on the viewer's region's board. Films only. */
   certifications: string[];
   statuses: StatusSlug[];
-
-  /** Audience score as a percentage, matching what the app shows everywhere. */
+  /** Audience score as a percentage, as the app shows it everywhere. */
   scoreMin: number;
   scoreMax: number;
-
   /**
-   * Simple mode: one decade, or null for any. Advanced mode ignores this and
-   * uses the year slider instead — the two are kept apart rather than derived
-   * from each other so that switching modes and back does not quietly rewrite
-   * the answer the user gave.
+   * Simple mode: a decade and an upper length. Advanced mode ignores both for
+   * the sliders below. Kept apart rather than derived from each other, so that
+   * switching modes and back never rewrites an answer already given.
    */
   decade: number | null;
-  /** Simple mode: an upper runtime bound in minutes, or null for any. */
   maxRuntime: number | null;
-
-  /** Advanced mode: the year and runtime sliders. */
   yearMin: number;
   yearMax: number;
   runtimeMin: number;
   runtimeMax: number;
-
-  /** Drop anything already watched, and anything already queued up. */
   hideWatched: boolean;
   hideSaved: boolean;
-
   mode: "simple" | "advanced";
 };
 
 export const DEFAULT_FILTERS: SmartFilters = {
   kind: "movie",
-  // "Anything" rather than "Popular": an empty editor should not have already
-  // made a choice on the user's behalf about which shelf to look at.
+  // An empty editor should not have chosen a shelf on anyone's behalf.
   source: "all",
   genres: [],
   providers: [],
@@ -185,119 +166,69 @@ export const DEFAULT_FILTERS: SmartFilters = {
   maxRuntime: null,
   yearMin: YEAR_FLOOR,
   yearMax: YEAR_CEILING,
-  runtimeMin: RUNTIME_FLOOR,
+  runtimeMin: 0,
   runtimeMax: RUNTIME_CEILING,
   hideWatched: false,
   hideSaved: false,
   mode: "simple",
 };
 
-/** The year window a set of filters actually asks for, whichever mode it is in. */
-export function yearBounds(filters: SmartFilters): { from: number | null; to: number | null } {
-  if (filters.mode === "advanced") {
-    return {
-      from: filters.yearMin > YEAR_FLOOR ? filters.yearMin : null,
-      to: filters.yearMax < YEAR_CEILING ? filters.yearMax : null,
-    };
+/** The years a set of filters asks for, whichever mode it is in. Null is open. */
+export function yearBounds(f: SmartFilters): { from: number | null; to: number | null } {
+  if (f.mode === "advanced") {
+    return { from: f.yearMin > YEAR_FLOOR ? f.yearMin : null, to: f.yearMax < YEAR_CEILING ? f.yearMax : null };
   }
-
-  if (filters.decade === null) return { from: null, to: null };
-  return { from: filters.decade, to: filters.decade + 9 };
+  return f.decade === null ? { from: null, to: null } : { from: f.decade, to: f.decade + 9 };
 }
 
-/** The same, for runtime, in minutes. */
-export function runtimeBounds(filters: SmartFilters): { min: number | null; max: number | null } {
-  if (filters.mode === "advanced") {
-    return {
-      min: filters.runtimeMin > RUNTIME_FLOOR ? filters.runtimeMin : null,
-      // The top of the slider is "and up", not "exactly four hours".
-      max: filters.runtimeMax < RUNTIME_CEILING ? filters.runtimeMax : null,
-    };
+/** The same for length, in minutes. */
+export function runtimeBounds(f: SmartFilters): { min: number | null; max: number | null } {
+  if (f.mode === "advanced") {
+    return { min: f.runtimeMin > 0 ? f.runtimeMin : null, max: f.runtimeMax < RUNTIME_CEILING ? f.runtimeMax : null };
   }
-
-  return { min: null, max: filters.maxRuntime };
+  return { min: null, max: f.maxRuntime };
 }
 
-/**
- * Whether a set of filters says anything at all beyond "the popular films".
- * Used to keep the editor from offering to save an empty question.
- */
-export function isNarrowed(filters: SmartFilters): boolean {
-  const years = yearBounds(filters);
-  const runtimes = runtimeBounds(filters);
+// ---------------------------------------------------------------------------
+// Reading a stored blob
 
-  return (
-    filters.genres.length > 0 ||
-    filters.providers.length > 0 ||
-    filters.cast.length > 0 ||
-    filters.certifications.length > 0 ||
-    filters.statuses.length > 0 ||
-    filters.scoreMin > 0 ||
-    filters.scoreMax < 100 ||
-    years.from !== null ||
-    years.to !== null ||
-    runtimes.min !== null ||
-    runtimes.max !== null ||
-    filters.hideWatched ||
-    filters.hideSaved ||
-    filters.source !== DEFAULT_FILTERS.source ||
-    filters.kind !== DEFAULT_FILTERS.kind
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-const KINDS = new Set<SmartKind>(["movie", "tv", "both"]);
-const SOURCE_VALUES = new Set<SmartSource>(SOURCES.map((s) => s.value));
-const STATUS_VALUES = new Set<StatusSlug>(STATUSES.map((s) => s.value));
+const KIND_VALUES = new Set<string>(KINDS.map((k) => k.value));
+const SOURCE_VALUES = new Set<string>(SOURCES.map((s) => s.value));
+const STATUS_VALUES = new Set<string>(STATUSES.map((s) => s.value));
 
 function clamp(value: unknown, low: number, high: number, fallback: number) {
-  const number = Number(value);
-  if (!Number.isFinite(number)) return fallback;
-  return Math.min(high, Math.max(low, Math.round(number)));
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(high, Math.max(low, Math.round(n)));
 }
 
 function strings(value: unknown, allowed?: Set<string>): string[] {
   if (!Array.isArray(value)) return [];
-  const clean = value.filter((v): v is string => typeof v === "string");
+  const clean = [...new Set(value.filter((v): v is string => typeof v === "string"))];
   return allowed ? clean.filter((v) => allowed.has(v)) : clean;
 }
 
-/**
- * People out of a stored blob. A pick with no usable id is dropped rather than
- * repaired: an unnamed id would query correctly but leave the editor showing a
- * chip with nothing written on it.
- */
+/** A pick with no usable id is dropped rather than repaired: a nameless chip says nothing. */
 function castPicks(value: unknown): CastPick[] {
   if (!Array.isArray(value)) return [];
-
-  const picks: CastPick[] = [];
-  const seen = new Set<number>();
-
+  const out: CastPick[] = [];
   for (const entry of value) {
     if (!entry || typeof entry !== "object") continue;
     const { id, name } = entry as Record<string, unknown>;
-    const numeric = Number(id);
-    if (!Number.isInteger(numeric) || numeric <= 0 || seen.has(numeric)) continue;
-
-    seen.add(numeric);
-    picks.push({ id: numeric, name: typeof name === "string" && name ? name : `#${numeric}` });
+    const n = Number(id);
+    if (!Number.isInteger(n) || n <= 0 || out.some((p) => p.id === n)) continue;
+    out.push({ id: n, name: typeof name === "string" && name ? name.slice(0, 80) : `#${n}` });
   }
-
-  return picks;
+  return out.slice(0, 5);
 }
 
 /**
- * Reads a stored blob back into filters, repairing whatever does not parse.
- *
- * Never throws: this runs on rows written by whatever version of the app the
- * user last saved with, and the list is far more useful slightly wrong than
- * gone. The one invariant enforced afterwards is that the sliders are the right
- * way round, since a min above its max silently returns nothing at all.
+ * A stored blob, or the editor's state on its way to the server, as filters.
+ * Never throws. The one invariant enforced afterwards is that each range is the
+ * right way round, since a minimum above its maximum quietly matches nothing.
  */
 export function parseFilters(raw: unknown): SmartFilters {
-  let source: unknown = raw;
-
+  let source = raw;
   if (typeof raw === "string") {
     try {
       source = JSON.parse(raw);
@@ -305,98 +236,130 @@ export function parseFilters(raw: unknown): SmartFilters {
       return { ...DEFAULT_FILTERS };
     }
   }
-
   if (!source || typeof source !== "object") return { ...DEFAULT_FILTERS };
-  const input = source as Record<string, unknown>;
+  const i = source as Record<string, unknown>;
 
-  const filters: SmartFilters = {
-    kind: KINDS.has(input.kind as SmartKind) ? (input.kind as SmartKind) : DEFAULT_FILTERS.kind,
-    source: SOURCE_VALUES.has(input.source as SmartSource)
-      ? (input.source as SmartSource)
-      : DEFAULT_FILTERS.source,
-    genres: strings(input.genres),
-    providers: Array.isArray(input.providers)
-      ? input.providers.map(Number).filter((id) => Number.isInteger(id) && id > 0)
+  const f: SmartFilters = {
+    kind: KIND_VALUES.has(i.kind as string) ? (i.kind as SmartKind) : DEFAULT_FILTERS.kind,
+    source: SOURCE_VALUES.has(i.source as string) ? (i.source as SmartSource) : DEFAULT_FILTERS.source,
+    genres: strings(i.genres).filter((slug) => findGenre(slug)),
+    providers: Array.isArray(i.providers)
+      ? [...new Set(i.providers.map(Number).filter((id) => Number.isInteger(id) && id > 0))]
       : [],
-    cast: castPicks(input.cast),
-    certifications: strings(input.certifications),
-    statuses: strings(input.statuses, STATUS_VALUES as Set<string>) as StatusSlug[],
-    scoreMin: clamp(input.scoreMin, 0, 100, 0),
-    scoreMax: clamp(input.scoreMax, 0, 100, 100),
-    decade:
-      input.decade === null || input.decade === undefined
-        ? null
-        : DECADES.includes(Number(input.decade))
-          ? Number(input.decade)
-          : null,
+    cast: castPicks(i.cast),
+    certifications: strings(i.certifications).slice(0, 10),
+    statuses: strings(i.statuses, STATUS_VALUES) as StatusSlug[],
+    scoreMin: clamp(i.scoreMin, 0, 100, 0),
+    scoreMax: clamp(i.scoreMax, 0, 100, 100),
+    decade: DECADES.includes(Number(i.decade)) && i.decade !== null ? Number(i.decade) : null,
     maxRuntime:
-      input.maxRuntime === null || input.maxRuntime === undefined
-        ? null
-        : clamp(input.maxRuntime, 1, RUNTIME_CEILING, RUNTIME_CEILING),
-    yearMin: clamp(input.yearMin, YEAR_FLOOR, YEAR_CEILING, YEAR_FLOOR),
-    yearMax: clamp(input.yearMax, YEAR_FLOOR, YEAR_CEILING, YEAR_CEILING),
-    runtimeMin: clamp(input.runtimeMin, RUNTIME_FLOOR, RUNTIME_CEILING, RUNTIME_FLOOR),
-    runtimeMax: clamp(input.runtimeMax, RUNTIME_FLOOR, RUNTIME_CEILING, RUNTIME_CEILING),
-    hideWatched: input.hideWatched === true,
-    hideSaved: input.hideSaved === true,
-    mode: input.mode === "advanced" ? "advanced" : "simple",
+      i.maxRuntime === null || i.maxRuntime === undefined ? null : clamp(i.maxRuntime, 1, RUNTIME_CEILING, RUNTIME_CEILING),
+    yearMin: clamp(i.yearMin, YEAR_FLOOR, YEAR_CEILING, YEAR_FLOOR),
+    yearMax: clamp(i.yearMax, YEAR_FLOOR, YEAR_CEILING, YEAR_CEILING),
+    runtimeMin: clamp(i.runtimeMin, 0, RUNTIME_CEILING, 0),
+    runtimeMax: clamp(i.runtimeMax, 0, RUNTIME_CEILING, RUNTIME_CEILING),
+    hideWatched: i.hideWatched === true,
+    hideSaved: i.hideSaved === true,
+    mode: i.mode === "advanced" ? "advanced" : "simple",
   };
-
-  if (filters.scoreMin > filters.scoreMax) {
-    [filters.scoreMin, filters.scoreMax] = [filters.scoreMax, filters.scoreMin];
-  }
-  if (filters.yearMin > filters.yearMax) {
-    [filters.yearMin, filters.yearMax] = [filters.yearMax, filters.yearMin];
-  }
-  if (filters.runtimeMin > filters.runtimeMax) {
-    [filters.runtimeMin, filters.runtimeMax] = [filters.runtimeMax, filters.runtimeMin];
-  }
-
-  return filters;
+  if (f.scoreMin > f.scoreMax) [f.scoreMin, f.scoreMax] = [f.scoreMax, f.scoreMin];
+  if (f.yearMin > f.yearMax) [f.yearMin, f.yearMax] = [f.yearMax, f.yearMin];
+  if (f.runtimeMin > f.runtimeMax) [f.runtimeMin, f.runtimeMax] = [f.runtimeMax, f.runtimeMin];
+  // A blob saved before the editor cleared them may hold a status the kind has no use for.
+  return withKind(f, f.kind);
 }
 
+// ---------------------------------------------------------------------------
+// Reading it back
+
+/** "90 m", "2 h", "2 h 30 m": the editor's way of saying a length. */
+export function lengthLabel(minutes: number): string {
+  if (minutes <= 0) return "0";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (!h) return `${m} m`;
+  return m ? `${h} h ${m} m` : `${h} h`;
+}
+
+function joined(words: string[], last: "and" | "or") {
+  if (words.length <= 1) return words.join("");
+  return `${words.slice(0, -1).join(", ")} ${last} ${words[words.length - 1]}`;
+}
+
+export const kindLabel = (kind: SmartKind) => (kind === "both" ? "Films and shows" : kind === "tv" ? "Shows" : "Films");
+const genreLabel = (slug: string) => findGenre(slug)?.label ?? slug;
+const providerName = (id: number) => KNOWN_PROVIDERS.find((p) => p.id === id)?.name ?? `Service ${id}`;
+const statusLabel = (slug: StatusSlug) => STATUSES.find((s) => s.value === slug)?.label ?? slug;
+
+const SOURCE_PHRASE: Record<SmartSource, string | null> = {
+  all: null,
+  popular: "popular",
+  trending: "trending this week",
+  "top-rated": "top rated",
+  upcoming: "not out yet",
+  newest: "newly out",
+};
+
+/** One piece of the readback; the bold ones are what was chosen. */
+export type Phrase = { text: string; strong?: boolean };
+
 /**
- * A one-line description of what a list is asking for, shown under its name so
- * a rail of five smart lists is readable without opening any of them.
+ * The whole question as one sentence, which is what you check before saving
+ * rather than re-reading six sections: "Films and shows that are popular,
+ * tagged horror and thriller, on Netflix, rated 70% or better, from 2015
+ * onwards. Leaves out what you have seen."
  */
-export function describeFilters(filters: SmartFilters, genreLabel: (slug: string) => string): string {
-  const parts: string[] = [];
+export function sentence(f: SmartFilters): Phrase[] {
+  const out: Phrase[] = [{ text: kindLabel(f.kind), strong: true }];
+  const clauses: Phrase[][] = [];
+  const add = (lead: string, chosen: string, tail = "") => clauses.push([{ text: lead }, { text: chosen, strong: true }, ...(tail ? [{ text: tail }] : [])]);
 
-  // "Anything" is the absence of a shelf, so saying it out loud would be noise
-  // in a line whose whole job is to list what has actually been narrowed.
-  if (filters.source !== "all") {
-    parts.push(SOURCES.find((s) => s.value === filters.source)?.label ?? "Popular");
-  }
+  const shelf = SOURCE_PHRASE[f.source];
+  if (shelf) add("that are ", shelf);
+  if (f.genres.length) add("tagged ", joined(f.genres.map((g) => genreLabel(g).toLowerCase()), "and"));
+  if (f.cast.length) add("with ", joined(f.cast.map((p) => p.name), "and"));
+  if (f.providers.length) add("on ", joined(f.providers.map(providerName), "or"));
+  if (f.statuses.length) add("", joined(f.statuses.map((s) => statusLabel(s).toLowerCase()), "or"));
+  if (f.certifications.length) add("certificate ", joined(f.certifications, "or"));
 
-  if (filters.genres.length > 0) parts.push(filters.genres.map(genreLabel).join(" + "));
+  if (f.scoreMin > 0 && f.scoreMax < 100) add("rated ", `${f.scoreMin}–${f.scoreMax}%`);
+  else if (f.scoreMin > 0) add("rated ", `${f.scoreMin}% or better`);
+  else if (f.scoreMax < 100) add("rated ", `${f.scoreMax}% or lower`);
 
-  // Ahead of the medium, because "Bryan Cranston films" is how anyone would say
-  // it out loud — the person is the subject, not another narrowing.
-  if (filters.cast.length > 0) parts.push(filters.cast.map((person) => person.name).join(" + "));
-
-  parts.push(filters.kind === "both" ? "films & shows" : filters.kind === "tv" ? "shows" : "films");
-
-  const years = yearBounds(filters);
+  const years = yearBounds(f);
   if (years.from !== null && years.to !== null) {
-    parts.push(years.to === years.from + 9 ? `${years.from}s` : `${years.from}–${years.to}`);
-  } else if (years.from !== null) {
-    parts.push(`${years.from} and later`);
-  } else if (years.to !== null) {
-    parts.push(`up to ${years.to}`);
-  }
+    if (f.mode === "simple") add("from the ", `${years.from}s`);
+    else add("from ", years.from === years.to ? `${years.from}` : `${years.from} to ${years.to}`);
+  } else if (years.from !== null) add("from ", `${years.from} onwards`);
+  else if (years.to !== null) add("from ", `${years.to} or earlier`);
 
-  if (filters.scoreMin > 0 || filters.scoreMax < 100) {
-    parts.push(`${filters.scoreMin}–${filters.scoreMax}%`);
-  }
+  const length = runtimeBounds(f);
+  if (length.min !== null && length.max !== null) add("", `${lengthLabel(length.min)} to ${lengthLabel(length.max)}`, " long");
+  else if (length.max !== null) add("", `under ${lengthLabel(length.max)}`);
+  else if (length.min !== null) add("", `over ${lengthLabel(length.min)}`);
 
-  const runtimes = runtimeBounds(filters);
-  if (runtimes.min !== null && runtimes.max !== null) {
-    parts.push(`${runtimes.min}–${runtimes.max}m`);
-  } else if (runtimes.max !== null) {
-    parts.push(`under ${runtimes.max}m`);
-  } else if (runtimes.min !== null) {
-    parts.push(`over ${runtimes.min}m`);
-  }
+  clauses.forEach((clause, index) => {
+    // The first clause follows the subject with a space; later ones with a comma.
+    out.push({ text: index === 0 ? " " : ", " }, ...clause);
+  });
+  out.push({ text: "." });
 
-  return parts.join(" · ");
+  const leaves = [f.hideWatched && "what you have seen", f.hideSaved && "what is already on a list"].filter(
+    (s): s is string => Boolean(s),
+  );
+  if (leaves.length) out.push({ text: ` Leaves out ${leaves.join(" and ")}.` });
+  return out;
+}
+
+/** What each folded section holds, for its closed header. */
+export function foldSummaries(f: SmartFilters) {
+  const source = SOURCES.find((s) => s.value === f.source)?.label ?? "Anything";
+  return {
+    what: `${kindLabel(f.kind)} · ${source.toLowerCase()}`,
+    genre: f.genres.length ? f.genres.map(genreLabel).join(", ") : "Any",
+    services: f.providers.length ? f.providers.map(providerName).join(", ") : "Any",
+    people: f.cast.length ? f.cast.map((p) => p.name).join(", ") : "Anyone",
+    status: f.statuses.length ? f.statuses.map(statusLabel).join(", ") : "Any",
+    certificate: f.certifications.length ? f.certifications.join(", ") : "Any",
+  };
 }

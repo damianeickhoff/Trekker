@@ -1,54 +1,42 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-const schema = z.object({
-  endpoint: z.string().url().max(2000),
-  keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
-  label: z.string().max(120).optional(),
-});
+/**
+ * This browser's push subscription, turned on or off from Settings. The
+ * endpoint is unique across the instance: a browser handed to someone else
+ * moves its row to them rather than being told about two people.
+ */
 
-/** Registers this browser for reminders. */
-export async function POST(req: Request) {
+type Body = { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown }; label?: unknown };
+
+const text = (v: unknown, max: number) => (typeof v === "string" && v.length > 0 && v.length <= max ? v : null);
+
+export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const parsed = schema.safeParse(await req.json().catch(() => null));
-  if (!parsed.success) {
+  const body = (await request.json().catch(() => null)) as Body | null;
+  const endpoint = text(body?.endpoint, 2000);
+  const p256dh = text(body?.keys?.p256dh, 500);
+  const auth = text(body?.keys?.auth, 500);
+  if (!endpoint || !p256dh || !auth || !/^https:\/\//.test(endpoint)) {
     return NextResponse.json({ error: "Bad subscription" }, { status: 400 });
   }
-
-  const { endpoint, keys, label } = parsed.data;
-
-  // The endpoint is unique across the whole instance: if a browser was handed
-  // to someone else, the row moves with it rather than being duplicated.
+  const label = text(body?.label, 120);
   await db.pushSubscription.upsert({
     where: { endpoint },
-    create: {
-      userId: user.id,
-      endpoint,
-      p256dh: keys.p256dh,
-      auth: keys.auth,
-      label: label ?? null,
-    },
-    update: { userId: user.id, p256dh: keys.p256dh, auth: keys.auth, label: label ?? null },
+    create: { userId: user.id, endpoint, p256dh, auth, label },
+    update: { userId: user.id, p256dh, auth, label },
   });
-
   return NextResponse.json({ ok: true });
 }
 
-/** Unregisters it again. */
-export async function DELETE(req: Request) {
+export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-
-  const body = (await req.json().catch(() => null)) as { endpoint?: string } | null;
-  if (!body?.endpoint) return NextResponse.json({ error: "Bad request" }, { status: 400 });
-
-  await db.pushSubscription
-    .deleteMany({ where: { endpoint: body.endpoint, userId: user.id } })
-    .catch(() => undefined);
-
+  const body = (await request.json().catch(() => null)) as Body | null;
+  const endpoint = text(body?.endpoint, 2000);
+  if (!endpoint) return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  await db.pushSubscription.deleteMany({ where: { endpoint, userId: user.id } });
   return NextResponse.json({ ok: true });
 }

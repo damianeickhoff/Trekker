@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Round 10: a WordPress-shaped feed whose items carry summary lines, as
+     Collider's and Deadline's do, with invented stories. The first summary is
+     long and marked up, the second ends in the site's boilerplate, the third
+     only repeats its headline, and every item has a body that must never be
+     kept. -->
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+	<title>Film | Example Daily</title>
+	<link>https://example.org</link>
+	<item>
+		<title>Netflix Drops the First Full Trailer for Minerva Academy</title>
+		<link>https://example.org/minerva-academy-trailer/</link>
+		<pubDate>Thu, 24 Sep 2026 12:00:00 +0000</pubDate>
+		<description><![CDATA[<p>Two and a half minutes, one <em>very</em> angry headmistress, and a premiere date of 30 October. The series stars an ensemble of newcomers. A third sentence that should not be kept.</p>]]></description>
+		<content:encoded><![CDATA[<p>The article body, paragraph after paragraph, which is never kept.</p>]]></content:encoded>
+		<media:content url="https://example.org/img/minerva.jpg" medium="image" />
+	</item>
+	<item>
+		<title>Digger Opens to $48M, the Biggest September Debut in Years</title>
+		<link>https://example.org/digger-box-office/</link>
+		<pubDate>Thu, 24 Sep 2026 10:00:00 +0000</pubDate>
+		<description>Glen Powell&#8217;s treasure-hunt thriller beat tracking by $12M on strong word of mouth. The post Digger Opens to $48M appeared first on Example Daily.</description>
+		<content:encoded><![CDATA[<p>The article body again.</p>]]></content:encoded>
+		<media:content url="https://example.org/img/digger.jpg" medium="image" />
+	</item>
+	<item>
+		<title>Ten Films to Watch This Autumn</title>
+		<link>https://example.org/ten-films/</link>
+		<pubDate>Wed, 23 Sep 2026 10:00:00 +0000</pubDate>
+		<description>Ten films to watch this autumn.</description>
+	</item>
+</channel>
+</rss>

@@ -1,0 +1,91 @@
+/*
+ * Discover's top-three carousel (Round 9 and its follow-ups), at both widths.
+ * Everything here is longer than `--slow` or timed against something else, so
+ * it lives in its own stylesheet (STYLE.md, Motion), as the screensaver's and
+ * the title hero's do.
+ *
+ * A slide is `data-state="showing" | "leaving" | "idle"` (`TopCarousel`), with
+ * two layers that change on their own clocks:
+ *
+ * - `.picture`: the incoming one fades in from 0 over 1.2s (`CHANGE_MS`) on
+ *   `--ease-in-out` while the outgoing one fades out on the same curve, each
+ *   zooming all the while, so neither stands still.
+ * - `.words` (the text, the rank chip and the score): the outgoing words go
+ *   in the first 300ms; the incoming rise 6px and fade in over 400ms from
+ *   400ms, so the two sets of words are never on screen together.
+ *
+ * The slow zoom: 1 to 1.08 across the seven-second dwell, linear, and on at
+ * the same rate through the 1.2s change after it (so to 1.0937 at 8.2s),
+ * which keeps the leaving picture moving while it fades. Two identical
+ * keyframes named by the parity of the slide's showings (`dwellName`), so a
+ * slide that comes back restarts its zoom; held with the carousel's pause.
+ *
+ * Every transition and keyframe is declared only under `no-preference`: with
+ * reduced motion the states simply swap, which is a cut, and nothing zooms.
+ */
+.picture {
+  opacity: 0;
+}
+
+.slide[data-state="showing"] .picture {
+  opacity: 1;
+}
+
+.words {
+  opacity: 0;
+  translate: 0 6px;
+}
+
+.slide[data-state="showing"] .words {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide[data-state="showing"] .picture,
+  .slide[data-state="leaving"] .picture {
+    transition: opacity 1200ms var(--ease-in-out);
+  }
+
+  .slide[data-state="showing"] .words {
+    transition:
+      opacity 400ms var(--ease-out) 400ms,
+      translate 400ms var(--ease-out) 400ms;
+  }
+
+  .slide[data-state="leaving"] .words {
+    transition:
+      opacity 300ms var(--ease-in),
+      translate 0s linear 300ms;
+  }
+
+  .dwell[data-dwell="a"] {
+    animation: dwell-a 8.2s linear both;
+  }
+
+  .dwell[data-dwell="b"] {
+    animation: dwell-b 8.2s linear both;
+  }
+
+  .dwell[data-held] {
+    animation-play-state: paused;
+  }
+
+  @keyframes dwell-a {
+    from {
+      scale: 1;
+    }
+    to {
+      scale: 1.0937;
+    }
+  }
+
+  @keyframes dwell-b {
+    from {
+      scale: 1;
+    }
+    to {
+      scale: 1.0937;
+    }
+  }
+}

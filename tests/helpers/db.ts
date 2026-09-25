@@ -1,63 +1,33 @@
 import { db } from "@/lib/db";
 
-/**
- * Fixtures shared by the database-backed tests.
- *
- * Deliberately thin: a user to own the rows, and shorthands for the two
- * identities `plays.ts` works in. Anything cleverer here tends to end up
- * asserting the fixture rather than the code.
- */
-
 let seq = 0;
 
 /** A throwaway account. Unique per call, since email is unique. */
 export async function freshUser() {
   seq += 1;
   return db.user.create({
-    data: {
-      email: `test-${seq}-${Date.now()}@example.com`,
-      name: `Tester ${seq}`,
-      passwordHash: "not-a-real-hash",
-    },
+    data: { email: `test-${seq}-${Date.now()}@example.com`, name: `Tester ${seq}`, passwordHash: "x" },
   });
 }
 
-/** Minutes as milliseconds, for readable duplicate-window arithmetic. */
-export function minutes(n: number) {
-  return n * 60 * 1000;
-}
+export const minutes = (n: number) => n * 60 * 1000;
+export const hours = (n: number) => n * 60 * 60 * 1000;
 
-export function hours(n: number) {
-  return n * 60 * 60 * 1000;
-}
-
-/** A fixed instant, so a test never straddles midnight or a DST boundary. */
+/** A fixed instant, so no test straddles midnight or a clock change. */
 export const T0 = new Date("2026-05-10T20:00:00.000Z");
+export const at = (offsetMs: number) => new Date(T0.getTime() + offsetMs);
 
-export function at(offsetMs: number) {
-  return new Date(T0.getTime() + offsetMs);
-}
-
-/** The film every movie test logs, unless it needs two. */
 export function film(overrides: Record<string, unknown> = {}) {
-  return {
-    mediaType: "movie" as const,
-    tmdbId: 550,
-    title: "Fight Club",
-    poster: "/poster.jpg",
-    runtime: 139,
-    ...overrides,
-  };
+  return { mediaType: "movie" as const, tmdbId: 550, title: "Fight Club", poster: "/fc.jpg", runtime: 139, ...overrides };
 }
 
-/** One episode of one show. */
-export function episode(number = 1, overrides: Record<string, unknown> = {}) {
+export function episode(season: number, number: number, overrides: Record<string, unknown> = {}) {
   return {
     mediaType: "tv" as const,
     tmdbId: 1396,
     title: "Breaking Bad",
     poster: "/bb.jpg",
-    seasonNumber: 1,
+    seasonNumber: season,
     episodeNumber: number,
     episodeName: `Episode ${number}`,
     runtime: 47,
@@ -65,7 +35,24 @@ export function episode(number = 1, overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** How many plays exist for one identity — the thing most assertions want. */
-export function countPlays(userId: string, where: Record<string, unknown>) {
-  return db.play.count({ where: { userId, ...where } });
+/**
+ * A show's episode list, as the refresh job would have stored it: `aired`
+ * episodes in the past, the rest in the future.
+ */
+export async function seedEpisodes(showId: number, seasons: { season: number; count: number; airedFrom: string }[]) {
+  const rows = seasons.flatMap(({ season, count, airedFrom }) =>
+    Array.from({ length: count }, (_, i) => {
+      const d = new Date(`${airedFrom}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() + i * 7);
+      return {
+        showId,
+        seasonNumber: season,
+        episodeNumber: i + 1,
+        name: `S${season}E${i + 1}`,
+        airDate: d.toISOString().slice(0, 10),
+        runtime: 45,
+      };
+    }),
+  );
+  await db.showEpisode.createMany({ data: rows });
 }

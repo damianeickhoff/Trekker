@@ -1,220 +1,129 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { isAdmin } from "./admin";
-import { requireUser } from "./auth";
-import { db } from "./db";
-import { verifySeerr } from "./seerr";
-import { sealSecret } from "./token-vault";
-import { defaultTraktClientId, TraktError, verifyTrakt } from "./trakt";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { refresh, updateTag } from "next/cache";
+import { takeBack } from "./admin";
+import { destroySession, getCurrentUser } from "./auth";
+import {
+  BACKGROUND_COOKIE,
+  BACKGROUND_COOKIE_MAX_AGE,
+  backgroundCookieValue,
+  type Background,
+  type BackgroundVariant,
+} from "./background";
+import { dailyPoster } from "./background-art";
+import { todayKey } from "./dates";
+import { bellTag } from "./notifications";
+import {
+  deleteAccount,
+  setNotify,
+  setRegion,
+  setScreensaverIdle,
+  setBackground,
+  setServices,
+  type DeleteOutcome,
+  type NotifyTopic,
+} from "./settings";
 
-export type SettingsState = { error?: string; ok?: string };
-
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
-
-export async function updateProfile(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const user = await requireUser();
-
-  const submitted = String(formData.get("email") ?? "").trim().toLowerCase();
-
-  /**
-   * A managed Plex Home profile may leave this blank.
-   *
-   * They have no address of their own — the one on the row is a placeholder
-   * minted to satisfy a unique index — and there is nothing they need one for:
-   * they sign in through the Home, not by email. So an empty field means "leave
-   * the stand-in alone" rather than an error, and filling it in is how such a
-   * profile becomes reachable if they ever want it to be.
-   */
-  const keepPlaceholder = user.plexManaged && submitted.length === 0;
-
-  const parsed = z
-    .object({
-      name: z.string().min(1, "Your name cannot be empty").max(60),
-      email: z.string().email("Enter a valid email address"),
-    })
-    .safeParse({
-      name: String(formData.get("name") ?? "").trim(),
-      email: keepPlaceholder ? user.email : submitted,
-    });
-
-  if (!parsed.success) return { error: parsed.error.issues[0].message };
-
-  if (parsed.data.email !== user.email) {
-    const taken = await db.user.findUnique({ where: { email: parsed.data.email } });
-    if (taken) return { error: "That email is already registered" };
-  }
-
-  await db.user.update({
-    where: { id: user.id },
-    data: { name: parsed.data.name, email: parsed.data.email },
-  });
-
-  revalidatePath("/", "layout");
-  return { ok: "Profile updated" };
-}
-
-export async function uploadAvatar(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const user = await requireUser();
-  const file = formData.get("avatar");
-
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose an image first" };
-  if (file.size > MAX_AVATAR_BYTES) return { error: "Images must be 2 MB or smaller" };
-  if (!ALLOWED.has(file.type)) return { error: "Use a PNG, JPEG or WebP image" };
-
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      avatarData: Buffer.from(await file.arrayBuffer()),
-      avatarType: file.type,
-      avatarSetAt: new Date(),
-    },
-  });
-
-  revalidatePath("/", "layout");
-  return { ok: "Picture updated" };
-}
-
-export async function removeAvatar() {
-  const user = await requireUser();
-
-  await db.user.update({
-    where: { id: user.id },
-    data: { avatarData: null, avatarType: null, avatarSetAt: null },
-  });
-
-  revalidatePath("/", "layout");
-}
-
-/**
- * Which country's streaming catalogue this person sees. Empty means "follow
- * the instance", stored as null — one meaning, one representation.
+/*
+ * Settings' writes. Each is one column on the signed-in account, checked in
+ * `lib/settings.ts`; the controls are optimistic, so a write re-renders the
+ * page only where something else on it follows from the answer.
  */
-export async function saveRegion(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const user = await requireUser();
 
-  const raw = String(formData.get("region") ?? "").trim().toUpperCase();
-  if (raw && !/^[A-Z]{2}$/.test(raw)) {
-    return { error: "A region is a two-letter country code, like NL or US" };
-  }
+export type SaveOutcome = { ok: true } | { ok: false; error: string };
 
-  await db.user.update({
-    where: { id: user.id },
-    data: { region: raw || null },
-  });
-
-  revalidatePath("/", "layout");
-  return { ok: raw ? `Streaming availability now follows ${raw}` : "Following the instance's region" };
+async function signedIn() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Not signed in");
+  return user;
 }
 
-export async function saveSeerrSettings(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const user = await requireUser();
-  if (!(await isAdmin(user.id))) {
-    return { error: "Only the instance admin can change server connections" };
-  }
-
-  const url = String(formData.get("seerrUrl") ?? "").trim();
-  const apiKey = String(formData.get("seerrApiKey") ?? "").trim();
-
-  if (!url || !apiKey) return { error: "Both the address and an API key are required" };
-
-  const identity = await verifySeerr(url, apiKey);
-  if (!identity) {
-    return {
-      error:
-        "Could not reach that instance. Check the address, that Trekker can see it on the network, and that the API key is valid.",
-    };
-  }
-
-  await db.user.update({
-    where: { id: user.id },
-    // Sealed at rest — see token-vault.ts.
-    data: { seerrUrl: url, seerrApiKey: sealSecret(apiKey) },
-  });
-
-  revalidatePath("/", "layout");
-  return { ok: `Connected to Overseerr ${identity.version}` };
-}
-
-/**
- * Trakt, unlike Plex and Overseerr, is a personal account rather than a shared
- * server, so every user stores their own username and client id.
- */
-export async function saveTraktSettings(
-  _prev: SettingsState,
-  formData: FormData,
-): Promise<SettingsState> {
-  const user = await requireUser();
-
-  const username = String(formData.get("traktUsername") ?? "").trim();
-  const typedClientId = String(formData.get("traktClientId") ?? "").trim();
-
-  if (!username) return { error: "Enter your Trakt username" };
-
-  // An empty client id field means "keep what is stored", so the saved value is
-  // never wiped just by saving a new username.
-  const existing = await db.user.findUnique({
-    where: { id: user.id },
-    select: { traktClientId: true },
-  });
-  const clientId = typedClientId || existing?.traktClientId || defaultTraktClientId();
-
-  if (!clientId) {
-    return { error: "Enter a Trakt client id — create an app at trakt.tv/oauth/applications" };
-  }
-
+async function attempt(write: () => Promise<unknown>): Promise<SaveOutcome> {
   try {
-    await verifyTrakt(username, clientId);
-  } catch (error) {
-    if (error instanceof TraktError) return { error: error.message };
-    return { error: "Could not reach Trakt" };
+    await write();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "That did not save. Try again in a moment." };
   }
-
-  await db.user.update({
-    where: { id: user.id },
-    // Only persist a client id the user actually typed; falling back to the
-    // instance-wide one stays a fallback rather than being copied in.
-    data: {
-      traktUsername: username,
-      ...(typedClientId ? { traktClientId: typedClientId } : {}),
-    },
-  });
-
-  revalidatePath("/", "layout");
-  return { ok: `Connected to Trakt as ${username}` };
 }
 
-export async function disconnectTrakt() {
-  const user = await requireUser();
-
-  await db.user.update({
-    where: { id: user.id },
-    data: { traktUsername: null, traktClientId: null },
-  });
-  revalidatePath("/", "layout");
+export async function saveServices(ids: number[]): Promise<SaveOutcome> {
+  const user = await signedIn();
+  return attempt(() => setServices(user.id, ids));
 }
 
-export async function disconnectSeerr() {
-  const user = await requireUser();
-  if (!(await isAdmin(user.id))) return;
+/** The chips are the region's services, so a new region re-renders them. */
+export async function saveRegion(code: string | null): Promise<SaveOutcome> {
+  const user = await signedIn();
+  const outcome = await attempt(() => setRegion(user.id, code));
+  if (outcome.ok) refresh();
+  return outcome;
+}
 
-  await db.user.update({
-    where: { id: user.id },
-    data: { seerrUrl: null, seerrApiKey: null },
+/** The chrome's idle watcher reads the minutes from the bell's answer, so that is expired too. */
+export async function saveScreensaverIdle(minutes: number): Promise<SaveOutcome> {
+  const user = await signedIn();
+  const outcome = await attempt(() => setScreensaverIdle(user.id, minutes));
+  if (outcome.ok) updateTag(bellTag(user.id));
+  return outcome;
+}
+
+/**
+ * The background: the row, then its cookie on this browser, so the next
+ * paint (and the boot script before it) draws it; other devices take it
+ * from the bell's answer, which is expired here. The artwork's poster for
+ * today comes back with it, for the picker to put up at once.
+ */
+export async function saveBackground(
+  variant: BackgroundVariant,
+  hue: number,
+): Promise<SaveOutcome & { poster?: string | null }> {
+  const user = await signedIn();
+  let saved: Background;
+  try {
+    saved = await setBackground(user.id, variant, hue);
+  } catch {
+    return { ok: false, error: "That did not save. Try again in a moment." };
+  }
+  const jar = await cookies();
+  jar.set(BACKGROUND_COOKIE, backgroundCookieValue(saved), {
+    path: "/",
+    maxAge: BACKGROUND_COOKIE_MAX_AGE,
+    sameSite: "lax",
   });
-  revalidatePath("/", "layout");
+  updateTag(bellTag(user.id));
+  const poster = saved.variant === "artwork" ? await dailyPoster(user.id, todayKey()).catch(() => null) : null;
+  return { ok: true, poster };
+}
+
+export async function saveNotify(topic: NotifyTopic, on: boolean): Promise<SaveOutcome> {
+  const user = await signedIn();
+  return attempt(() => setNotify(user.id, topic, Boolean(on)));
+}
+
+/**
+ * Deletes the signed-in account, then its session. The browser has already
+ * told the worker to forget cached pages, so the next launch cannot paint the
+ * deleted person's Home.
+ */
+export async function deleteMyAccount(typed: string): Promise<DeleteOutcome> {
+  const user = await signedIn();
+  const outcome = await deleteAccount(user.id, typed);
+  if (!outcome.ok) return outcome;
+  await destroySession();
+  redirect("/login");
+}
+
+/** Admin only; `takeBack` checks. The owner's bell loses the badge's notice with it. */
+export async function takeBackBadge(form: FormData): Promise<void> {
+  const user = await signedIn();
+  const target = String(form.get("userId") ?? "");
+  const key = String(form.get("key") ?? "");
+  if (!target || !key || target.length > 64 || key.length > 120) return;
+  if (await takeBack(user.id, target, key)) {
+    updateTag(bellTag(target));
+    refresh();
+  }
 }

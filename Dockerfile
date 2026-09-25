@@ -60,7 +60,7 @@ RUN npx prisma generate
 # out of the runtime image instead of the whole production dependency set.
 FROM base AS migrator
 WORKDIR /opt/prisma
-RUN npm install --no-save --no-audit --no-fund prisma@7.9.1
+RUN npm install --no-save --no-audit --no-fund prisma@7.10.0
 
 # Most of what that pulls in is Prisma Studio: a browser UI a container has no
 # way to serve. Its bundle is 29MB, the esbuild metafiles beside it another 5MB,

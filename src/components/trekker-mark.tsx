@@ -1,22 +1,20 @@
-import { MARK_GEOMETRY, MARK_VIEWBOX } from "@/lib/logo";
+import { MARK_ASPECT, MARK_GEOMETRY, MARK_VIEWBOX } from "@/lib/logo";
 
 /**
- * The mark, wherever it is drawn in the page rather than baked into an icon.
- *
- * It takes its colour from `currentColor`, so it sits on the accent tile as
- * `text-white` — a literal, because the tile is a fixed colour in both themes
- * and the ink ramp would invert underneath it.
- *
- * Sized by height: the artwork is taller than it is wide, so a caller that sets
- * both dimensions squashes it. `w-auto` beside an `h-*` is the shape of it.
+ * The mark, wherever the page draws it rather than an icon: in `currentColor`,
+ * so the wordmark sets it amber with `text-accent` and the collapsed sidebar
+ * black on its amber disc. Sized by height, the width following from the
+ * artwork's shape, because setting both would squash it.
  */
-export function TrekkerMark({ className }: { className?: string }) {
+export function TrekkerMark({ height, className = "" }: { height: number; className?: string }) {
   return (
     <svg
       viewBox={MARK_VIEWBOX}
+      width={Math.round(height * MARK_ASPECT)}
+      height={height}
       fill="currentColor"
       aria-hidden="true"
-      className={className}
+      className={`shrink-0 ${className}`}
       dangerouslySetInnerHTML={{ __html: MARK_GEOMETRY }}
     />
   );

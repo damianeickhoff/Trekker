@@ -1,0 +1,238 @@
+/*
+ * The screensaver's own stylesheet, loaded on this route and nowhere else
+ * (rebuild plan, section 8): nothing else in the app needs a two-second
+ * crossfade or a 120px clock, so no other page pays for them.
+ *
+ * White on black in both themes. The window is the artwork and everything is
+ * drawn over it; there is no chrome, no column and no scroll.
+ */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-screensaver);
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  cursor: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * Two layers, one showing and one loading the next title. The one place in
+ * the app a slow crossfade is allowed (STYLE.md, Motion): it is the whole
+ * point of a screen left to be looked at. Reduced motion cuts it, through
+ * the global rule in globals.css.
+ */
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  opacity: 0;
+  transition: opacity 2.5s ease-in-out;
+}
+
+.shown {
+  opacity: 0.85;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+.stack {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 72px;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.date {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nextLabel {
+  color: var(--color-accent, #f2b233);
+}
+
+.nextTitle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.episodeName {
+  display: none;
+}
+
+/*
+ * Who is watching on Plex. A translucent fill rather than glass: STYLE.md
+ * keeps backdrop-filter to three places, and this is not one of them.
+ */
+.playing {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.playingPoster {
+  width: 40px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.playingText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.playingWho {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.playingTitle {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 2px;
+  background: #f2b233;
+}
+
+.queue {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .art {
+    object-position: center 22%;
+  }
+
+  .shown {
+    opacity: 0.9;
+  }
+
+  .scrim {
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 55%, rgba(0, 0, 0, 0.1) 100%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.7) 100%);
+  }
+
+  .stack {
+    left: 64px;
+    right: auto;
+    bottom: 64px;
+    gap: 28px;
+  }
+
+  .time {
+    font-size: 120px;
+  }
+
+  .date {
+    font-size: 18px;
+  }
+
+  .next {
+    gap: 6px;
+  }
+
+  .label {
+    font-size: 11px;
+  }
+
+  .nextTitle {
+    font-size: 28px;
+    letter-spacing: -0.03em;
+  }
+
+  .episodeName {
+    display: inline;
+  }
+
+  /* Out of the stack and into the corner opposite the clock. */
+  .playing {
+    position: fixed;
+    right: 64px;
+    bottom: 64px;
+    width: 420px;
+  }
+
+  /* What comes next in the cycle, small and quiet, top right. */
+  .queue {
+    position: absolute;
+    top: 48px;
+    right: 64px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .queue img {
+    width: 44px;
+    height: 66px;
+    border-radius: 6px;
+    object-fit: cover;
+    opacity: 0.6;
+  }
+}

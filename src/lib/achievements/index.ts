@@ -1,342 +1,248 @@
 import "server-only";
+import type { IconName } from "@/components/icon";
 import { db } from "../db";
+import type { Tier } from "../levels";
 import {
   ACHIEVEMENTS,
   ACHIEVEMENTS_BY_ID,
-  CATEGORIES,
-  type Achievement,
-  type Category,
-  type EvidenceItem,
-  type Tier,
+  GROUPS as GROUPS_LIST,
+  evaluateAll,
+  opensLabel,
+  progressLabel,
+  seasonOpen,
+  type Group,
+  type Snapshot,
 } from "./catalogue";
-import { syncChallenges } from "../challenges";
 import { buildSnapshot } from "./snapshot";
 import { classifyUnlocks, syncLevelBonuses } from "./xp";
 
-export type { Category, Tier, EvidenceItem } from "./catalogue";
-export { CATEGORIES } from "./catalogue";
-export { absorbImport, getLevel, type LevelState, type XpSource } from "./xp";
+/**
+ * Progress is always worked out afresh from the history; only the moment of
+ * earning is stored, because it is the one thing the history cannot give back.
+ * A badge once earned is kept even if the number behind it falls: deleting a
+ * viewing never confiscates something that was done.
+ */
 
-/** One achievement as the interface needs it: definition plus where you are. */
-export type AchievementState = {
+export type BadgeState = {
   id: string;
   name: string;
+  icon: IconName;
   description: string;
-  category: Category;
+  group: Group;
   tier: Tier;
-  icon: string;
-  /** Where you are, capped at the target. */
-  progress: number;
-  target: number;
-  /** 0-100. Always 0 or 100 for the ones with nothing to count. */
+  earned: boolean;
+  /** ISO, since it crosses into client components. */
+  earnedAt: string | null;
+  /** 0 to 100; 100 only when earned. */
   percent: number;
-  unlocked: boolean;
-  unlockedAt: Date | null;
-  /** Reads as "7 / 30", or "42h / 100h" for the time-based ones. */
-  label: string;
-  detail: string | null;
-  /** Nothing to show a bar for — it is a yes or no. */
-  binary: boolean;
+  /** The line under the name: when it was earned, how close, or when it opens. */
+  sub: string;
+  /** "3 to go", "40h to go"; null once earned, and for a badge with nothing to count. */
+  toGo: string | null;
 };
 
-export type AchievementBoard = {
-  achievements: AchievementState[];
-  unlockedCount: number;
-  total: number;
-  /** Share of the whole set earned, 0-100. */
-  percent: number;
-  /** Newly earned in this pass, for the "just unlocked" strip. */
-  justUnlocked: AchievementState[];
-  /**
-   * Titles still waiting for their first TMDB lookup. Genre, language and
-   * franchise achievements read low until this reaches zero.
-   */
-  pendingLookups: number;
+export type Board = {
+  badges: BadgeState[];
+  earned: number;
+  /** Titles still waiting for their facts; genre and franchise badges read low until 0. */
+  pending: number;
+  /** Earned on this pass. */
+  fresh: string[];
 };
 
-function formatUnit(value: number, unit: Achievement["unit"]) {
-  if (unit !== "minutes") return value.toLocaleString("en-GB");
-  const hours = Math.round(value / 60);
-  return `${hours.toLocaleString("en-GB")}h`;
+/** "5 Aug", with the year only when it is not this one: the mono line under a badge's description. */
+export function earnedDay(at: Date, now: Date) {
+  const sameYear = at.getFullYear() === now.getFullYear();
+  return at.toLocaleDateString("en-GB", sameYear ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** The badges a snapshot meets. */
+function met(s: Snapshot): Set<string> {
+  return new Set(evaluateAll(s).filter((m) => m.progress >= ACHIEVEMENTS_BY_ID.get(m.id)!.target).map((m) => m.id));
 }
 
 /**
- * Evaluates every achievement against the user's history and records anything
- * newly earned.
- *
- * Progress is always recomputed rather than stored: the numbers move whenever
- * anything is logged, and a counter kept in the database would drift the first
- * time a row was deleted. Only the moment of unlocking is written down, because
- * that is the one fact the history cannot produce again.
+ * Writes new unlocks, deciding for each whether it was carried in with an
+ * import: `history` is the snapshot cut down to what arrived with the account.
  */
-export async function getAchievementBoard(userId: string): Promise<AchievementBoard> {
-  const [snapshot, unlockedRows] = await Promise.all([
-    buildSnapshot(userId),
-    db.unlockedAchievement.findMany({ where: { userId } }),
-  ]);
-
-  const unlockedAt = new Map(unlockedRows.map((row) => [row.key, row.unlockedAt]));
-  const fresh: string[] = [];
-
-  const achievements = ACHIEVEMENTS.map((achievement) => {
-    const measured = achievement.measure(snapshot);
-    const progress = Math.min(Math.max(0, Math.round(measured.progress)), achievement.target);
-    const earned = progress >= achievement.target;
-
-    // An achievement someone earned before keeps its badge even if the number
-    // behind it has since fallen — deleting a watched row should not confiscate
-    // something they did do.
-    const previously = unlockedAt.get(achievement.id) ?? null;
-    if (earned && !previously) fresh.push(achievement.id);
-
-    const unlocked = earned || previously !== null;
-
-    return {
-      id: achievement.id,
-      name: achievement.name,
-      description: achievement.description,
-      category: achievement.category,
-      tier: achievement.tier,
-      icon: achievement.icon,
-      progress,
-      target: achievement.target,
-      percent: unlocked
-        ? 100
-        : Math.min(99, Math.floor((progress / achievement.target) * 100)),
-      unlocked,
-      unlockedAt: previously,
-      label: achievement.binary
-        ? unlocked
-          ? "Earned"
-          : "Not yet"
-        : `${formatUnit(progress, achievement.unit)} / ${formatUnit(
-            achievement.target,
-            achievement.unit,
-          )}`,
-      detail: measured.detail ?? null,
-      binary: achievement.binary === true,
-    } satisfies AchievementState;
-  });
-
-  // Always, not only when something unlocked: the catalogue has to be recorded
-  // as seen even on a pass where nothing was earned, or every achievement would
-  // keep reading as new.
+async function recordUnlocks(userId: string, fresh: string[], history: Snapshot, now: Date) {
   const carried = await classifyUnlocks(
     userId,
     fresh,
     ACHIEVEMENTS.map((a) => a.id),
+    fresh.length ? met(history) : new Set(),
   );
-
-  if (fresh.length > 0) {
-    const now = new Date();
+  if (fresh.length === 0) return;
+  // createMany has no skip-duplicates on SQLite; two tabs racing to the same
+  // unlock is settled by the unique key, and the loser changes nothing.
+  for (const key of fresh) {
     await db.unlockedAchievement
-      .createMany({
-        data: fresh.map((key) => ({
-          userId,
-          key,
-          unlockedAt: now,
-          carried: carried.has(key),
-        })),
-      })
+      .create({ data: { userId, key, unlockedAt: now, carried: carried.has(key) } })
       .catch(() => undefined);
-
-    for (const state of achievements) {
-      if (fresh.includes(state.id)) state.unlockedAt = now;
-    }
   }
+}
 
-  // This pass has already paid TMDB for the two answers the level cannot work
-  // out on its own, so it writes them down on the way past. Awaited, and it is
-  // one small update: the page asks for the level immediately afterwards, and
-  // should get this visit's numbers rather than the previous visit's.
+const complete = (s: Snapshot) => s.franchises.filter((f) => f.owned >= f.total).length;
+
+/**
+ * One evaluation: every achievement measured, new unlocks written, and the
+ * level's two completion counts brought up to date, since this pass has just
+ * worked them out. `offline` reads rows and caches only.
+ */
+async function evaluate(userId: string, now: Date, { offline = false } = {}) {
+  const [{ snapshot, history, pending }, stored] = await Promise.all([
+    buildSnapshot(userId, { offline }),
+    db.unlockedAchievement.findMany({ where: { userId }, select: { key: true, unlockedAt: true } }),
+  ]);
+  const unlockedAt = new Map(stored.map((r) => [r.key, r.unlockedAt]));
+  const measured = evaluateAll(snapshot);
+
+  const fresh = measured
+    .filter((m) => m.progress >= ACHIEVEMENTS_BY_ID.get(m.id)!.target && !unlockedAt.has(m.id))
+    .map((m) => m.id);
+  await recordUnlocks(userId, fresh, history, now);
+  for (const id of fresh) unlockedAt.set(id, now);
+
   await syncLevelBonuses(
     userId,
-    {
-      finishedShows: snapshot.finishedShows,
-      finishedFranchises: snapshot.franchises.filter((f) => f.owned >= f.total).length,
-    },
-    { partial: snapshot.pendingLookups > 0 },
+    { finishedShows: snapshot.finishedShows, finishedFranchises: complete(snapshot) },
+    { partial: pending > 0, history: { finishedShows: history.finishedShows, finishedFranchises: complete(history) } },
   );
+  return { measured, unlockedAt, pending, fresh };
+}
 
-  const unlockedCount = achievements.filter((a) => a.unlocked).length;
+/** What is left, in the badge's own unit. Hours round up, so it never says "0h to go" with minutes left. */
+export function toGoLabel(left: number, unit?: "count" | "minutes") {
+  const n = Math.max(1, left);
+  if (unit === "minutes") return `${Math.ceil(n / 60).toLocaleString("en-GB")}h to go`;
+  return `${n.toLocaleString("en-GB")} to go`;
+}
 
-  return {
-    achievements,
-    unlockedCount,
-    total: achievements.length,
-    percent: Math.round((unlockedCount / achievements.length) * 100),
-    justUnlocked: achievements.filter((a) => fresh.includes(a.id)),
-    pendingLookups: snapshot.pendingLookups,
-  };
+/** The badges page's board, measured and written by `evaluate`. */
+export async function boardFor(userId: string, now = new Date()): Promise<Board> {
+  const { measured, unlockedAt, pending, fresh } = await evaluate(userId, now);
+
+  const badges = measured.map((m): BadgeState => {
+    const a = ACHIEVEMENTS_BY_ID.get(m.id)!;
+    const at = unlockedAt.get(m.id) ?? null;
+    const earned = at !== null;
+    let sub: string;
+    if (at) sub = `Earned ${earnedDay(at, now)}`;
+    else if (m.progress === 0 && !seasonOpen(a, now)) sub = opensLabel(a)!;
+    else if (a.binary) sub = m.detail ?? "Not yet";
+    else sub = m.detail ?? progressLabel(a, m.progress);
+    return {
+      id: a.id,
+      name: a.name,
+      icon: a.icon,
+      description: a.description,
+      group: a.group,
+      tier: a.tier,
+      earned,
+      earnedAt: at?.toISOString() ?? null,
+      percent: earned ? 100 : Math.min(99, Math.floor((m.progress / a.target) * 100)),
+      sub,
+      toGo: earned || a.binary ? null : toGoLabel(a.target - m.progress, a.unit),
+    };
+  });
+
+  return { badges, earned: badges.filter((b) => b.earned).length, pending, fresh };
 }
 
 /**
- * How long to leave a user alone between background unlock checks. Nothing here
- * is time-critical — "you earned a badge" a minute or two after the fact is
- * indistinguishable from instant — and the cap is what stops a run of episode
- * ticks from recomputing the whole board once each.
+ * New unlocks from rows alone, without drawing anything: the check after a
+ * viewing, so a badge reached from a title page is in the bell before anyone
+ * opens the badges page. No network and no cache parsing; anything it cannot
+ * see reads low, so it can only ever unlock later than the full pass, never
+ * wrongly.
  */
-const SYNC_EVERY_MS = 2 * 60 * 1000;
-const lastSync = new Map<string, number>();
-
-/**
- * Records anything newly earned, without drawing the board.
- *
- * The full `getAchievementBoard` only runs when someone opens the achievements
- * page, so unlocks used to be discovered there and nowhere else — which is no
- * use to a notification, since by the time it appeared you would already be
- * looking at the badge. This is the same evaluation with the reporting stripped
- * out and the network turned off, cheap enough to run after tracking something.
- *
- * Returns the keys of whatever was newly earned, so a caller can announce it.
- */
-export async function syncUnlocks(
-  userId: string,
-  options: { carried?: boolean } = {},
-): Promise<string[]> {
-  const [snapshot, unlockedRows] = await Promise.all([
+export async function syncUnlocks(userId: string, now = new Date()): Promise<string[]> {
+  const [{ snapshot, history }, stored] = await Promise.all([
     buildSnapshot(userId, { offline: true }),
     db.unlockedAchievement.findMany({ where: { userId }, select: { key: true } }),
   ]);
-
-  const known = new Set(unlockedRows.map((row) => row.key));
-
-  const fresh = ACHIEVEMENTS.filter((achievement) => {
-    if (known.has(achievement.id)) return false;
-    const { progress } = achievement.measure(snapshot);
-    return Math.round(progress) >= achievement.target;
-  }).map((achievement) => achievement.id);
-
-  const carried = await classifyUnlocks(
-    userId,
-    fresh,
-    ACHIEVEMENTS.map((a) => a.id),
-  );
-
-  if (fresh.length === 0) return [];
-
-  const now = new Date();
-  await db.unlockedAchievement
-    .createMany({
-      data: fresh.map((key) => ({
-        userId,
-        key,
-        unlockedAt: now,
-        // Forced when an import is running: everything it turns up belongs to
-        // the history it brought in.
-        carried: options.carried === true || carried.has(key),
-      })),
-    })
-    .catch(() => undefined);
-
+  const have = new Set(stored.map((r) => r.key));
+  const fresh = evaluateAll(snapshot)
+    .filter((m) => !have.has(m.id) && m.progress >= ACHIEVEMENTS_BY_ID.get(m.id)!.target)
+    .map((m) => m.id);
+  await recordUnlocks(userId, fresh, history, now);
   return fresh;
 }
 
 /**
- * Fires an unlock check off to one side, at most every couple of minutes per
- * user. Deliberately not awaited: logging an episode should not wait on a badge
- * that nobody has asked to see yet.
- *
- * The throttle is per process, like the Plex sync's. Losing it on a restart
- * costs one extra recomputation, and nothing double-unlocks either way — the
- * check is idempotent.
+ * The first evaluation, run at server start for every account that has not
+ * had one under the current rules (`levelRepairedAt`), so that a database
+ * brought over from the old app reads the same level before anyone opens
+ * Badges as after. Until an account has been evaluated, its stored state is
+ * whatever the old app left: unlocks it never wrote, completion counts from its
+ * own arithmetic, and a starting line that knew nothing of the history-only
+ * snapshot. The level would then move on the first Badges visit, which is the
+ * correction happening lazily. Offline, so boot never waits on TMDB; whatever
+ * the lookups add later is judged against the history as it arrives.
  */
+export async function repairLevels(now = new Date()) {
+  const users = await db.user.findMany({ where: { levelRepairedAt: null }, select: { id: true } });
+  for (const { id } of users) {
+    try {
+      await evaluate(id, now, { offline: true });
+      await db.user.update({ where: { id }, data: { levelRepairedAt: now } });
+    } catch (error) {
+      // Left unflagged, so the next start tries again; the Badges pass still corrects it meanwhile.
+      console.error(`level repair for ${id} failed`, error);
+    }
+  }
+  return { users: users.length };
+}
+
+/**
+ * Nothing about a badge is urgent: announced a minute after the tick is
+ * indistinguishable from at once, and the gap is what stops a run of ticks
+ * rebuilding the history once each. Per process, like the refresh queue.
+ */
+const CHECK_EVERY_MS = 2 * 60 * 1000;
+const g = globalThis as unknown as { trekkerUnlockChecks?: Map<string, number> };
+const lastCheck = (g.trekkerUnlockChecks ??= new Map());
+
+/** Fire and forget, after a viewing. */
 export function scheduleUnlockCheck(userId: string) {
-  const last = lastSync.get(userId) ?? 0;
-  if (Date.now() - last < SYNC_EVERY_MS) return;
-  lastSync.set(userId, Date.now());
-
-  void syncUnlocks(userId).catch((error) => {
-    console.error("Background achievement check failed", error);
-  });
-
-  // Same idea, same throttle: a challenge finished by the episode just logged
-  // should be waiting in the bell rather than discovered on the next visit home.
-  void syncChallenges(userId).catch((error) => {
-    console.error("Background challenge check failed", error);
-  });
+  const now = Date.now();
+  if (now - (lastCheck.get(userId) ?? 0) < CHECK_EVERY_MS) return;
+  lastCheck.set(userId, now);
+  void syncUnlocks(userId).catch((error) => console.error("unlock check failed", error));
 }
 
-export type AchievementEvidence = {
-  caption: string;
-  items: EvidenceItem[];
-  /** Titles still waiting on TMDB, so a short list can say why. */
-  pendingLookups: number;
-};
+export type CabinetBadge = { id: string; name: string; icon: IconName; tier: Tier; earnedAt: string };
 
 /**
- * What earned one achievement.
- *
- * Only the evidence: the name, tier and progress are already on screen by the
- * time anyone asks for this, having come down with the wall. Fetching this
- * separately is what lets the dialog open instantly and fill in underneath,
- * rather than making a badge tap wait on the slowest query in the app.
+ * The trophy cabinet: what has been earned, newest first, straight off the
+ * table. Someone's profile is a display case, not a to-do list, so nothing is
+ * measured here. A key no longer in the catalogue stays stored but is not drawn.
  */
-export async function getAchievementEvidence(
-  userId: string,
-  id: string,
-): Promise<AchievementEvidence | null> {
-  const achievement = ACHIEVEMENTS_BY_ID.get(id);
-  if (!achievement) return null;
-
-  const snapshot = await buildSnapshot(userId);
-  const evidence = achievement.evidence?.(snapshot) ?? { caption: "", items: [] };
-
-  return {
-    caption: evidence.caption,
-    items: evidence.items,
-    pendingLookups: snapshot.pendingLookups,
-  };
-}
-
-export type Badge = {
-  id: string;
-  name: string;
-  description: string;
-  tier: Tier;
-  icon: string;
-  unlockedAt: Date;
-};
-
-/**
- * Just the badges someone has earned, newest first — a plain table read with no
- * TMDB traffic behind it. This is what the profile pages show; working out how
- * close you are to the rest is the achievements page's job.
- */
-export async function getBadges(userId: string, take?: number): Promise<Badge[]> {
+export async function cabinetFor(userId: string): Promise<CabinetBadge[]> {
   const rows = await db.unlockedAchievement.findMany({
     where: { userId },
     orderBy: { unlockedAt: "desc" },
+    select: { key: true, unlockedAt: true },
   });
-
-  const badges = rows
-    .map((row) => {
-      const achievement = ACHIEVEMENTS_BY_ID.get(row.key);
-      // A key that is no longer in the catalogue: the row stays, in case the
-      // achievement comes back, but there is nothing to draw.
-      if (!achievement) return null;
-
-      return {
-        id: achievement.id,
-        name: achievement.name,
-        description: achievement.description,
-        tier: achievement.tier,
-        icon: achievement.icon,
-        unlockedAt: row.unlockedAt,
-      } satisfies Badge;
-    })
-    .filter((badge): badge is Badge => badge !== null);
-
-  return take === undefined ? badges : badges.slice(0, take);
+  return rows.flatMap((r) => {
+    const a = ACHIEVEMENTS_BY_ID.get(r.key);
+    return a ? [{ id: a.id, name: a.name, icon: a.icon, tier: a.tier, earnedAt: r.unlockedAt.toISOString() }] : [];
+  });
 }
 
-export function achievementTotal() {
-  return ACHIEVEMENTS.length;
-}
+export { ACHIEVEMENTS, GROUPS, type Group } from "./catalogue";
 
-export function byCategory(achievements: AchievementState[]) {
-  return CATEGORIES.map((category) => ({
-    category,
-    items: achievements.filter((a) => a.category === category),
-  })).filter((group) => group.items.length > 0);
+/** Earned badges per group, from the stored unlocks alone: the chips and the level card, before the board has measured anything. */
+export async function earnedByGroup(userId: string): Promise<{ counts: Record<Group, { earned: number; total: number }>; earned: number }> {
+  const rows = await db.unlockedAchievement.findMany({ where: { userId }, select: { key: true } });
+  const counts = Object.fromEntries(GROUPS_LIST.map((g) => [g, { earned: 0, total: 0 }])) as Record<Group, { earned: number; total: number }>;
+  for (const a of ACHIEVEMENTS) counts[a.group].total += 1;
+  let earned = 0;
+  for (const r of rows) {
+    const a = ACHIEVEMENTS_BY_ID.get(r.key);
+    if (!a) continue;
+    counts[a.group].earned += 1;
+    earned += 1;
+  }
+  return { counts, earned };
 }

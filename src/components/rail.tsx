@@ -1,132 +1,108 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { Poster } from "./poster";
 
 /**
- * Horizontal scroller. Keeps native touch/trackpad scrolling, and adds arrow
- * buttons on pointer devices where dragging a row sideways is awkward.
+ * A horizontal row of artwork. One IntersectionObserver per rail decides when
+ * its images start loading, all at once, as the rail comes near the screen;
+ * nothing observes the tiles themselves, and nothing measures them. Until then
+ * each tile is its own shaded block, so the row keeps its shape. Nothing fades
+ * in: an image shows on the frame it arrives.
+ *
+ * On phones the rail bleeds to the screen edge, as the mockups draw it, and
+ * snaps (`x proximity`, each card's left edge to the 20px gutter), so a flick
+ * comes to rest on a card rather than across one; proximity rather than
+ * mandatory, so a slow drag still stops where it is let go.
+ * `cards` is the standard poster and wide card rail (`poster-card.tsx`), whose
+ * cards stand 9px apart, as the old app spaced them; everything else keeps the
+ * 12px gap.
  */
+
+const RailVisible = createContext(true);
+
 export function Rail({
   children,
+  label,
   className = "",
-  scrollRef,
-  artHeight,
+  cards = false,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
+  label?: string;
   className?: string;
-  /**
-   * How tall the pictures in this rail are, in CSS length units.
-   *
-   * Given, the edge fade is limited to that band so the captions underneath
-   * stay at full strength — see `.rail-fade-art`. Left out, the fade covers the
-   * whole row, which is right for a rail that is nothing but artwork.
-   */
-  artHeight?: string;
-  /**
-   * The scrolling element itself, handed back to a caller that needs to drive
-   * it — `UpNextRail` brings the next unwatched episode to the left edge, and
-   * reads which season is under the reader's eye from the same box.
-   */
-  scrollRef?: React.RefObject<HTMLDivElement | null>;
+  cards?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState({ start: true, end: true });
-
-  const measure = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const max = el.scrollWidth - el.clientWidth;
-    // A row that does not overflow has no start or end to reach: treat it as
-    // being at both, so neither arrow is rendered.
-    const scrollable = max > 1;
-
-    setEdges({
-      start: !scrollable || el.scrollLeft <= 1,
-      end: !scrollable || el.scrollLeft >= max - 1,
-    });
-  }, []);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
-    // ResizeObserver fires on observe, which gives us the initial measurement
-    // without setting state synchronously inside the effect body. Children are
-    // observed too: posters loading changes the scroll width but not the
-    // container's size, so watching only the container would leave the arrows
-    // stuck in their initial state.
-    const observer = new ResizeObserver(measure);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      // A screen's height of warning: the images are small and cached by the
+      // worker, and a rail that pops in under the thumb is worse than a few KB.
+      { rootMargin: "100% 0px" },
+    );
     observer.observe(el);
-    for (const child of el.children) observer.observe(child);
-
-    el.addEventListener("scroll", measure, { passive: true });
-    // Smooth scrolling keeps moving after the last `scroll` event on some
-    // browsers, so settle the state once it has actually stopped.
-    el.addEventListener("scrollend", measure);
-    // Image decode finishes after layout; `load` does not bubble, so capture.
-    el.addEventListener("load", measure, { capture: true });
-    window.addEventListener("resize", measure);
-
-    return () => {
-      observer.disconnect();
-      el.removeEventListener("scroll", measure);
-      el.removeEventListener("scrollend", measure);
-      el.removeEventListener("load", measure, { capture: true });
-      window.removeEventListener("resize", measure);
-    };
-  }, [measure]);
-
-  function nudge(direction: -1 | 1) {
-    const el = ref.current;
-    if (!el) return;
-    el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.8), behavior: "smooth" });
-  }
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className={`group/rail relative ${className}`}>
-      {/* Bleeds to the viewport edge, then re-adds the layout's own gutter, so
-          the first card lines up with the headings above it at every width.
-          The matching scroll-padding is essential: without it a snapped item
-          aligns to the scrollport edge and swallows that gutter. */}
+    <RailVisible.Provider value={visible}>
       <div
-        ref={(node) => {
-          ref.current = node;
-          if (scrollRef) scrollRef.current = node;
-        }}
-        // The fade sits on whichever side still has content behind it, so a row
-        // that fits shows no fade at all and a scrolled one never hard-cuts an
-        // item against the gutter.
-        style={artHeight ? ({ "--rail-art": artHeight } as React.CSSProperties) : undefined}
-        className={`rail -mx-4 scroll-pl-4 px-4 sm:-mx-6 sm:scroll-pl-6 sm:px-6 lg:-mx-2 lg:scroll-pl-2 lg:px-2 ${
-          artHeight ? "rail-fade-art" : ""
-        } ${edges.start ? "" : "rail-fade-start"} ${edges.end ? "" : "rail-fade-end"}`}
+        ref={ref}
+        role={label ? "list" : undefined}
+        aria-label={label}
+        className={`no-scrollbar -mx-5 flex snap-x snap-proximity scroll-px-5 overflow-x-auto px-5 *:snap-start lg:mx-0 lg:-my-3 lg:snap-none lg:px-0 lg:py-3 ${cards ? CARD_RAIL : "gap-3"} ${className}`}
       >
         {children}
       </div>
-
-      {/* Rendered only when there is somewhere to scroll to — an arrow hidden
-          with opacity alone can still be left visible by a stale style. */}
-      {!edges.start && <Arrow side="left" onClick={() => nudge(-1)} />}
-      {!edges.end && <Arrow side="right" onClick={() => nudge(1)} />}
-    </div>
+    </RailVisible.Provider>
   );
 }
 
-function Arrow({ side, onClick }: { side: "left" | "right"; onClick: () => void }) {
-  const Icon = side === "left" ? ChevronLeft : ChevronRight;
+/**
+ * The poster system's rail, its cards 9px apart. Every rail's artwork deepens
+ * its shadow on a hover (`ZOOM_SHADOW`), and a scroller clips both ways, so
+ * every rail carries 12px of room above and below from `lg`, with a negative
+ * margin to match: the shadow shows, and nothing around the rail moves.
+ */
+const CARD_RAIL = "gap-(--card-gap)";
 
+/**
+ * A poster inside a rail: drawn once the rail says so. Outside a rail, at once.
+ * A title with no artwork has nothing to load, so its placeholder shows at once.
+ */
+export function RailImage(props: Parameters<typeof Poster>[0]) {
+  const visible = useContext(RailVisible);
+  if (!visible && props.path) return <span aria-hidden="true" className={`block shrink-0 bg-surface-2 ${props.className ?? ""}`} />;
+  return <Poster {...props} />;
+}
+
+/**
+ * A backdrop at TMDB's w780, the one size a wide card asks for at both widths
+ * (318px at twice the density is 636). Asked for by name rather than through
+ * the loader's srcset, which is built for posters and would offer w342 to a
+ * phone. Gated on the rail like `RailImage`.
+ */
+export function RailBackdrop({ path, className = "" }: { path: string; className?: string }) {
+  const visible = useContext(RailVisible);
+  if (!visible) return <span aria-hidden="true" className={`block bg-surface-2 ${className}`} />;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={side === "left" ? "Scroll left" : "Scroll right"}
-      className={`absolute top-[38%] z-10 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-ink-700 bg-ink-900/90 text-ink-100 opacity-0 shadow-lg shadow-ink-950/60 backdrop-blur transition group-hover/rail:opacity-100 hover:border-flare-500 hover:text-flare-400 focus-visible:opacity-100 md:grid ${
-        side === "left" ? "-left-4" : "-right-4"
-      }`}
-    >
-      <Icon size={20} />
-    </button>
+    <Image
+      unoptimized
+      src={`https://image.tmdb.org/t/p/w780/${path.replace(/^\//, "")}`}
+      alt=""
+      width={780}
+      height={439}
+      className={`block object-cover ${className}`}
+    />
   );
 }

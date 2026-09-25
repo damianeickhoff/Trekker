@@ -1,231 +1,118 @@
 import "server-only";
-import { watchRegion } from "./region";
+import { db } from "./db";
 
 /**
- * Weather, for the screensaver and nothing else.
+ * The weather line on the screensaver, and nothing else.
  *
- * Open-Meteo, because it is the only usable forecast API that needs no account,
- * no key and no attribution — which matters for a self-hosted app whose owner
- * should not have to sign up to a third service to see a temperature on a shelf
- * tablet. Nothing about the user leaves this machine: the request carries a
- * latitude and a longitude and nothing else, no identifier of any kind, and it
- * is only ever made for someone who typed a place into their settings.
+ * Open-Meteo, because it needs no account, no key and no attribution: the
+ * owner of a self-hosted app should not have to sign up to a third service to
+ * see a temperature on a shelf. The request carries a latitude and a
+ * longitude and nothing about anyone.
  *
- * Everything fails soft. No location, an unreachable API, a shape we did not
- * expect — all of them mean "no weather panel", never a broken screensaver.
+ * The place is the instance's: `WEATHER_LATITUDE`, `WEATHER_LONGITUDE` and
+ * `WEATHER_PLACE`, else the place the admin account chose in the current app
+ * (its `screensaver*` columns came across with the database). A household
+ * shares a window. With neither there is no weather line at all.
+ *
+ * Kept an hour in this process, per place and unit: the screensaver may sit
+ * on a tablet for a fortnight, and the ceiling on requests matters more than
+ * the last degree. A failure is kept for five minutes, so an unreachable API
+ * is not asked again by every refresh, and it means no weather, never a
+ * broken screensaver.
  */
 
 const FORECAST = "https://api.open-meteo.com/v1/forecast";
-const GEOCODE = "https://geocoding-api.open-meteo.com/v1/search";
+export const WEATHER_LIFETIME_MS = 60 * 60 * 1000;
+const FAILURE_LIFETIME_MS = 5 * 60 * 1000;
 
-/**
- * The coarse kind of weather it is, for choosing a glyph.
- *
- * Separate from the label on purpose: the label is prose and belongs to this
- * module, the glyph is a lucide component and belongs to the client. Handing
- * over one of eight words rather than the raw WMO number keeps the mapping in
- * one place without dragging the whole code table into the browser.
- */
-export type WeatherKind =
-  | "clear"
-  | "part-cloud"
-  | "cloud"
-  | "fog"
-  | "drizzle"
-  | "rain"
-  | "snow"
-  | "storm";
+export type Weather = { temperature: number; unit: "C" | "F"; label: string };
 
-export type Weather = {
-  /** As the user named it — "Utrecht", not "Utrecht, Provincie Utrecht, NL". */
-  place: string;
-  /** Whole degrees. A screensaver has no use for a decimal. */
-  temperature: number;
-  feelsLike: number;
-  high: number;
-  low: number;
-  /** "C" or "F", so the panel can print the unit it was actually given. */
-  unit: "C" | "F";
-  label: string;
-  kind: WeatherKind;
-  /** Open-Meteo's own idea of it, which follows the local sunrise. */
-  isDay: boolean;
-};
+/** The countries that still report the weather in Fahrenheit; everywhere else is Celsius. */
+const FAHRENHEIT = new Set(["US", "BS", "BZ", "KY", "PW", "FM", "MH", "LR"]);
 
-/**
- * Which unit to ask for.
- *
- * Taken from the viewer's region — their own setting where they made one,
- * `WATCH_REGION` otherwise — because a second question about where this person
- * is would be a second question with the same answer. The list is every
- * country that still reports the weather in Fahrenheit; everywhere else, and an
- * unset region, gets Celsius.
- */
-const FAHRENHEIT = new Set(["US", "BS", "BZ", "KY", "PW", "FM", "MH"]);
-
-function unit(region: string = watchRegion()): "C" | "F" {
+export function unitFor(region: string): "C" | "F" {
   return FAHRENHEIT.has(region) ? "F" : "C";
 }
 
 /**
- * WMO weather interpretation codes, which is what Open-Meteo answers in.
- *
- * The full table has twenty-eight entries, most of them distinctions nobody
- * standing across a room can act on — "slight" versus "moderate" rain reads the
- * same from the sofa. These are the ones worth telling apart, and anything
- * unrecognised falls through to the cloud, which is the safest wrong answer.
+ * WMO codes, which Open-Meteo answers in, cut down to the distinctions anyone
+ * across a room can act on. Anything unrecognised reads as cloud, the safest
+ * wrong answer.
  */
-const CODES: Record<number, { label: string; kind: WeatherKind }> = {
-  0: { label: "Clear", kind: "clear" },
-  1: { label: "Mostly clear", kind: "clear" },
-  2: { label: "Partly cloudy", kind: "part-cloud" },
-  3: { label: "Overcast", kind: "cloud" },
-  45: { label: "Fog", kind: "fog" },
-  48: { label: "Freezing fog", kind: "fog" },
-  51: { label: "Light drizzle", kind: "drizzle" },
-  53: { label: "Drizzle", kind: "drizzle" },
-  55: { label: "Heavy drizzle", kind: "drizzle" },
-  56: { label: "Freezing drizzle", kind: "drizzle" },
-  57: { label: "Freezing drizzle", kind: "drizzle" },
-  61: { label: "Light rain", kind: "rain" },
-  63: { label: "Rain", kind: "rain" },
-  65: { label: "Heavy rain", kind: "rain" },
-  66: { label: "Freezing rain", kind: "rain" },
-  67: { label: "Freezing rain", kind: "rain" },
-  71: { label: "Light snow", kind: "snow" },
-  73: { label: "Snow", kind: "snow" },
-  75: { label: "Heavy snow", kind: "snow" },
-  77: { label: "Snow grains", kind: "snow" },
-  80: { label: "Showers", kind: "rain" },
-  81: { label: "Showers", kind: "rain" },
-  82: { label: "Heavy showers", kind: "rain" },
-  85: { label: "Snow showers", kind: "snow" },
-  86: { label: "Snow showers", kind: "snow" },
-  95: { label: "Thunderstorm", kind: "storm" },
-  96: { label: "Thunderstorm", kind: "storm" },
-  99: { label: "Thunderstorm", kind: "storm" },
+const CODES: Record<number, string> = {
+  0: "clear", 1: "mostly clear", 2: "partly cloudy", 3: "overcast",
+  45: "fog", 48: "freezing fog",
+  51: "light drizzle", 53: "drizzle", 55: "heavy drizzle", 56: "freezing drizzle", 57: "freezing drizzle",
+  61: "light rain", 63: "rain", 65: "heavy rain", 66: "freezing rain", 67: "freezing rain",
+  71: "light snow", 73: "snow", 75: "heavy snow", 77: "snow grains",
+  80: "showers", 81: "showers", 82: "heavy showers", 85: "snow showers", 86: "snow showers",
+  95: "thunderstorms", 96: "thunderstorms", 99: "thunderstorms",
 };
 
-type Forecast = {
-  current?: {
-    temperature_2m?: number;
-    apparent_temperature?: number;
-    is_day?: number;
-    weather_code?: number;
-  };
-  daily?: {
-    temperature_2m_max?: number[];
-    temperature_2m_min?: number[];
-  };
-};
+type Forecast = { current?: { temperature_2m?: number; weather_code?: number } };
 
-/**
- * Current conditions at a point.
- *
- * Cached for fifteen minutes, which is roughly how often Open-Meteo's own
- * current-conditions block moves. The screensaver may sit on one machine for a
- * fortnight, so the ceiling on requests matters more here than the freshness of
- * the last degree.
- */
-export async function getWeather(
+type Entry = { until: number; value: Weather | null };
+const g = globalThis as unknown as { trekkerWeather?: Map<string, Entry> };
+const kept = (g.trekkerWeather ??= new Map<string, Entry>());
+
+export type WeatherDeps = { fetcher?: typeof fetch; now?: () => number };
+
+/** Current conditions at a point, from the hour's copy when there is one. */
+export async function weatherAt(
   latitude: number,
   longitude: number,
-  place: string,
-  region?: string,
+  unit: "C" | "F",
+  { fetcher = fetch, now = Date.now }: WeatherDeps = {},
 ): Promise<Weather | null> {
-  const scale = unit(region);
+  const key = `${latitude.toFixed(2)},${longitude.toFixed(2)},${unit}`;
+  const hit = kept.get(key);
+  if (hit && hit.until > now()) return hit.value;
 
   const url = new URL(FORECAST);
   url.searchParams.set("latitude", latitude.toFixed(4));
   url.searchParams.set("longitude", longitude.toFixed(4));
-  url.searchParams.set(
-    "current",
-    "temperature_2m,apparent_temperature,is_day,weather_code",
-  );
-  url.searchParams.set("daily", "temperature_2m_max,temperature_2m_min");
-  url.searchParams.set("forecast_days", "1");
-  if (scale === "F") url.searchParams.set("temperature_unit", "fahrenheit");
-  // Without this the daily high and low are cut at UTC midnight, which in the
-  // evening hands back tomorrow's figures for somewhere east of Greenwich.
-  url.searchParams.set("timezone", "auto");
+  url.searchParams.set("current", "temperature_2m,weather_code");
+  if (unit === "F") url.searchParams.set("temperature_unit", "fahrenheit");
 
-  const data = await fetch(url, {
-    next: { revalidate: 60 * 15 },
-    signal: AbortSignal.timeout(6000),
-  })
+  const data = await fetcher(url, { cache: "no-store", signal: AbortSignal.timeout(6000) })
     .then((res) => (res.ok ? (res.json() as Promise<Forecast>) : null))
     .catch(() => null);
-
-  const current = data?.current;
-  if (!data || typeof current?.temperature_2m !== "number") return null;
-
-  const code = CODES[current.weather_code ?? 3] ?? CODES[3];
-
-  return {
-    place,
-    temperature: Math.round(current.temperature_2m),
-    feelsLike: Math.round(current.apparent_temperature ?? current.temperature_2m),
-    high: Math.round(data.daily?.temperature_2m_max?.[0] ?? current.temperature_2m),
-    low: Math.round(data.daily?.temperature_2m_min?.[0] ?? current.temperature_2m),
-    unit: scale,
-    label: code.label,
-    kind: code.kind,
-    isDay: current.is_day !== 0,
-  };
+  const temperature = data?.current?.temperature_2m;
+  const value =
+    typeof temperature === "number"
+      ? { temperature: Math.round(temperature), unit, label: CODES[data?.current?.weather_code ?? 3] ?? CODES[3] }
+      : null;
+  kept.set(key, { until: now() + (value ? WEATHER_LIFETIME_MS : FAILURE_LIFETIME_MS), value });
+  return value;
 }
 
-export type Place = {
-  name: string;
-  /** "Provincie Utrecht, Netherlands" — enough to tell two Springfields apart. */
-  detail: string;
-  latitude: number;
-  longitude: number;
-};
+/** For tests: forget every kept answer. */
+export function forgetWeather() {
+  kept.clear();
+}
 
-/**
- * Turns a typed place name into coordinates, once, when it is chosen.
- *
- * The result is stored on the account, so nothing has to be looked up again
- * while the screensaver runs — and a village whose name Open-Meteo has never
- * heard of fails at the moment somebody is looking at the settings page, which
- * is the only moment there is anywhere to say so.
- */
-export async function searchPlaces(query: string): Promise<Place[]> {
-  const trimmed = query.trim();
-  if (trimmed.length < 2) return [];
+export type Place = { name: string | null; latitude: number; longitude: number };
 
-  const url = new URL(GEOCODE);
-  url.searchParams.set("name", trimmed);
-  url.searchParams.set("count", "5");
-  url.searchParams.set("language", "en");
-  url.searchParams.set("format", "json");
+export async function instancePlace(): Promise<Place | null> {
+  const lat = Number(process.env.WEATHER_LATITUDE);
+  const lon = Number(process.env.WEATHER_LONGITUDE);
+  if (process.env.WEATHER_LATITUDE?.trim() && process.env.WEATHER_LONGITUDE?.trim() && Number.isFinite(lat) && Number.isFinite(lon)) {
+    return { name: process.env.WEATHER_PLACE?.trim() || null, latitude: lat, longitude: lon };
+  }
+  const admin = await db.user.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { screensaverPlace: true, screensaverLat: true, screensaverLon: true },
+  });
+  if (admin?.screensaverLat == null || admin.screensaverLon == null) return null;
+  return { name: admin.screensaverPlace, latitude: admin.screensaverLat, longitude: admin.screensaverLon };
+}
 
-  type Result = {
-    name?: string;
-    country?: string;
-    admin1?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-
-  const data = await fetch(url, {
-    next: { revalidate: 60 * 60 * 24 },
-    signal: AbortSignal.timeout(6000),
-  })
-    .then((res) => (res.ok ? (res.json() as Promise<{ results?: Result[] }>) : null))
-    .catch(() => null);
-
-  return (data?.results ?? [])
-    .filter(
-      (r): r is Result & { name: string; latitude: number; longitude: number } =>
-        typeof r.name === "string" &&
-        typeof r.latitude === "number" &&
-        typeof r.longitude === "number",
-    )
-    .map((r) => ({
-      name: r.name,
-      detail: [r.admin1, r.country].filter(Boolean).join(", "),
-      latitude: r.latitude,
-      longitude: r.longitude,
-    }));
+/** "Utrecht 14° and clear", or null when there is no place or no answer. */
+export async function weatherLine(region: string, deps?: WeatherDeps): Promise<string | null> {
+  const place = await instancePlace();
+  if (!place) return null;
+  const w = await weatherAt(place.latitude, place.longitude, unitFor(region), deps);
+  if (!w) return null;
+  const degrees = `${w.temperature}°${w.unit === "F" ? "F" : ""}`;
+  return [place.name, `${degrees} and ${w.label}`].filter(Boolean).join(" ");
 }

@@ -2,90 +2,47 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { createIdleTimer } from "@/lib/idle-timer";
+import { useBell } from "./bell/bell-provider";
+
+/** What counts as someone being here. Pointer movement included: it is only a timestamp. */
+const INPUT = ["pointerdown", "pointermove", "keydown", "touchstart", "wheel", "scroll"] as const;
 
 /**
- * Starts the screensaver once the app has been left alone long enough.
+ * Starts the screensaver after the account's idle minutes without input, on
+ * any signed-in page. The minutes ride on the bell's answer, so this asks the
+ * server nothing; zero, the default, means it does nothing at all.
  *
- * Mounted in the layout, so it is watching on every page — which is the whole
- * point: the tab this is meant for is the one somebody put down on the kitchen
- * counter on the discover page and did not come back to.
- *
- * Renders nothing, and does nothing at all until somebody has picked a delay in
- * settings. Zero minutes is the default and means "only when I ask", in which
- * case this listens to nothing and the browser never knows it is here.
+ * Input only notes the time (`createIdleTimer`), so there is no polling and no
+ * timer churn. A hidden tab or anything in full screen, a trailer with two
+ * minutes left, never gives way to it; either one starts the wait again.
  */
-
-/**
- * How often the clock is checked, rather than how precise the delay is.
- *
- * Activity is recorded as a timestamp and read on a timer, instead of resetting
- * a `setTimeout` on every event. `pointermove` fires a hundred times a second
- * while a mouse is moving, and tearing down and rebuilding a timer that often —
- * on every page, for the whole life of the tab — is real work for an answer that
- * was never going to be needed to the second.
- */
-const TICK = 15_000;
-
-export function ScreensaverIdle({ minutes }: { minutes: number }) {
+export function ScreensaverIdle() {
+  const minutes = useBell().data?.me?.screensaverIdle ?? 0;
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (minutes <= 0) return;
-    // Already there, or not signed in yet. The sign-in pages are the one place
-    // where a screensaver would be actively unhelpful.
-    if (pathname.startsWith("/screensaver") || pathname.startsWith("/login")) return;
-    if (pathname.startsWith("/register")) return;
-
-    const after = minutes * 60_000;
-    let last = Date.now();
-
-    function stir() {
-      last = Date.now();
-    }
-
-    /**
-     * Watching something is not being idle.
-     *
-     * A trailer handed the whole window is the case that matters: nobody
-     * touches the machine for two minutes and the screensaver would slide in
-     * over the top of it. Anything else in fullscreen deserves the same
-     * treatment, so the test is the state rather than the element.
-     */
-    function busy() {
-      if (document.fullscreenElement) return true;
-      if (document.visibilityState !== "visible") return true;
-      return false;
-    }
-
-    function check() {
-      if (busy()) {
-        // Not idle, and not accumulating idleness either — otherwise a film
-        // that finishes at the two hour mark is followed straight into the
-        // screensaver, from a standing start.
-        stir();
-        return;
-      }
-
-      if (Date.now() - last < after) return;
-
-      // Where they were, so waking up puts them back rather than on the
-      // dashboard. It is read back through `safeReturn` on the other side.
-      router.push(`/screensaver?from=${encodeURIComponent(pathname)}`);
-    }
-
-    const events = ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"] as const;
-    for (const event of events) window.addEventListener(event, stir, { passive: true });
-    document.addEventListener("visibilitychange", stir);
-
-    const timer = setInterval(check, TICK);
-
+    if (!minutes) return;
+    const timer = createIdleTimer(
+      minutes * 60_000,
+      () => {
+        const here = window.location.pathname + window.location.search;
+        router.push(`/screensaver?from=${encodeURIComponent(here)}`);
+      },
+      { shouldFire: () => document.visibilityState === "visible" && !document.fullscreenElement },
+    );
+    const onInput = () => timer.activity();
+    const onVisible = () => document.visibilityState === "visible" && timer.activity();
+    for (const name of INPUT) window.addEventListener(name, onInput, { passive: true, capture: true });
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
-      for (const event of events) window.removeEventListener(event, stir);
-      document.removeEventListener("visibilitychange", stir);
-      clearInterval(timer);
+      timer.stop();
+      for (const name of INPUT) window.removeEventListener(name, onInput, { capture: true });
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [minutes, pathname, router]);
+    // A new page is input too: the wait starts over from it.
+  }, [minutes, router, pathname]);
 
   return null;
 }

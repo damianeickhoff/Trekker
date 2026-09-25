@@ -1,59 +1,49 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getShowcase } from "@/lib/screensaver";
-import { Screensaver } from "@/components/screensaver";
+import { plexLinked } from "@/lib/now-playing";
+import { regionFor } from "@/lib/providers";
+import { safeReturn, screensaverSlides } from "@/lib/screensaver";
+import { getUpNext } from "@/lib/title-state";
+import { weatherLine } from "@/lib/weather";
+import { Screensaver } from "./screensaver";
 
-export const metadata = { title: "Screensaver — Trekker" };
+export const metadata: Metadata = { title: "Screensaver" };
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
- * Never cached. The slideshow is per person — one of the sources is their own
- * watchlist — and the weather on it is a number that is wrong within the hour.
+ * The screensaver, outside the signed-in chrome: no sidebar, no tab bar, the
+ * window is the artwork. Everything on it is rows (the titles' backdrops from
+ * the cache, Up next from `TitleState`) plus the weather, which is one
+ * request an hour for the whole instance. `?from=` is where waking returns.
  */
-export const dynamic = "force-dynamic";
-
-export default async function ScreensaverPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ from?: string }>;
-}) {
+export default async function ScreensaverPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const from = safeReturn((await searchParams).from);
 
-  const [{ from }, showcase, identity] = await Promise.all([
-    searchParams,
-    getShowcase(user.id),
-    db.user.findUnique({
-      where: { id: user.id },
-      select: { plexAccountId: true, plexUsername: true },
-    }),
+  const row = await db.user.findUnique({ where: { id: user.id }, select: { region: true } });
+  const [slides, next, weather, linked] = await Promise.all([
+    screensaverSlides(user.id),
+    getUpNext(user.id, 1),
+    weatherLine(regionFor(row?.region)),
+    plexLinked(),
   ]);
+  const first = next[0];
 
   return (
     <Screensaver
-      slides={showcase.slides}
-      weather={showcase.weather}
-      plexLinked={Boolean(identity?.plexAccountId || identity?.plexUsername)}
-      exitTo={safeReturn(from)}
+      slides={slides}
+      upNext={
+        first
+          ? { title: first.showName, code: `S${pad(first.seasonNumber)} E${pad(first.episodeNumber)}`, episode: first.episodeName }
+          : null
+      }
+      weather={weather}
+      from={from}
+      plexLinked={linked}
     />
   );
-}
-
-/**
- * Where waking up puts you.
- *
- * Whoever sends the reader here says where they came from, so waking lands them
- * back on the page they were reading rather than on the dashboard — and it is a
- * plain push rather than a `router.back()`, because the screensaver may equally
- * have been opened from a bookmark on a device that has no history to go back
- * through.
- *
- * Only ever a path on this instance. A `from` beginning `//` is a protocol-
- * relative URL and would send anyone who followed a doctored link straight off
- * to somebody else's site, which is not a thing a screensaver should be able to
- * do.
- */
-function safeReturn(from: string | undefined) {
-  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/";
-  return from;
 }

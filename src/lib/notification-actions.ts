@@ -1,39 +1,32 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { getCurrentUser } from "./auth";
-import { dismissAll, markAllRead, markRead } from "./notification-centre";
+import { bellTag, dismissAll, markAllRead, markRead } from "./notifications";
 
-/**
- * Only async functions may live in here — every export of a `"use server"` file
- * becomes a callable endpoint. Types and constants belong in
- * `notification-centre.ts`.
+/*
+ * Read marks, and clearing. They expire this person's cached bell and nothing else; the
+ * bell fetches again itself, so there is no page to re-render.
  */
 
-export async function markNotificationRead(key: string) {
+export async function readAll(): Promise<void> {
   const user = await getCurrentUser();
-  if (!user) return { ok: false };
-
-  await markRead(user.id, key);
-  // The bell is rendered by the root layout, so its count lives on every page.
-  revalidatePath("/", "layout");
-  return { ok: true };
-}
-
-export async function markAllNotificationsRead() {
-  const user = await getCurrentUser();
-  if (!user) return { ok: false };
-
+  if (!user) return;
   await markAllRead(user.id);
-  revalidatePath("/", "layout");
-  return { ok: true };
+  updateTag(bellTag(user.id));
 }
 
-export async function clearNotifications() {
+/** Clears the list: everything on it goes, not just greys out. */
+export async function clearAll(): Promise<void> {
   const user = await getCurrentUser();
-  if (!user) return { ok: false };
-
+  if (!user) return;
   await dismissAll(user.id);
-  revalidatePath("/", "layout");
-  return { ok: true };
+  updateTag(bellTag(user.id));
+}
+
+export async function readOne(key: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user || typeof key !== "string") return;
+  await markRead(user.id, key);
+  updateTag(bellTag(user.id));
 }

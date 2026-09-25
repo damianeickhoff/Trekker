@@ -1,72 +1,49 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import type { HomeUser } from "./plex-home";
+import type { HomeUser } from "./plex-tv";
 
 /**
- * The gap between "Plex says who signed in" and "and which of the household is
- * it?".
+ * The gap between "plex.tv says who signed in" and "which of the household is
+ * it?". Choosing a profile needs the owner's token (it is what plex.tv trades
+ * for a profile's own), so it is held here, on the server, for ten minutes,
+ * and the browser gets only an opaque handle in a cookie. A Plex token is a
+ * password by another name and never goes near a cookie, an address or a form.
  *
- * Picking a profile needs the owner's Plex token — that is what plex.tv will
- * exchange for a profile's own — so something has to hold it across the two
- * requests the picker takes. It is held here, on the server, and the browser
- * gets nothing but an opaque handle in a cookie. A Plex auth token is a
- * password by another name; it has no business being in a cookie, a URL or a
- * form field, and the whole point of this module is that it never is.
- *
- * In memory, and gone in ten minutes. This is a sign-in that is halfway
- * through: if it does not finish in the next minute or two it is not going to,
- * and if the process restarts underneath it the right answer is to start again
- * rather than to find a stale token waiting.
+ * In memory on purpose: a sign-in halfway through that outlives a restart
+ * should start again, not find a stale token waiting.
  */
 
 export const HANDOFF_COOKIE = "trekker_plex_choice";
+export const HANDOFF_TTL_S = 10 * 60;
 
-/** Long enough to read a list of faces and type a PIN, and no longer. */
-const TTL_MS = 10 * 60 * 1000;
+type Handoff = { ownerToken: string; users: HomeUser[]; expiresAt: number };
 
-type Handoff = {
-  ownerToken: string;
-  /** Who is on offer. Read from plex.tv once, at the top of the flow. */
-  users: HomeUser[];
-  expiresAt: number;
-};
+const g = globalThis as unknown as { trekkerPlexHandoff?: Map<string, Handoff> };
+const store = (g.trekkerPlexHandoff ??= new Map<string, Handoff>());
 
-const store = ((globalThis as { __trekkerPlexHandoff?: Map<string, Handoff> })
-  .__trekkerPlexHandoff ??= new Map<string, Handoff>());
-
-function sweep() {
-  const now = Date.now();
-  for (const [handle, entry] of store) {
-    if (entry.expiresAt < now) store.delete(handle);
-  }
+function sweep(now = Date.now()) {
+  for (const [handle, entry] of store) if (entry.expiresAt < now) store.delete(handle);
 }
 
 export function startHandoff(ownerToken: string, users: HomeUser[]): string {
   sweep();
-
   const handle = randomUUID();
-  store.set(handle, { ownerToken, users, expiresAt: Date.now() + TTL_MS });
+  store.set(handle, { ownerToken, users, expiresAt: Date.now() + HANDOFF_TTL_S * 1000 });
   return handle;
 }
 
-export function readHandoff(handle: string | undefined): Handoff | null {
+export function readHandoff(handle: string | undefined | null): Handoff | null {
   if (!handle) return null;
-
   const entry = store.get(handle);
   if (!entry) return null;
-
   if (entry.expiresAt < Date.now()) {
     store.delete(handle);
     return null;
   }
-
   return entry;
 }
 
-/**
- * Spends the handoff. Called once a profile has actually been signed into, so a
- * token cannot be reused to seat somebody at a second profile afterwards.
- */
-export function endHandoff(handle: string | undefined) {
+/** Spent once a profile is signed into, so the token cannot seat somebody at a second one. */
+export function endHandoff(handle: string | undefined | null) {
   if (handle) store.delete(handle);
 }

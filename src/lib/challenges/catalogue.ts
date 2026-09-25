@@ -1,419 +1,429 @@
 /**
- * Monthly challenges: three of them, new every month, worth bonus XP.
+ * Monthly challenges: three at a time, a new trio each month, bonus XP for each.
  *
- * Where an achievement is a lifetime claim — a hundred films, every Best
- * Picture winner — a challenge is a small thing to do *this month*. That is the
- * whole point of them: they reset, so an account with twenty years of imported
- * history starts each month on exactly the same line as one opened yesterday.
+ * An achievement is a claim about a whole history; a challenge is something to
+ * do this month. That is why they reset: an account arriving with twenty years
+ * of imported plays starts every month level with one opened yesterday.
  *
- * Everything here is measured from one month of plays, the ratings written in
- * that month, and the cached TMDB facts about the titles involved. Nothing
- * needs the network, which is what lets the bar sit on the dashboard.
+ * Pure. Every measure reads one month of plays, the ratings written in it, and
+ * cached facts about the titles involved (`TitleMeta`), which the server side
+ * gathers in four indexed reads. Ids, targets and XP are stored against
+ * `ChallengeRun` rows, so they must not change once a month has used them.
  */
+
+export type WindowPlay = {
+  mediaType: "movie" | "tv";
+  tmdbId: number;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  runtime: number;
+  watchedAt: Date;
+};
+
+export type TitleFacts = {
+  genres: string[];
+  originalLanguage: string | null;
+  year: number | null;
+  runtime: number | null;
+};
 
 export type ChallengeWindow = {
   /** Every viewing in the month, oldest first. */
-  plays: {
-    mediaType: "movie" | "tv";
-    tmdbId: number;
-    title: string;
-    seasonNumber: number | null;
-    episodeNumber: number | null;
-    runtime: number;
-    watchedAt: Date;
-  }[];
-  /** Cached TMDB facts, keyed `${mediaType}-${tmdbId}`. */
-  facts: Map<
-    string,
-    {
-      genres: string[];
-      originalLanguage: string | null;
-      year: number | null;
-      runtime: number | null;
-    }
-  >;
+  plays: WindowPlay[];
+  /** Keyed `${mediaType}-${tmdbId}`. Missing facts count as unknown, never as a match. */
+  facts: Map<string, TitleFacts>;
   /** Ratings written or changed during the month. */
-  ratings: { score: number; review: string | null }[];
-  /** Show ids the user had already watched before this month began. */
+  ratings: { review: string | null }[];
+  /** Shows with a viewing before the month began. */
   showsBefore: Set<number>;
-  /** The month itself. */
+  /** The month's year, for "released this year". */
   year: number;
-  month: number;
 };
+
+/**
+ * Names from the app's icon set (`components/icon`); the strip draws them,
+ * and the typecheck fails there if one is missing from the set.
+ */
+export type ChallengeIcon =
+  | "tv"
+  | "film"
+  | "hourglass"
+  | "calendarCheck"
+  | "flame"
+  | "shapes"
+  | "languages"
+  | "history"
+  | "camera"
+  | "sparkle"
+  | "layers"
+  | "clapperboard"
+  | "gauge"
+  | "pen"
+  | "monitorPlay"
+  | "ruler"
+  | "timer"
+  | "ghost"
+  | "sun"
+  | "moon";
 
 export type Challenge = {
   id: string;
   name: string;
+  icon: ChallengeIcon;
+  /** What the strip says: short enough for one line on a phone. */
+  short: string;
   description: string;
-  icon: string;
   target: number;
-  /** Bonus XP for finishing it. */
   xp: number;
-  /** How the numbers read under the bar. */
-  unit?: "count" | "minutes";
-  measure: (window: ChallengeWindow) => number;
+  /** Time-based ones read in hours. */
+  unit: "count" | "minutes";
+  measure: (w: ChallengeWindow) => number;
 };
 
 // ---------------------------------------------------------------------------
-// Helpers.
-// ---------------------------------------------------------------------------
+// Measures
 
-function factsFor(w: ChallengeWindow, play: ChallengeWindow["plays"][number]) {
-  return w.facts.get(`${play.mediaType}-${play.tmdbId}`);
+const factsOf = (w: ChallengeWindow, p: WindowPlay) => w.facts.get(`${p.mediaType}-${p.tmdbId}`);
+const filmsIn = (w: ChallengeWindow) => w.plays.filter((p) => p.mediaType === "movie");
+const episodesIn = (w: ChallengeWindow) => w.plays.filter((p) => p.mediaType === "tv");
+
+/** A viewing's day in the server's own calendar, which is the household's. */
+const dayOf = (p: WindowPlay) =>
+  `${p.watchedAt.getFullYear()}-${p.watchedAt.getMonth() + 1}-${p.watchedAt.getDate()}`;
+
+/** Distinct titles among the plays that pass a test. */
+function distinctTitles(plays: WindowPlay[], test: (p: WindowPlay) => boolean): number {
+  return new Set(plays.filter(test).map((p) => `${p.mediaType}-${p.tmdbId}`)).size;
 }
 
-function hasGenre(
-  w: ChallengeWindow,
-  play: ChallengeWindow["plays"][number],
-  ...needles: string[]
-) {
-  const genres = factsFor(w, play)?.genres ?? [];
-  return genres.some((genre) =>
-    needles.some((needle) => genre.toLowerCase().includes(needle.toLowerCase())),
-  );
+function hasGenre(w: ChallengeWindow, p: WindowPlay, needle: string) {
+  return (factsOf(w, p)?.genres ?? []).some((g) => g.toLowerCase().includes(needle));
 }
 
-const films = (w: ChallengeWindow) => w.plays.filter((p) => p.mediaType === "movie");
-const episodes = (w: ChallengeWindow) => w.plays.filter((p) => p.mediaType === "tv");
-
-/** Distinct calendar days with something on them. */
-function dayKeys(plays: ChallengeWindow["plays"]) {
-  return new Set(
-    plays.map((p) => `${p.watchedAt.getFullYear()}-${p.watchedAt.getMonth()}-${p.watchedAt.getDate()}`),
-  );
-}
-
-function longestStreak(plays: ChallengeWindow["plays"]) {
-  const days = [...dayKeys(plays)]
-    .map((key) => {
-      const [y, m, d] = key.split("-").map(Number);
-      return new Date(y, m, d).getTime();
-    })
-    .sort((a, b) => a - b);
-
-  let longest = 0;
+/** The longest run of consecutive days with at least one viewing. */
+function longestRun(plays: WindowPlay[]): number {
+  const days = [
+    ...new Set(
+      plays.map((p) => new Date(p.watchedAt.getFullYear(), p.watchedAt.getMonth(), p.watchedAt.getDate()).getTime()),
+    ),
+  ].sort((a, b) => a - b);
+  let best = 0;
   let run = 0;
-  let previous: number | null = null;
-
-  for (const day of days) {
-    run = previous !== null && Math.round((day - previous) / 86_400_000) === 1 ? run + 1 : 1;
-    longest = Math.max(longest, run);
-    previous = day;
+  for (let i = 0; i < days.length; i++) {
+    // Rounded, because a day across a clock change is 23 or 25 hours long.
+    run = i > 0 && Math.round((days[i] - days[i - 1]) / 86_400_000) === 1 ? run + 1 : 1;
+    best = Math.max(best, run);
   }
-  return longest;
+  return best;
 }
 
-/** The most of anything counted per day. */
-function bestDay(plays: ChallengeWindow["plays"], group?: (p: ChallengeWindow["plays"][number]) => string) {
-  const buckets = new Map<string, number>();
-  for (const play of plays) {
-    const day = `${play.watchedAt.getFullYear()}-${play.watchedAt.getMonth()}-${play.watchedAt.getDate()}`;
-    const key = group ? `${day}|${group(play)}` : day;
-    buckets.set(key, (buckets.get(key) ?? 0) + 1);
+/** The most viewings on any one day, optionally counted per group within the day. */
+function busiestDay(plays: WindowPlay[], group: (p: WindowPlay) => string = () => "") {
+  const counts = new Map<string, number>();
+  for (const p of plays) {
+    const key = `${dayOf(p)}|${group(p)}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  return Math.max(0, ...buckets.values());
+  return Math.max(0, ...counts.values());
+}
+
+function filmRuntime(w: ChallengeWindow, p: WindowPlay) {
+  return Math.max(p.runtime, factsOf(w, p)?.runtime ?? 0);
 }
 
 // ---------------------------------------------------------------------------
-// The pool.
-// ---------------------------------------------------------------------------
+// The pool, in rotation order
 
 export const CHALLENGES: Challenge[] = [
   {
     id: "marathon-month",
     name: "Marathon Month",
-    description: "Watch 20 episodes before the month is out.",
     icon: "tv",
+    short: "Watch 20 episodes",
+    description: "Watch 20 episodes before the month is out.",
     target: 20,
     xp: 500,
-    measure: (w) => episodes(w).length,
+    unit: "count",
+    measure: (w) => episodesIn(w).length,
   },
   {
     id: "feature-presentation",
     name: "Feature Presentation",
-    description: "Watch eight films this month.",
     icon: "film",
+    short: "Watch 8 films",
+    description: "Watch eight films this month.",
     target: 8,
     xp: 500,
-    measure: (w) => films(w).length,
+    unit: "count",
+    measure: (w) => filmsIn(w).length,
   },
   {
     id: "twenty-five-hours",
     name: "Twenty-Five Hours",
-    description: "Spend 25 hours watching something this month.",
     icon: "hourglass",
+    short: "Spend 25 hours watching",
+    description: "Spend 25 hours watching something this month.",
     target: 25 * 60,
     xp: 600,
     unit: "minutes",
-    measure: (w) => w.plays.reduce((sum, play) => sum + play.runtime, 0),
+    measure: (w) => w.plays.reduce((sum, p) => sum + p.runtime, 0),
   },
   {
     id: "half-the-month",
     name: "Half the Month",
+    icon: "calendarCheck",
+    short: "Log on 15 different days",
     description: "Log something on fifteen different days.",
-    icon: "calendar-check",
     target: 15,
     xp: 700,
-    measure: (w) => dayKeys(w.plays).size,
+    unit: "count",
+    measure: (w) => new Set(w.plays.map(dayOf)).size,
   },
   {
     id: "seven-in-a-row",
     name: "Seven in a Row",
-    description: "Log something seven days running, inside this month.",
     icon: "flame",
+    short: "Log 7 days running",
+    description: "Log something seven days running, inside this month.",
     target: 7,
     xp: 600,
-    measure: (w) => longestStreak(w.plays),
+    unit: "count",
+    measure: (w) => longestRun(w.plays),
   },
   {
     id: "genre-tour",
     name: "Genre Tour",
-    description: "Watch something from six different genres.",
     icon: "shapes",
+    short: "Watch 6 different genres",
+    description: "Watch something from six different genres.",
     target: 6,
     xp: 600,
-    measure: (w) => {
-      const genres = new Set<string>();
-      for (const play of w.plays) {
-        for (const genre of factsFor(w, play)?.genres ?? []) genres.add(genre);
-      }
-      return genres.size;
-    },
+    unit: "count",
+    measure: (w) => new Set(w.plays.flatMap((p) => factsOf(w, p)?.genres ?? [])).size,
   },
   {
     id: "passport",
     name: "Passport",
-    description: "Watch three titles that were not made in English.",
     icon: "languages",
+    short: "3 titles not in English",
+    description: "Watch three titles that were not made in English.",
     target: 3,
     xp: 500,
-    measure: (w) => {
-      const seen = new Set<string>();
-      for (const play of w.plays) {
-        const language = factsFor(w, play)?.originalLanguage;
-        if (language && language !== "en") seen.add(`${play.mediaType}-${play.tmdbId}`);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) =>
+      distinctTitles(w.plays, (p) => {
+        const language = factsOf(w, p)?.originalLanguage;
+        return Boolean(language) && language !== "en";
+      }),
   },
   {
     id: "time-traveller",
     name: "Time Traveller",
-    description: "Watch films from three different decades.",
     icon: "history",
+    short: "Films from 3 decades",
+    description: "Watch films from three different decades.",
     target: 3,
     xp: 500,
+    unit: "count",
     measure: (w) => {
-      const decades = new Set<number>();
-      for (const play of films(w)) {
-        const year = factsFor(w, play)?.year;
-        if (year) decades.add(Math.floor(year / 10) * 10);
-      }
-      return decades.size;
+      const decades = filmsIn(w)
+        .map((p) => factsOf(w, p)?.year)
+        .filter((y): y is number => typeof y === "number")
+        .map((y) => Math.floor(y / 10));
+      return new Set(decades).size;
     },
   },
   {
     id: "dust-off-a-classic",
     name: "Dust Off a Classic",
-    description: "Watch a film made before 1980.",
     icon: "camera",
+    short: "Something made before 1980",
+    description: "Watch a film made before 1980.",
     target: 1,
     xp: 400,
-    measure: (w) => films(w).filter((p) => (factsFor(w, p)?.year ?? 9999) < 1980).length,
+    unit: "count",
+    measure: (w) => filmsIn(w).filter((p) => (factsOf(w, p)?.year ?? Infinity) < 1980).length,
   },
   {
     id: "hot-off-the-press",
     name: "Hot off the Press",
+    icon: "sparkle",
+    short: "2 films from this year",
     description: "Watch two films released this year.",
-    icon: "sparkles",
     target: 2,
     xp: 400,
-    measure: (w) => {
-      const seen = new Set<number>();
-      for (const play of films(w)) {
-        if (factsFor(w, play)?.year === w.year) seen.add(play.tmdbId);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) => distinctTitles(filmsIn(w), (p) => factsOf(w, p)?.year === w.year),
   },
   {
     id: "one-more-episode",
     name: "One More Episode",
-    description: "Watch five episodes of the same show in one day.",
     icon: "layers",
+    short: "5 episodes of one show in a day",
+    description: "Watch five episodes of the same show in one day.",
     target: 5,
     xp: 400,
-    measure: (w) => bestDay(episodes(w), (p) => String(p.tmdbId)),
+    unit: "count",
+    measure: (w) => busiestDay(episodesIn(w), (p) => String(p.tmdbId)),
   },
   {
     id: "double-bill",
     name: "Double Bill",
-    description: "Watch two films on the same day.",
     icon: "clapperboard",
+    short: "2 films on the same day",
+    description: "Watch two films on the same day.",
     target: 2,
     xp: 400,
-    measure: (w) => bestDay(films(w)),
+    unit: "count",
+    measure: (w) => busiestDay(filmsIn(w)),
   },
   {
     id: "give-your-verdict",
     name: "Give Your Verdict",
-    description: "Rate ten titles this month.",
     icon: "gauge",
+    short: "Rate 10 titles",
+    description: "Rate ten titles this month.",
     target: 10,
     xp: 500,
+    unit: "count",
     measure: (w) => w.ratings.length,
   },
   {
     id: "in-your-own-words",
     name: "In Your Own Words",
+    icon: "pen",
+    short: "Write 3 reviews",
     description: "Write three reviews this month.",
-    icon: "pen-line",
     target: 3,
     xp: 600,
-    measure: (w) => w.ratings.filter((r) => (r.review ?? "").trim().length > 0).length,
+    unit: "count",
+    measure: (w) => w.ratings.filter((r) => (r.review ?? "").trim() !== "").length,
   },
   {
     id: "new-horizons",
     name: "New Horizons",
+    icon: "monitorPlay",
+    short: "Start 3 new shows",
     description: "Start three shows you had never watched before.",
-    icon: "monitor-play",
     target: 3,
     xp: 600,
-    measure: (w) => {
-      const started = new Set<number>();
-      for (const play of episodes(w)) {
-        if (!w.showsBefore.has(play.tmdbId)) started.add(play.tmdbId);
-      }
-      return started.size;
-    },
+    unit: "count",
+    measure: (w) => distinctTitles(episodesIn(w), (p) => !w.showsBefore.has(p.tmdbId)),
   },
   {
     id: "the-long-sit",
     name: "The Long Sit",
-    description: "Watch a film over two and a half hours long.",
     icon: "ruler",
+    short: "A film over 2.5 hours",
+    description: "Watch a film over two and a half hours long.",
     target: 1,
     xp: 400,
-    measure: (w) =>
-      films(w).filter((p) => Math.max(p.runtime, factsFor(w, p)?.runtime ?? 0) >= 150).length,
+    unit: "count",
+    measure: (w) => filmsIn(w).filter((p) => filmRuntime(w, p) >= 150).length,
   },
   {
     id: "quick-ones",
     name: "Quick Ones",
-    description: "Watch three films under a hundred minutes.",
     icon: "timer",
+    short: "3 films under 100 minutes",
+    description: "Watch three films under a hundred minutes.",
     target: 3,
     xp: 400,
-    measure: (w) => {
-      const seen = new Set<number>();
-      for (const play of films(w)) {
-        const runtime = Math.max(play.runtime, factsFor(w, play)?.runtime ?? 0);
-        if (runtime > 0 && runtime < 100) seen.add(play.tmdbId);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) =>
+      distinctTitles(filmsIn(w), (p) => {
+        const runtime = filmRuntime(w, p);
+        return runtime > 0 && runtime < 100;
+      }),
   },
   {
     id: "drawn-out",
     name: "Drawn Out",
-    description: "Watch three animated titles.",
     icon: "shapes",
+    short: "3 animated titles",
+    description: "Watch three animated titles.",
     target: 3,
     xp: 500,
-    measure: (w) => {
-      const seen = new Set<string>();
-      for (const play of w.plays) {
-        if (hasGenre(w, play, "animation")) seen.add(`${play.mediaType}-${play.tmdbId}`);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) => distinctTitles(w.plays, (p) => hasGenre(w, p, "animation")),
   },
   {
     id: "non-fiction",
     name: "Non-Fiction",
-    description: "Watch two documentaries.",
     icon: "camera",
+    short: "2 documentaries",
+    description: "Watch two documentaries.",
     target: 2,
     xp: 500,
-    measure: (w) => {
-      const seen = new Set<string>();
-      for (const play of w.plays) {
-        if (hasGenre(w, play, "documentary")) seen.add(`${play.mediaType}-${play.tmdbId}`);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) => distinctTitles(w.plays, (p) => hasGenre(w, p, "documentary")),
   },
   {
     id: "something-scary",
     name: "Something Scary",
-    description: "Watch three horror films.",
     icon: "ghost",
+    short: "3 horror films",
+    description: "Watch three horror films.",
     target: 3,
     xp: 500,
-    measure: (w) => {
-      const seen = new Set<number>();
-      for (const play of films(w)) {
-        if (hasGenre(w, play, "horror")) seen.add(play.tmdbId);
-      }
-      return seen.size;
-    },
+    unit: "count",
+    measure: (w) => distinctTitles(filmsIn(w), (p) => hasGenre(w, p, "horror")),
   },
   {
     id: "weekend-regular",
     name: "Weekend Regular",
-    description: "Watch something on four different weekend days.",
     icon: "sun",
+    short: "4 different weekend days",
+    description: "Watch something on four different weekend days.",
     target: 4,
     xp: 500,
-    measure: (w) =>
-      dayKeys(w.plays.filter((p) => [0, 6].includes(p.watchedAt.getDay()))).size,
+    unit: "count",
+    measure: (w) => new Set(w.plays.filter((p) => [0, 6].includes(p.watchedAt.getDay())).map(dayOf)).size,
   },
   {
     id: "after-midnight",
     name: "After Midnight",
-    description: "Watch something between midnight and four, three times.",
     icon: "moon",
+    short: "3 times after midnight",
+    description: "Watch something between midnight and four, three times.",
     target: 3,
     xp: 400,
-    measure: (w) =>
-      w.plays.filter((p) => {
-        const hour = p.watchedAt.getHours();
-        return hour >= 0 && hour < 4;
-      }).length,
+    unit: "count",
+    measure: (w) => w.plays.filter((p) => p.watchedAt.getHours() < 4).length,
   },
 ];
 
 export const CHALLENGES_BY_ID = new Map(CHALLENGES.map((c) => [c.id, c]));
 
-/** How many run at once. */
 export const PER_MONTH = 3;
 
-/** "2026-08" — how a month is written down. */
-export function periodKey(date: Date) {
+/** "2026-09": how a month is written on `ChallengeRun`. */
+export function periodKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function monthName(date: Date) {
-  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-}
-
 /**
- * Which three are running in a given month.
- *
- * Picked by the month itself rather than stored, so every account on the
- * instance is doing the same three and there is no state to seed, migrate or
- * keep in step.
- *
- * Each month takes the next three in order, so no challenge carries over from
- * the month before — a set that only rotated one at a time would leave two
- * thirds of the bar looking exactly as it did yesterday. The pool's length is
- * not a multiple of three, so each pass through it lands on different
- * boundaries and the trios themselves keep changing.
+ * The trio running in a month, decided by the month alone: everybody on the
+ * instance has the same three and there is nothing to store or seed. Each
+ * month takes the next three in the pool, so nothing carries over from last
+ * month; the pool is not a multiple of three, so the trios themselves shift on
+ * every pass through it.
  */
 export function challengesFor(date: Date): Challenge[] {
-  const index = date.getFullYear() * 12 + date.getMonth();
-  const size = CHALLENGES.length;
-  const start = (index * PER_MONTH) % size;
+  const month = date.getFullYear() * 12 + date.getMonth();
+  const start = (month * PER_MONTH) % CHALLENGES.length;
+  return Array.from({ length: PER_MONTH }, (_, i) => CHALLENGES[(start + i) % CHALLENGES.length]);
+}
 
-  return Array.from({ length: PER_MONTH }, (_, i) => CHALLENGES[(start + i) % size]);
+export type ChallengeProgress = { id: string; progress: number };
+
+/** How far along each challenge is, capped at its target. */
+export function evaluate(window: ChallengeWindow, active: Challenge[]): ChallengeProgress[] {
+  return active.map((c) => ({ id: c.id, progress: Math.min(Math.max(0, Math.round(c.measure(window))), c.target) }));
+}
+
+/** "14/20", or "8h/25h" for the time-based ones. */
+export function progressLabel(challenge: Challenge, progress: number): string {
+  if (challenge.unit === "minutes") return `${Math.floor(progress / 60)}h/${Math.round(challenge.target / 60)}h`;
+  return `${progress}/${challenge.target}`;
 }

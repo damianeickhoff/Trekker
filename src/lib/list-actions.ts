@@ -1,494 +1,285 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { requireUser } from "./auth";
+import { refresh } from "next/cache";
+import { getCurrentUser } from "./auth";
+import { mapLimit } from "./concurrency";
 import { db } from "./db";
-import { refreshSmartList, SMART_LIST_MAX, SMART_LIST_STEP } from "./lists";
-import { DEFAULT_FILTERS, parseFilters } from "./smart-filters";
-import { autoRequestForList, requestCap } from "./auto-request";
-import { castBlocksTv, genresWithoutTv, getViewerState, runSmartList } from "./smart-lists";
-import { searchCast, type CastSearchResult, type NormalisedItem } from "./tmdb";
+import {
+  addToList,
+  cleanName,
+  createManualList,
+  deleteList,
+  removeFromList,
+  removeFromWatchlist,
+  renameList,
+  requestPlan,
+  saveSmartList,
+} from "./lists";
+import { regionFor } from "./providers";
+import { scheduleSmartBuild } from "./refresh";
+import { mayRequest, requestOnSeerr, seerrConnected } from "./request";
+import { wholeRuntime } from "./runtime";
+import { parseFilters } from "./smart-filters";
+import { PREVIEW_SIZE, runSmartList, SMART_LIST_SIZE, viewerSets } from "./smart-lists";
+import { trendingNote, tvNote } from "./smart-query";
+import { loadFilm, loadShow } from "./title";
+import { setSaved } from "./title-writes";
+import { searchMulti, searchPeople, tmdbConfigured, type MediaType } from "./tmdb";
 
-/**
- * Everything that writes to a list.
- *
- * The watchlist is addressed by the reserved id `"watchlist"` rather than being
- * given actions of its own, so the Save menu can treat every row it shows the
- * same way — one checkbox, one call, whichever table the answer lands in.
- * `toggleWatchlist` in `actions.ts` still exists and still works; this is the
- * same write behind a different door.
+/*
+ * The lists section's writes, and the two things in it that ask TMDB while a
+ * person waits: the smart list editor's preview and Add titles' search. Every
+ * write re-renders the current page with `refresh()`; nothing cached hangs off
+ * a list, so there is no tag to expire.
  */
 
-const WATCHLIST = "watchlist";
+const isId = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n) && n > 0;
+const isMedia = (t: unknown): t is MediaType => t === "movie" || t === "tv";
+const isListId = (s: unknown): s is string => typeof s === "string" && /^[a-z0-9]{8,40}$/i.test(s);
 
-const title = z.object({
-  mediaType: z.enum(["movie", "tv"]),
-  tmdbId: z.number().int(),
-  title: z.string().min(1),
-  poster: z.string().nullish(),
-  score: z.number().int().nullish(),
-  year: z.string().nullish(),
-});
-
-export type TitleInput = z.input<typeof title>;
-
-/** Lists show up on the home page rails and in the nav, so redraw the lot. */
-function revalidateLists() {
-  revalidatePath("/", "layout");
-}
-
-/* ==========================================================================
- * Membership
- * ======================================================================== */
-
-/**
- * Adds or removes a title from one place, and says which it did.
- *
- * The answer is the new state rather than "ok", because the button that called
- * this has already drawn the optimistic version and needs to be told when the
- * server disagreed — a list deleted in another tab, say.
- */
-export async function toggleInList(input: { listId: string; item: TitleInput }) {
-  const user = await requireUser();
-  const item = title.parse(input.item);
-
-  if (input.listId === WATCHLIST) {
-    const existing = await db.watchlistItem.findUnique({
-      where: {
-        userId_mediaType_tmdbId: {
-          userId: user.id,
-          mediaType: item.mediaType,
-          tmdbId: item.tmdbId,
-        },
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      await db.watchlistItem.delete({ where: { id: existing.id } });
-    } else {
-      await db.watchlistItem.create({
-        data: {
-          userId: user.id,
-          mediaType: item.mediaType,
-          tmdbId: item.tmdbId,
-          title: item.title,
-          poster: item.poster ?? null,
-          score: item.score ?? null,
-        },
-      });
-    }
-
-    revalidateLists();
-    return { holds: !existing };
+/** A title's row fields from its details, read through the cache as a title page would. */
+async function describe(mediaType: MediaType, tmdbId: number) {
+  if (mediaType === "tv") {
+    const show = await loadShow(tmdbId);
+    if (!show) return null;
+    const d = show.details;
+    return {
+      mediaType,
+      tmdbId,
+      title: d.name,
+      poster: d.poster_path,
+      score: Math.round(d.vote_average * 10) || null,
+      year: d.first_air_date ? d.first_air_date.slice(0, 4) : null,
+      runtime: wholeRuntime("tv", d),
+    };
   }
-
-  // Scoped by user as well as by id: an id from a stale page must not be able
-  // to write into somebody else's list.
-  const list = await db.mediaList.findFirst({
-    where: { id: input.listId, userId: user.id, kind: "manual" },
-    select: { id: true },
-  });
-  if (!list) return { holds: false, error: "That list is gone" };
-
-  const existing = await db.mediaListItem.findUnique({
-    where: {
-      listId_mediaType_tmdbId: {
-        listId: list.id,
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-      },
-    },
-    select: { id: true },
-  });
-
-  if (existing) {
-    await db.mediaListItem.delete({ where: { id: existing.id } });
-  } else {
-    // New titles go to the end. `position` is only ever read in order, so the
-    // gaps a removal leaves behind cost nothing.
-    const last = await db.mediaListItem.findFirst({
-      where: { listId: list.id },
-      orderBy: { position: "desc" },
-      select: { position: true },
-    });
-
-    await db.mediaListItem.create({
-      data: {
-        listId: list.id,
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-        title: item.title,
-        poster: item.poster ?? null,
-        score: item.score ?? null,
-        year: item.year ?? null,
-        position: (last?.position ?? -1) + 1,
-      },
-    });
-  }
-
-  revalidateLists();
-  return { holds: !existing };
-}
-
-/** The heart. One press, no list to choose. */
-export async function toggleFavourite(input: TitleInput) {
-  const user = await requireUser();
-  const item = title.parse(input);
-
-  const key = {
-    userId_mediaType_tmdbId: {
-      userId: user.id,
-      mediaType: item.mediaType,
-      tmdbId: item.tmdbId,
-    },
+  const film = await loadFilm(tmdbId);
+  if (!film) return null;
+  const d = film.details;
+  return {
+    mediaType,
+    tmdbId,
+    title: d.title,
+    poster: d.poster_path,
+    score: Math.round(d.vote_average * 10) || null,
+    year: d.release_date ? d.release_date.slice(0, 4) : null,
+    runtime: wholeRuntime("movie", d),
   };
-
-  const existing = await db.favourite.findUnique({ where: key, select: { id: true } });
-
-  if (existing) {
-    await db.favourite.delete({ where: { id: existing.id } });
-  } else {
-    await db.favourite.create({
-      data: {
-        userId: user.id,
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-        title: item.title,
-        poster: item.poster ?? null,
-        score: item.score ?? null,
-      },
-    });
-  }
-
-  revalidateLists();
-  return { favourite: !existing };
 }
 
-/** Takes one title off a list, from the list's own page. */
-export async function removeFromList(input: { listId: string; itemId: string }) {
-  const user = await requireUser();
+// ---------------------------------------------------------------------------
+// Manual lists
 
-  const { count } = await db.mediaListItem.deleteMany({
-    where: { id: input.itemId, listId: input.listId, list: { userId: user.id } },
-  });
-
-  revalidateLists();
-  return { removed: count > 0 };
+export async function createList(name: string): Promise<{ id: string } | { error: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Signed out." };
+  const clean = cleanName(name);
+  if (!clean) return { error: "Give it a name." };
+  const list = await createManualList(user.id, clean);
+  refresh();
+  return { id: list.id };
 }
 
-/* ==========================================================================
- * The lists themselves
- * ======================================================================== */
-
-const NAME_LIMIT = 60;
-
-const name = z.string().trim().min(1, "Give the list a name").max(NAME_LIMIT);
-
-/**
- * Makes a list. A manual one is empty; a smart one is filled in immediately, so
- * that it is never shown as an empty rail while waiting for the nightly job.
- */
-export async function createList(input: {
-  name: string;
-  kind: "manual" | "smart";
-  filters?: unknown;
-  /** Optional: put this title on the new list straight away. */
-  item?: TitleInput;
-}) {
-  const user = await requireUser();
-
-  const parsed = name.safeParse(input.name);
-  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
-
-  const smart = input.kind === "smart";
-
-  const list = await db.mediaList.create({
-    data: {
-      userId: user.id,
-      name: parsed.data,
-      kind: smart ? "smart" : "manual",
-      filters: smart ? JSON.stringify(parseFilters(input.filters ?? DEFAULT_FILTERS)) : null,
-    },
-  });
-
-  if (smart) {
-    await refreshSmartList(list).catch(() => undefined);
-  } else if (input.item) {
-    const item = title.parse(input.item);
-    await db.mediaListItem.create({
-      data: {
-        listId: list.id,
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-        title: item.title,
-        poster: item.poster ?? null,
-        score: item.score ?? null,
-        year: item.year ?? null,
-        position: 0,
-      },
-    });
-  }
-
-  revalidateLists();
-  return { ok: true as const, id: list.id, name: list.name };
+export async function renameListAction(listId: string, name: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  const clean = cleanName(name);
+  if (!user || !isListId(listId) || !clean) return false;
+  const ok = await renameList(user.id, listId, clean);
+  if (ok) refresh();
+  return ok;
 }
 
-export async function renameList(input: { listId: string; name: string }) {
-  const user = await requireUser();
-
-  const parsed = name.safeParse(input.name);
-  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
-
-  const { count } = await db.mediaList.updateMany({
-    where: { id: input.listId, userId: user.id },
-    data: { name: parsed.data },
-  });
-
-  revalidateLists();
-  return count > 0 ? { ok: true as const, name: parsed.data } : { ok: false as const, error: "That list is gone" };
+/** No refresh: the page it was on no longer exists, and the caller goes to /lists. */
+export async function deleteListAction(listId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user || !isListId(listId)) return false;
+  return deleteList(user.id, listId);
 }
 
-export async function deleteList(listId: string) {
-  const user = await requireUser();
-  // Items go with it: the relation cascades.
-  await db.mediaList.deleteMany({ where: { id: listId, userId: user.id } });
-  revalidateLists();
-  return { ok: true };
+export async function removeFromListAction(listId: string, mediaType: MediaType, tmdbId: number) {
+  const user = await getCurrentUser();
+  if (!user || !isListId(listId) || !isMedia(mediaType) || !isId(tmdbId)) return;
+  if (await removeFromList(user.id, listId, mediaType, tmdbId)) refresh();
 }
 
-/**
- * Saves a new question onto an existing smart list and answers it at once.
- *
- * The rebuild is not left to the nightly job on purpose: the user has just
- * spent a minute watching a live preview change, and being shown yesterday's
- * answer the moment they press Save would undo all of that.
- */
-export async function updateSmartList(input: { listId: string; name?: string; filters: unknown }) {
-  const user = await requireUser();
-
-  const list = await db.mediaList.findFirst({
-    where: { id: input.listId, userId: user.id, kind: "smart" },
-  });
-  if (!list) return { ok: false as const, error: "That list is gone" };
-
-  let listName = list.name;
-  if (input.name !== undefined) {
-    const parsed = name.safeParse(input.name);
-    if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
-    listName = parsed.data;
-  }
-
-  const filters = JSON.stringify(parseFilters(input.filters));
-
-  const updated = await db.mediaList.update({
-    where: { id: list.id },
-    data: { name: listName, filters },
-  });
-
-  await refreshSmartList(updated).catch(() => undefined);
-
-  revalidateLists();
-  return { ok: true as const, id: list.id, name: listName };
+export async function removeFromWatchlistAction(mediaType: MediaType, tmdbId: number) {
+  const user = await getCurrentUser();
+  if (!user || !isMedia(mediaType) || !isId(tmdbId)) return;
+  await removeFromWatchlist(user.id, mediaType, tmdbId);
+  refresh();
 }
 
-/** Rebuilds one smart list now, from the list's own page. */
-export async function refreshList(listId: string) {
-  const user = await requireUser();
-
-  const list = await db.mediaList.findFirst({
-    where: { id: listId, userId: user.id, kind: "smart" },
-  });
-  if (!list) return { ok: false as const, error: "That list is gone" };
-
-  await refreshSmartList(list);
-  revalidateLists();
-  return { ok: true as const };
-}
-
-/* ==========================================================================
- * The live preview
- * ======================================================================== */
-
-export type PreviewResult = {
-  items: NormalisedItem[];
-  /**
-   * Genres the user picked that TMDB has no television equivalent for. When
-   * this is non-empty and shows were asked for, the shows half of the query was
-   * dropped — the editor says so rather than letting the results look broken.
-   */
-  genresWithoutTv: string[];
-  /**
-   * True when a cast filter is what dropped the shows half. TMDB's television
-   * discover has no cast parameter at all, so the editor has to say why the
-   * answer is films only rather than leave it looking like a bug.
-   */
-  castBlocksTv: boolean;
+export type SearchHit = {
+  mediaType: MediaType;
+  tmdbId: number;
+  title: string;
+  poster: string | null;
+  year: string | null;
+  onList: boolean;
 };
 
-/** How many the editor shows while you are still deciding. */
-const PREVIEW_SIZE = 20;
+/**
+ * Add titles' search: TMDB's multi search through the cache (an hour's
+ * lifetime), with what the list already holds marked. Two characters at
+ * least, where a search stops being the whole catalogue.
+ */
+export async function searchForList(listId: string, query: string): Promise<SearchHit[]> {
+  const user = await getCurrentUser();
+  const term = typeof query === "string" ? query.trim().slice(0, 100) : "";
+  if (!user || !isListId(listId) || term.length < 2 || !tmdbConfigured()) return [];
+  const [found, held] = await Promise.all([
+    searchMulti(term).catch(() => null),
+    db.mediaListItem.findMany({ where: { listId, list: { userId: user.id } }, select: { mediaType: true, tmdbId: true } }),
+  ]);
+  const on = new Set(held.map((h) => `${h.mediaType}-${h.tmdbId}`));
+  return (found?.items ?? []).slice(0, 12).map((i) => ({
+    mediaType: i.mediaType,
+    tmdbId: i.id,
+    title: i.title,
+    poster: i.poster,
+    year: i.year,
+    onList: on.has(`${i.mediaType}-${i.id}`),
+  }));
+}
+
+export async function addTitleToList(listId: string, mediaType: MediaType, tmdbId: number): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user || !isListId(listId) || !isMedia(mediaType) || !isId(tmdbId)) return false;
+  const item = await describe(mediaType, tmdbId).catch(() => null);
+  if (!item) return false;
+  const ok = await addToList(user.id, listId, item);
+  if (ok) refresh();
+  return ok;
+}
 
 /**
- * The next slice of a smart list, past the sixty that were cached.
- *
- * Only the first `SMART_LIST_SIZE` titles are stored, because a smart list is a
- * cache of an answer rather than a membership roll — storing two hundred rows
- * per list, rewritten nightly, to serve the handful of people who scroll past
- * the first screen would be the wrong trade. So scrolling past the cache re-runs
- * the query a little deeper and takes what is new.
- *
- * Re-running from the top each time looks wasteful and mostly is not: the pages
- * already walked come back from the TMDB fetch cache, so the only real cost is
- * the one new page at the end. It buys the thing that matters — the deeper run
- * is the *same* query, so item 61 is genuinely the next one, not the first item
- * of a differently-sorted second opinion.
- *
- * Three things stop this from being an open-ended crawl, and they are all here
- * rather than in the browser, because the browser is not the part to trust:
- * the offset is clamped, the total is capped at `SMART_LIST_MAX`, and a short
- * answer reports `done` so the caller stops asking.
+ * Save's menu on a title page: the watchlist or one manual list, on or off.
+ * Filing only; lists are made on the lists page and nowhere else.
  */
-export async function loadMoreSmartList(input: { listId: string; offset: number }): Promise<{
-  items: NormalisedItem[];
-  done: boolean;
-}> {
-  const user = await requireUser();
+export async function setSaveTarget(target: string, mediaType: MediaType, tmdbId: number, on: boolean) {
+  const user = await getCurrentUser();
+  if (!user || !isMedia(mediaType) || !isId(tmdbId)) return;
+  if (target === "watchlist") {
+    const d = await describe(mediaType, tmdbId);
+    if (!d) return;
+    await setSaved(user.id, mediaType, tmdbId, on === true, d);
+  } else if (isListId(target)) {
+    if (on === true) {
+      const d = await describe(mediaType, tmdbId);
+      if (!d) return;
+      await addToList(user.id, target, d);
+    } else {
+      await removeFromList(user.id, target, mediaType, tmdbId);
+    }
+  } else return;
+  refresh();
+}
 
-  const list = await db.mediaList.findFirst({
-    where: { id: input.listId, userId: user.id, kind: "smart" },
-    select: { filters: true },
-  });
-  if (!list) return { items: [], done: true };
+// ---------------------------------------------------------------------------
+// Smart lists
 
-  // Whatever the caller claims, this only ever reads inside the window.
-  const offset = Math.min(Math.max(0, Math.floor(input.offset) || 0), SMART_LIST_MAX);
-  if (offset >= SMART_LIST_MAX) return { items: [], done: true };
+export type PreviewItem = { mediaType: MediaType; tmdbId: number; title: string; poster: string | null; score: number };
 
-  const filters = parseFilters(list.filters);
-  const viewer =
-    filters.hideWatched || filters.hideSaved ? await getViewerState(user.id) : undefined;
+export type Preview = {
+  items: PreviewItem[];
+  /** How many a saved list would keep, up to sixty. */
+  count: number;
+  /** How many the question matches in all, which the preview reports (`matchTotal`). */
+  total: number;
+  /** False when TMDB could not answer, which is not the same as nothing matching. */
+  ok: boolean;
+  tvNote: string | null;
+  trendingNote: string | null;
+};
 
-  const wanted = Math.min(offset + SMART_LIST_STEP, SMART_LIST_MAX);
-  const all = await runSmartList(filters, wanted, viewer).catch(() => []);
-  const items = all.slice(offset);
-
+/**
+ * The editor's live preview: the same run the saved list makes, at the same
+ * depth, so the twenty shown are the top of what Save would store and the
+ * count is what it would hold; the total is what the question matches beyond
+ * that, which is what the editor shows. Through the cache, so going back to a question
+ * already asked costs nothing.
+ */
+export async function previewSmartList(raw: unknown): Promise<Preview> {
+  const user = await getCurrentUser();
+  const f = parseFilters(raw);
+  const notes = { tvNote: tvNote(f), trendingNote: trendingNote(f) };
+  if (!user) return { items: [], count: 0, total: 0, ok: false, ...notes };
+  const me = await db.user.findUnique({ where: { id: user.id }, select: { region: true } });
+  const viewer = f.hideWatched || f.hideSaved ? await viewerSets(user.id) : undefined;
+  const answer = await runSmartList(f, SMART_LIST_SIZE, { region: regionFor(me?.region), viewer });
   return {
-    items,
-    // Either TMDB has run out — a run that came back short will not get longer
-    // by being asked again — or we have reached the ceiling.
-    done: items.length < SMART_LIST_STEP || offset + items.length >= SMART_LIST_MAX,
+    items: answer.items.slice(0, PREVIEW_SIZE).map((i) => ({
+      mediaType: i.mediaType,
+      tmdbId: i.id,
+      title: i.title,
+      poster: i.poster,
+      score: i.score,
+    })),
+    count: answer.items.length,
+    total: answer.total,
+    ok: answer.ok,
+    ...notes,
   };
 }
 
+export async function findPeople(query: string) {
+  const user = await getCurrentUser();
+  const term = typeof query === "string" ? query.trim().slice(0, 80) : "";
+  if (!user || term.length < 2 || !tmdbConfigured()) return [];
+  return (await searchPeople(term).catch(() => [])).slice(0, 8);
+}
+
 /**
- * Runs the filters as they currently stand and returns the first twenty.
- *
- * This is the same call the saved list makes, only shallower — which is the
- * point: what the editor shows has to be the top of what the list will hold,
- * or the preview is a lie. It takes no list id because it deliberately works
- * before anything has been created.
+ * Writes the list and queues its first build, which reads the answers the
+ * preview has just put in the cache, so it lands in moments. The caller goes
+ * to the list, whose "being built" line waits for it.
  */
-export async function previewSmartList(rawFilters: unknown): Promise<PreviewResult> {
-  const user = await requireUser();
-  const filters = parseFilters(rawFilters);
+export async function saveSmartListAction(
+  listId: string | null,
+  name: string,
+  raw: unknown,
+  autoRequest?: boolean,
+): Promise<{ id: string } | { error: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Signed out." };
+  const clean = cleanName(name);
+  if (!clean) return { error: "Give it a name." };
+  if (listId !== null && !isListId(listId)) return { error: "That list is gone." };
+  // The switch is stored only where it was offered.
+  const auto = typeof autoRequest === "boolean" && (await seerrConnected()) ? autoRequest : undefined;
+  const id = await saveSmartList(user.id, listId, clean, JSON.stringify(parseFilters(raw)), auto);
+  if (!id) return { error: "That list is gone." };
+  void scheduleSmartBuild(id).catch((error) => console.error(`build of smart list ${id} failed`, error));
+  return { id };
+}
 
-  const viewer =
-    filters.hideWatched || filters.hideSaved ? await getViewerState(user.id) : undefined;
+// ---------------------------------------------------------------------------
+// Requesting what a smart list finds
 
-  const items = await runSmartList(filters, PREVIEW_SIZE, viewer).catch(() => []);
+export type RequestAllOutcome = { filed: number; failed: number; error: string | null };
 
+/**
+ * Request all: files an Overseerr request for each title the plan names,
+ * leaving out those already streaming on a service this person pays for when
+ * they chose to skip them. The plan is worked out again here rather than
+ * trusted from the page. Two at a time through the Overseerr gate.
+ */
+export async function requestAllOnList(listId: string, skipSubscribed: boolean): Promise<RequestAllOutcome> {
+  const user = await getCurrentUser();
+  if (!user || !isListId(listId)) return { filed: 0, failed: 0, error: "Signed out." };
+  if (!(await mayRequest(user.id))) {
+    return { filed: 0, failed: 0, error: "Requesting is limited to people with access to this Plex server." };
+  }
+  const plan = await requestPlan(user.id, listId);
+  if (!plan) return { filed: 0, failed: 0, error: "That list is gone." };
+  const skip = new Set(skipSubscribed ? plan.subscribed.map((s) => `${s.mediaType}-${s.tmdbId}`) : []);
+  const wanted = plan.titles.filter((t) => !skip.has(`${t.mediaType}-${t.tmdbId}`));
+  const outcomes = await mapLimit(wanted, 2, (t) => requestOnSeerr(user.id, t.mediaType, t.tmdbId));
+  const failed = outcomes.filter((o) => !o.ok);
+  refresh();
   return {
-    items,
-    genresWithoutTv: filters.kind === "movie" ? [] : genresWithoutTv(filters),
-    castBlocksTv: castBlocksTv(filters),
+    filed: outcomes.length - failed.length,
+    failed: failed.length,
+    error: failed.length ? (failed[0] as { error: string }).error : null,
   };
-}
-
-/**
- * People to choose from, for the cast filter.
- *
- * A server action rather than an API route: the editor is the only caller, it
- * already reaches the server this way for its preview, and this keeps the TMDB
- * key where it belongs. Signed in only — everything else in this file is, and a
- * public search endpoint would be a free proxy onto somebody else's API quota.
- */
-export async function searchPeople(query: string): Promise<CastSearchResult[]> {
-  await requireUser();
-
-  const term = query.trim();
-  // Two characters is where a name search stops being every actor on TMDB.
-  if (term.length < 2) return [];
-
-  return searchCast(term, 8).catch(() => []);
-}
-
-/* ==========================================================================
- * Auto-requesting
- * ======================================================================== */
-
-const autoRequestInput = z.object({
-  listId: z.string().min(1),
-  enabled: z.boolean(),
-  scope: z.enum(["missing", "all"]),
-  cap: z.number().int(),
-});
-
-/**
- * Saves a smart list's auto-request settings.
- *
- * Separate from `updateSmartList` on purpose: that one rewrites the filters and
- * re-runs the whole query, which is a lot to do because somebody moved a
- * slider. This touches four columns and answers immediately.
- */
-export async function setAutoRequest(input: unknown) {
-  const user = await requireUser();
-
-  const parsed = autoRequestInput.safeParse(input);
-  if (!parsed.success) return { ok: false as const, error: "That does not look right" };
-
-  const { listId, enabled, scope, cap } = parsed.data;
-
-  const list = await db.mediaList.findFirst({
-    where: { id: listId, userId: user.id, kind: "smart" },
-    select: { id: true },
-  });
-  if (!list) return { ok: false as const, error: "That list is gone" };
-
-  await db.mediaList.update({
-    where: { id: list.id },
-    data: {
-      autoRequest: enabled,
-      autoRequestScope: scope,
-      // Clamped here as well as in the engine. The browser is not the authority
-      // on how much of somebody's disk this may spend.
-      autoRequestCap: requestCap(cap),
-    },
-  });
-
-  revalidateLists();
-  return { ok: true as const };
-}
-
-/**
- * Runs a list's auto-request now, from the editor.
- *
- * The nightly job is what this feature is *for*, but a setting you cannot try
- * is a setting nobody trusts — and finding out tomorrow that it asked for the
- * wrong twenty things is the worst way to learn.
- */
-export async function runAutoRequestNow(listId: string) {
-  const user = await requireUser();
-
-  const list = await db.mediaList.findFirst({
-    where: { id: listId, userId: user.id, kind: "smart" },
-    select: { id: true },
-  });
-  if (!list) return { ok: false as const, error: "That list is gone" };
-
-  const result = await autoRequestForList(list.id);
-
-  revalidateLists();
-  return { ok: true as const, ...result };
 }

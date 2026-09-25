@@ -78,6 +78,30 @@ model User {
   traktClientId String?
   traktUsername String?
 
+  /// The two webhooks' secrets, instance-wide and so on the admin's row beside
+  /// the connections they belong to. Sealed like the tokens (`token-vault.ts`),
+  /// shown in the Manage sheets, and made on first sight there. Plex cannot
+  /// send a header, so its secret rides in the address; Overseerr sends it as
+  /// the Authorization header it lets you set.
+  plexWebhookSecret  String?
+  seerrWebhookSecret String?
+
+  /// When this person's Plex history was last read into their plays, by the
+  /// half-hourly job or Sync now. Null means never, which the job reads as due.
+  plexSyncedAt DateTime?
+
+  /// An import running or finished (Trakt, from its API or an export file),
+  /// stored like the backfill's progress so Home can show a card from a row
+  /// and a restart mid-way is noticed. `importSummary` is JSON: what was
+  /// logged, rated, saved and skipped, for the Trakt sheet to report.
+  importSource     String?
+  importStage      String?
+  importTotal      Int       @default(0)
+  importDone       Int       @default(0)
+  importStartedAt  DateTime?
+  importFinishedAt DateTime?
+  importSummary    String?
+
   /// The two completion bonuses behind the level: how many shows have been
   /// watched to the end of a finished run, and how many franchises are complete.
   /// Both need TMDB to answer, which is far too expensive for a profile render,
@@ -97,6 +121,13 @@ model User {
   levelBaseShows      Int       @default(0)
   levelBaseFranchises Int       @default(0)
   levelBaselineAt     DateTime?
+  /// When this account's stored level state (unlocks, both completion counts
+  /// and their starting line) was last brought into line with a full offline
+  /// evaluation at server start (`repairLevels`). Null means never under the
+  /// current rules: a database from the old app arrives with state that its
+  /// arithmetic wrote, and the level would otherwise move on the first Badges
+  /// visit. Cleared by a migration whenever the rules change.
+  levelRepairedAt     DateTime?
 
   /// Whether the monthly challenge strip on the dashboard is folded away. On the
   /// account rather than in the browser so the choice follows you between the
@@ -107,6 +138,17 @@ model User {
   /// Whether the experience breakdown on the achievements page is folded down to
   /// just the bar. On the account for the same reason as the one above.
   xpPanelCollapsed Boolean @default(false)
+
+  /// What stands behind every page (`lib/background.ts`): "gradient",
+  /// "artwork" or "colour". Null is plain, the page colour, which is the
+  /// default and what every account had before. The shell paints before any
+  /// data, so the choice is mirrored in the `trekker_background` cookie, which
+  /// the root layout and the boot script read; this row is what the cookie is
+  /// written from, so the choice follows the person to their other devices.
+  background    String?
+  /// The colour variant's hue in degrees, one of the eight swatches. Kept when
+  /// another variant is chosen, so going back to colour finds the last pick.
+  backgroundHue Int?
 
   /// The screensaver: minutes of nothing at all before it starts by itself.
   ///
@@ -124,6 +166,39 @@ model User {
   screensaverPlace  String?
   screensaverLat    Float?
   screensaverLon    Float?
+
+  /// The two pushes that are not the morning one, each a yes or no for the
+  /// account rather than the device: a friend request or a recommendation the
+  /// moment it arrives, and the month's challenges on the first. Whether a
+  /// device takes push at all is its `PushSubscription` row; these only say
+  /// which of the extra messages its owner wants. Friends is on because those
+  /// pushes were sent before there was a switch; challenges is new and off.
+  notifyFriends    Boolean @default(true)
+  notifyChallenges Boolean @default(false)
+  /// News about what this account follows (T2) in the morning push, off
+  /// until asked for; the bell and the News page show it either way. Since
+  /// Round 10 it is "Push me the big ones" alone: renewals, cancellations,
+  /// endings and dates set or moved for what they watch or saved. A new
+  /// trailer or next-episode date is not pushed; the page and the bell show it.
+  notifyNews       Boolean @default(false)
+  /// Round 10: a followed person's new work (announced or released) in the
+  /// same morning push, so never more than once a day. Split from
+  /// `notifyNews`, which used to carry it; the migration copied that switch's
+  /// value here so nobody's push changed on the day.
+  notifyNewsPeople Boolean @default(false)
+
+  /// How the News page reads (Settings › News, Round 10). Which chip it opens
+  /// on without one in the address: "for-you", "top", or "last" (the last chip
+  /// chosen, which only the browser knows, in localStorage).
+  newsOpenOn     String  @default("for-you")
+  /// Whether opening a For you story marks it read. Off, only Mark all read
+  /// clears the count, for someone who treats the count as a to-read pile.
+  newsMarkOnOpen Boolean @default(true)
+  /// 7 or 30: how far back the page shows headlines. The instance keeps press
+  /// rows 30 days for everyone; the shorter value only hides older ones, and
+  /// prunes the rows of this account's own feeds when no other owner wants
+  /// them longer.
+  newsKeepDays   Int     @default(30)
 
   /// Every achievement id this account has been measured against, comma
   /// separated. What makes a *newly added* achievement that a years-old imported
@@ -152,6 +227,28 @@ model User {
   /// `getCurrentUser` refuses anything that no longer matches.
   tokenVersion Int @default(0)
 
+  /// What the profile and the level read instead of counting the play log on
+  /// every render. Written only by `recordPlay` and `removePlay`, inside the
+  /// same transaction as the rows they count, and always re-derived with a
+  /// COUNT rather than incremented — so a path that forgets to adjust them
+  /// cannot exist, and running either function again repairs any drift.
+  watchedEpisodeCount Int @default(0)
+  watchedMovieCount   Int @default(0)
+  playCount           Int @default(0)
+  minutesWatched      Int @default(0)
+
+  /// The import backfill: working out where this person is in every show in
+  /// their history, which needs TMDB once per show. Progress is stored rather
+  /// than held in memory so the dashboard can say "Working out where you are in
+  /// 84 shows" from a row, and so a restart mid-way is noticed and resumed.
+  /// `backfillFinishedAt` null with history present means it has not run yet.
+  backfillTotal      Int       @default(0)
+  backfillDone       Int       @default(0)
+  backfillStartedAt  DateTime?
+  backfillFinishedAt DateTime?
+
+  titleStates TitleState[]
+
   deletedPlays DeletedPlay[]
 
   sentRequests     Friendship[] @relation("SentFriendRequests")
@@ -163,6 +260,15 @@ model User {
   comments         Comment[]
   commentReactions CommentReaction[]
   feelings         Feeling[]
+
+  /// People this person follows from the actor page; see `FollowedPerson`.
+  followedPeople FollowedPerson[]
+  newsSources    NewsSource[]
+  newsFeeds      UserFeed[]
+
+  /// The instance's admin is the oldest account, and the Plex and Overseerr
+  /// connections live on it, so "first by createdAt" is asked often.
+  @@index([createdAt])
 }
 
 /// "You should watch this."
@@ -348,6 +454,9 @@ model NotificationRead {
 
   @@unique([userId, key])
   @@index([userId])
+  /// This table only ever grows, so the daily job keeps the newest 200 rows
+  /// per user (`capNotificationReads`), and this is the order it keeps them in.
+  @@index([userId, readAt])
 }
 
 /// Something still meant to be watched.
@@ -362,8 +471,10 @@ model WatchlistItem {
   score     Int?
   addedAt   DateTime @default(now())
 
-  /// Filled in lazily so the watchlist can be sorted by length and filtered by
-  /// what is streaming. Both go stale, hence the timestamp.
+  /// Filled in by the daily job, 24 rows a pass, so the watchlist can be sorted
+  /// by length and by what is streaming now. Both go stale, hence the stamp:
+  /// a row is looked at again a week after its last lookup, whether or not
+  /// that lookup found a length. A show's length here is one episode's.
   runtime      Int?
   /// Comma-separated streaming provider names for the owner's region, or ""
   /// when nothing streams it. Null means "not looked up yet".
@@ -373,6 +484,17 @@ model WatchlistItem {
   /// and which one a title comes back under varies — see `KNOWN_PROVIDERS`.
   streamingIds String?
   enrichedAt   DateTime?
+
+  /// When a watchlisted film arrives, for the calendar and Landing soon: the
+  /// cinema release and the streaming (digital) release in the owner's region,
+  /// as YYYY-MM-DD text like every other air date here. Films only. Written by
+  /// the daily job from the cached TMDB answers, so the calendar never asks TMDB
+  /// on a render. Null means unknown, not "never".
+  releaseDate      String?
+  streamingDate    String?
+  /// When the two above were last worked out. A film already out both ways is
+  /// settled and looked at monthly rather than daily.
+  releaseCheckedAt DateTime?
 
   @@unique([userId, mediaType, tmdbId])
 }
@@ -428,13 +550,17 @@ model MediaList {
   /// Off by default and deliberately opt-in per list: a standing question that
   /// files requests on its own is the one feature here that spends somebody
   /// else's disk, and "top rated films of all time" would ask for four hundred
-  /// of them.
+  /// of them. In the rebuild only what is new to the list at a daily rebuild
+  /// is asked for, by Request all's rule (unseen, not on Plex, not on a service
+  /// the owner pays for), twenty a day at most, and each one is recorded in
+  /// `MediaListRequest` so it is never asked for twice.
   autoRequest         Boolean   @default(false)
-  /// "missing" — skip anything already streaming on a service the user pays for.
-  /// "all"     — ask for everything the list answers with.
+  /// The current app's: "missing" skips anything already streaming on a
+  /// service the user pays for, "all" asks for everything. The rebuild always
+  /// skips, as Request all does, and does not read this.
   autoRequestScope    String    @default("missing")
-  /// How many titles one run may ask for. Capped again in code, because a
-  /// number in a database is not a promise.
+  /// The current app's per-run limit. The rebuild's is a fixed twenty a day
+  /// (`AUTO_REQUEST_DAILY_CAP`) and does not read this.
   autoRequestCap      Int       @default(5)
   /// When a run last filed anything, for the panel to report.
   autoRequestedAt     DateTime?
@@ -444,9 +570,24 @@ model MediaList {
   autoRequestedCount  Int       @default(0)
   autoRequestedTitles String?
 
-  items MediaListItem[]
+  items    MediaListItem[]
+  requests MediaListRequest[]
 
   @@index([userId, createdAt])
+}
+
+/// A title a smart list asked Overseerr for on its own. The record that stops
+/// a title being requested twice however often it leaves the list and comes
+/// back, and what the twenty-a-day cap counts. Goes with its list.
+model MediaListRequest {
+  listId      String
+  list        MediaList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  mediaType   String // "movie" | "tv"
+  tmdbId      Int
+  requestedAt DateTime  @default(now())
+
+  @@id([listId, mediaType, tmdbId])
+  @@index([listId, requestedAt])
 }
 
 /// One title on a list.
@@ -467,6 +608,13 @@ model MediaListItem {
   /// Release year as TMDB gives it, for the card caption. Text, because it is
   /// only ever printed and TMDB leaves it blank on unannounced titles.
   year      String?
+  /// Minutes to watch the whole thing: a film's length, or a show's episode
+  /// length times its episodes. What the list page's hours and its "Shortest"
+  /// order read. Written when a title is added by hand, from the details the
+  /// add has already read, and on a smart list by the daily job, carried over
+  /// between rebuilds and topped up through the cached details. Null is "not
+  /// known yet", which sorts last and adds nothing to the hours.
+  runtime   Int?
   /// Where it sits in the list: insertion order by hand, TMDB's own ranking on
   /// a smart list. Sorting on this is what keeps "best rated first" meaningful
   /// after the rows have been shuffled through the database.
@@ -477,8 +625,13 @@ model MediaListItem {
   @@index([listId, position])
 }
 
-/// A thumbs up or down on a single episode. Separate from Rating, which is a
-/// percentage on a whole title — nobody wants to score an episode out of 100.
+/// A popcorn rating on a single episode, on the same five buckets as `Rating`.
+///
+/// It began as a thumbs up or down, and `liked` is kept so nothing that was
+/// said is thrown away. The migration mapped up to "full" (4) and down to
+/// "empty" (2): neither extreme, because a thumb never said golden or spilled.
+/// `score` is what the app reads and writes now; `liked` is left in step with
+/// it (true from 4 up) only so the previous app can still share the database.
 model EpisodeRating {
   id            String   @id @default(cuid())
   userId        String
@@ -487,6 +640,8 @@ model EpisodeRating {
   seasonNumber  Int
   episodeNumber Int
   liked         Boolean
+  /// 1 spilled, 2 empty, 3 half full, 4 full, 5 golden.
+  score         Int?
   updatedAt     DateTime @updatedAt
 
   @@unique([userId, showId, seasonNumber, episodeNumber])
@@ -540,15 +695,18 @@ model UnlockedAchievement {
   key        String
   unlockedAt DateTime @default(now())
   /// True when this badge came with an imported history rather than being earned
-  /// here: either it was already satisfied when the account's starting line was
-  /// drawn, or it was added to the catalogue later and a years-old history met it
-  /// on sight. The badge is kept and shown either way — it is a true statement
+  /// here: either the history alone meets it (the imported plays and those from
+  /// before the account's starting line, however long after the line its title
+  /// facts arrive), or it was added to the catalogue later and a years-old
+  /// history met it on sight. The badge is kept and shown either way — it is a true statement
   /// about what someone has watched — but it pays no XP towards the Trekker
   /// level. It still counts towards the lifetime figure.
   carried    Boolean  @default(false)
 
   @@unique([userId, key])
   @@index([userId])
+  /// "Recently earned", newest first, without sorting every badge ever won.
+  @@index([userId, unlockedAt])
 }
 
 /// A monthly challenge someone finished. One row per challenge per month, so a
@@ -598,17 +756,26 @@ model TitleMeta {
   @@unique([mediaType, tmdbId])
 }
 
+/// A popcorn rating on a whole title: one of five buckets, stored 1 to 5 —
+/// spilled, empty, half full, full, golden. Shown as one bucket and its name.
+///
+/// Scores used to be percentages. The migration to buckets is lossy by design
+/// (`ceil(percent / 20)`: 1-20 spilled, 21-40 empty, 41-60 half full, 61-80
+/// full, 81-100 golden, the same as halving a score out of ten and rounding
+/// up), so the percentage is kept in `legacyScore` in case the mapping ever
+/// needs revisiting. Nothing reads it; nothing new writes it.
 model Rating {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mediaType String
-  tmdbId    Int
-  title     String
-  poster    String?
-  score     Int // 1-100 percentage
-  review    String?
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType   String
+  tmdbId      Int
+  title       String
+  poster      String?
+  score       Int // 1-5 popcorn
+  legacyScore Int?
+  review      String?
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, mediaType, tmdbId])
 }
@@ -672,12 +839,12 @@ model CommentReaction {
 ///
 /// Public, like comments and unlike everything older than them.
 model Feeling {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mediaType String
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaType     String
   /// The film's id, or the *show's* id for an episode.
-  tmdbId    Int
+  tmdbId        Int
   /// Which episode it is about. Zero for a film, and for the show-level rows
   /// left behind by the version of this that asked on the show's own page.
   ///
@@ -685,12 +852,342 @@ model Feeling {
   /// does the same: SQLite treats NULLs in a unique index as distinct, so a
   /// nullable column here would let one person hold any number of feelings
   /// about the same film. Zero is a value, and the index means what it says.
-  seasonNumber  Int @default(0)
-  episodeNumber Int @default(0)
-  feeling   String
-  updatedAt DateTime @updatedAt
+  seasonNumber  Int      @default(0)
+  episodeNumber Int      @default(0)
+  feeling       String
+  updatedAt     DateTime @updatedAt
 
   @@unique([userId, mediaType, tmdbId, seasonNumber, episodeNumber])
   /// The tally a film's page and an episode's page each draw.
   @@index([mediaType, tmdbId, seasonNumber, episodeNumber])
+}
+
+/// Where one person is in one show, stored so that no page has to work it out.
+///
+/// The previous app computed this on every dashboard, calendar and discover
+/// render by asking TMDB about every show in the history, which is what made it
+/// slow. Here it is a row, written from two sides and read by everything:
+///
+/// - the **watched half** (`watchedCount`, `lastWatchedAt`, and the next
+///   episode, since what comes next depends on what has been seen) by
+///   `recordPlay` and `removePlay`, synchronously, from rows alone;
+/// - the **aired half** (`airedCount`, `totalCount`, `status`, `lastAirDate`,
+///   and the next episode again) by the refresh job, from `ShowEpisode`, which
+///   it fills from the TMDB cache.
+///
+/// Both halves go through `recomputeTitleState`, so they cannot disagree about
+/// what "next" means. Name and artwork are denormalised like every list row, so
+/// Up next renders without a TMDB call.
+model TitleState {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showId Int
+
+  showName   String
+  showPoster String?
+  backdrop   String?
+
+  /// "returning" | "ended" | "cancelled" | "upcoming". Only returning shows are
+  /// re-fetched every six hours; the rest are settled and wait for the daily pass.
+  status       String  @default("returning")
+  /// Episodes in numbered seasons that have aired, as of the last computation.
+  airedCount   Int     @default(0)
+  /// Distinct episodes of numbered seasons this person has seen. Specials are
+  /// left out of both counts, so progress reads the way the show is numbered.
+  watchedCount Int     @default(0)
+  /// Every announced episode in numbered seasons, aired or not.
+  totalCount   Int     @default(0)
+  /// YYYY-MM-DD, plain text like TMDB gives it: turning an air date into a
+  /// timestamp is how an episode lands on the wrong day west of UTC.
+  lastAirDate  String?
+  /// The show's first air date. The calendar marks a series premiere from the
+  /// episode list when season one is listed; this covers the announced show
+  /// whose episodes TMDB has not published yet. Aired half, like the above.
+  premiereDate String?
+
+  /// The first episode, in order, that this person has not seen. When its air
+  /// date is today or earlier it is Up next; when it is later, the show is
+  /// caught up and the episode is "landing soon". Null when there is nothing
+  /// left, or when the episode list has not been fetched yet.
+  nextSeason  Int?
+  nextEpisode Int?
+  nextTitle   String?
+  nextAirDate String?
+  nextRuntime Int?
+  nextStill   String?
+
+  /// The latest viewing of any episode, for ordering Up next by what is warm.
+  lastWatchedAt DateTime?
+  /// Up next holds still while someone works through it on Home. Ordered by
+  /// `lastWatchedAt` alone, ticking a show in Also waiting makes it the warmest
+  /// and it jumps to the card; so a tick from Home freezes the row's warmth as
+  /// it stood before that day's first Home tick, and the row orders by this
+  /// instead for the rest of the day. A viewing from anywhere else (a title
+  /// page, Plex) clears it: that is new information, and reordering for it is
+  /// right. Tomorrow the day's ticks count like any other.
+  heldAt        DateTime?
+  /// The day, YYYY-MM-DD in server time, that `heldAt` applies to. On any other
+  /// day it is ignored, so nothing has to clear it at midnight.
+  heldOn        String?
+  /// When the aired half was last computed. Null means never: the show has not
+  /// been through the refresh job, so the next episode is not known yet.
+  airedAt       DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@id([userId, showId])
+  /// Up next and Also waiting: this person's shows, warmest first.
+  @@index([userId, lastWatchedAt])
+  /// Landing soon and the calendar: this person's next episodes by date.
+  @@index([userId, nextAirDate])
+  /// The refresh job: every user following a show it has just re-fetched.
+  @@index([showId])
+  @@index([status])
+}
+
+/// Every episode of every show somebody here follows, shared by all users.
+///
+/// Filled by the refresh job from the cached season lists. This is what lets
+/// "what is next" and "what airs this week" be a query instead of a walk through
+/// TMDB JSON: the next episode is the first row here with no `WatchedEpisode`
+/// beside it, and a week of the calendar is a date range over `airDate`.
+model ShowEpisode {
+  showId        Int
+  seasonNumber  Int
+  episodeNumber Int
+  name          String
+  /// YYYY-MM-DD, or null while TMDB has not dated it.
+  airDate       String?
+  runtime       Int?
+  still         String?
+  /// TMDB's "standard" | "premiere" | "finale" | "mid_season", where it says.
+  episodeType   String?
+  fetchedAt     DateTime @default(now())
+
+  @@id([showId, seasonNumber, episodeNumber])
+  @@index([airDate])
+}
+
+/// The TMDB cache, on the data volume.
+///
+/// The previous app cached TMDB in `.next/cache`, which is thrown away with the
+/// container on every update, so the first visit after one fetched the whole
+/// library again. A table survives that, and a lifetime per endpoint (details a
+/// week, seasons a day, trending an hour) means rarely-changing answers are not
+/// refetched hourly. `key` is the path plus its sorted query parameters.
+model TmdbCache {
+  key       String   @id
+  /// The response exactly as TMDB sent it, as JSON text.
+  body      String
+  fetchedAt DateTime @default(now())
+  /// Past this the entry is refetched on read. It is kept until then and
+  /// served stale if TMDB cannot be reached, because an old answer beats none.
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+/// Where a title can be watched: on the household's Plex, requested or
+/// available through Overseerr, and on which streaming services per region.
+///
+/// Refreshed by the daily job for everything on a watchlist, a favourite or a
+/// list, and never on a render. This is what the Plex chip, the Overseerr mark
+/// on posters and the availability panel read.
+model Availability {
+  /// "movie" | "tv"
+  mediaType       String
+  tmdbId          Int
+  onPlex          Boolean   @default(false)
+  plexRatingKey   String?
+  /// "none" | "requested" | "available"
+  overseerrStatus String    @default("none")
+  /// JSON: `{ "GB": { "link": "...", "stream": [{ "id": 8, "name": "Netflix" }], ... } }`
+  /// for the regions somebody on this instance uses. Null means never looked up.
+  providers       String?
+  checkedAt       DateTime?
+
+  /// Written by the Overseerr webhook and by a request filed here, so the bell
+  /// can say "now on Plex" from rows: when Overseerr said the title arrived,
+  /// who asked for it (a Trekker account, when the requester could be matched),
+  /// and the title and poster denormalised, since the requester may have no
+  /// other row that names it.
+  availableAt   DateTime?
+  requestedById String?
+  title         String?
+  poster        String?
+
+  @@id([mediaType, tmdbId])
+  @@index([checkedAt])
+  @@index([availableAt])
+}
+
+/// People from TMDB, cached for the actor page and cast rails.
+///
+/// `knownForBackdrop` is the artwork of the title they are best known for, so
+/// the actor page has a hero without a second lookup.
+model Person {
+  tmdbId            Int      @id
+  name              String
+  profilePath       String?
+  /// "movie" | "tv", with the id below.
+  knownForMediaType String?
+  knownForTitleId   Int?
+  knownForBackdrop  String?
+  bio               String?
+  fetchedAt         DateTime @default(now())
+
+  /// Following a person: what their credits were at the daily job's last look,
+  /// so the next look can tell what is new. JSON, `{ "movie-603": "1999-03-31",
+  /// "tv-1399": "" }`, every part and direction by key with its date (empty
+  /// when TMDB has none yet), because "released" is a dated part that was
+  /// undated or in the future last time. Null until someone follows them: the
+  /// first look only draws the line, so following someone never floods the
+  /// news with a career's worth of old work.
+  credits          String?
+  /// When `credits` was taken. The job reads the person through the cache,
+  /// which keeps them a week, so a day between looks is plenty.
+  creditsCheckedAt DateTime?
+}
+
+/// A person someone follows: an actor or director whose new work they want to
+/// hear about. The daily job checks each followed person once however many
+/// people follow them, and writes what is new to `PersonNews`; the
+/// notification that tells the follower arrives with step 7.
+model FollowedPerson {
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// TMDB's person id. Not a relation to `Person`: that row is a cache, and
+  /// can be rebuilt or pruned without anyone losing who they follow.
+  personId   Int
+  followedAt DateTime @default(now())
+
+  @@id([userId, personId])
+  /// The daily job: everyone followed by anyone.
+  @@index([personId])
+}
+
+/// News about what someone follows (T2), found by the refresh job at the
+/// moment it writes a newer answer over an older one, so it is a comparison
+/// at the point of write rather than a second pass. Four subjects:
+///
+/// - "person": a followed person's part announced (in their credits for the
+///   first time, not out yet) or released (dated today or earlier where it was
+///   undated or in the future at the last look). The daily look; the first
+///   look, at the follow, seeds what is upcoming or just out (Round 9).
+/// - "tv": a show someone watches or has saved is renewed, cancelled or ends
+///   (its status), gets a next-episode date or the date moves, has a new
+///   season announced (the season count rises), or a new trailer. The
+///   six-hourly returning pass.
+/// - "movie": a saved film's release date is set or moves, or it gets a
+///   trailer. The six-hourly pass, for saved films not long out.
+/// - "press" (Round 9): a headline from an entertainment site's RSS or Atom
+///   feed, read by the daily pass (`lib/press.ts`), for everyone: the News
+///   page's Popular tab, never the bell, Home or a count. Only the headline,
+///   its link, the source's name, when it was published and the feed's
+///   picture are kept, never the article. Kept thirty days.
+///
+/// Shared by everyone the subject concerns and stored once; who sees what is
+/// worked out on reading (`lib/news.ts`): a person's news from
+/// `FollowedPerson.followedAt`, a title's for anyone with it in progress or
+/// saved. Read state is the bell's `NotificationRead`, keyed `news:<id>`,
+/// so the bell, the News page, Home's rail and the sidebar's count agree.
+/// Replaces `PersonNews`, whose rows were carried over with their ids, so
+/// their read marks still hold. Title, poster and words denormalised, like
+/// every row a list renders.
+model NewsItem {
+  id        String   @id @default(cuid())
+  /// "person" | "tv" | "movie" | "press"
+  subject   String
+  /// The subject's TMDB id: the person's, or the title's own. 0 for press.
+  subjectId Int
+  /// person: "announced" | "released"; tv: "renewed" | "cancelled" | "ended" |
+  /// "next-date" | "date-moved" | "new-season" | "trailer"; movie:
+  /// "release-date" | "trailer"; press: "press".
+  kind      String
+  /// The title the news links to: a person's credit, or the title itself; for
+  /// press, the title the headline names, when the cache knows one (null
+  /// otherwise, as are `tmdbId` and `title`).
+  /// "movie" | "tv"
+  mediaType String?
+  tmdbId    Int?
+  title     String?
+  /// The title's poster, or a person's headshot for theirs: a TMDB path.
+  image     String?
+  /// "Silo renewed for season 4", "New from Kyle Chandler"; a press row's
+  /// headline as its feed gave it, tags stripped and entities decoded.
+  headline  String
+  /// "Season 4 announced", "Lanterns announced". Empty for press.
+  detail    String
+  /// When the job noticed, not the date in the news: the news is that it
+  /// changed. A press row's is when its feed says it was published.
+  at        DateTime @default(now())
+  /// What the change was, so each is news once however many passes see it and
+  /// a status flapping back and forth is not news twice:
+  /// "tv:95396:status:ended", "movie:693134:release:2026-12-18",
+  /// "person:3497:tv-2:announced", "press:<link>".
+  key       String   @unique
+  /// Press only: the site's name ("Variety"), the article's address (an
+  /// absolute http(s) URL, unique: an article is one row whichever feed
+  /// carried it), and the feed's picture for it (an absolute https URL). When
+  /// the feed has none, the pass reads the article's head once for its
+  /// `og:image` (Round 10 review); "" means it looked and found none, so the
+  /// row is not asked again, and null that it has not looked yet.
+  source    String?
+  link      String?  @unique
+  imageUrl  String?
+  /// Round 10, press only. What the headline is about, from a keyword rule
+  /// on the headline at record time (`classifyHeadline` in `lib/press.ts`):
+  /// "renewed" | "cancelled" | "trailer" | "casting" | "box-office" |
+  /// "reviews" | "dated" | "moved", so the News page's chips are a column, not
+  /// a pass over every headline per render. "" is classified and about none
+  /// of those; null is a row from before Round 10 not yet looked at, which the
+  /// next feed pass classifies once.
+  tag       String?
+  /// Round 10, press only: the feed's own summary line for the item, as plain
+  /// text, its first two sentences and at most 220 characters, which is what
+  /// a feed publishes it for. Never the article's body: the page shows the
+  /// headline, this line, the source and the link out, and nothing more.
+  summary   String?
+  /// Round 10, press only: the feed the row came from, so a person's sources
+  /// (`NewsSource`) and their own feeds (`UserFeed`) filter by a column
+  /// rather than a join through the source's name. An article two feeds carry
+  /// is still one row, under the feed that brought it first.
+  feedUrl   String?
+
+  @@index([subject, subjectId, at])
+  @@index([at])
+  @@index([feedUrl])
+}
+
+/// Round 10: one person's choice about one of the instance's feeds
+/// (`feedList()`). A feed with no row is on, so a new feed in `NEWS_FEEDS`
+/// reaches everyone and only a switch turned off needs storing. Keyed by the
+/// feed's address; Settings shows one switch per source name, which writes a
+/// row for each address under that name (Variety has two feeds).
+model NewsSource {
+  userId  String
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedUrl String
+  enabled Boolean
+
+  @@id([userId, feedUrl])
+}
+
+/// Round 10: an RSS or Atom feed someone added for themselves. Read by the
+/// same passes as the instance's feeds (on opening News, and daily), gated
+/// and fail-soft with them, 40 kept per feed; its rows are `NewsItem` press
+/// rows with this `url` as their `feedUrl`, shown to the people who added
+/// it and nobody else. Ten per person. Removing one deletes its rows unless
+/// someone else still has the same address.
+model UserFeed {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  url     String
+  /// The feed's own title when it was added, or its host.
+  name    String
+  enabled Boolean  @default(true)
+  addedAt DateTime @default(now())
+
+  @@unique([userId, url])
+  @@index([url])
 }

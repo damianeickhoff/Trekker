@@ -26,7 +26,6 @@ services:
       # Inside the container this is the mounted volume, not the repo.
       DATABASE_URL: file:/data/trekker.db
       # Optional; unset is fine for all of these.
-      OMDB_API_KEY: ${OMDB_API_KEY:-}
       WATCH_REGION: ${WATCH_REGION:-US}
       PLEX_CLIENT_ID: ${PLEX_CLIENT_ID:-}
       TRAKT_CLIENT_ID: ${TRAKT_CLIENT_ID:-}
@@ -35,6 +34,10 @@ services:
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
       CRON_SECRET: ${CRON_SECRET:-}
       PLEX_WEBHOOK_SECRET: ${PLEX_WEBHOOK_SECRET:-}
+      NEWS_FEEDS: ${NEWS_FEEDS-}
+      WEATHER_LATITUDE: ${WEATHER_LATITUDE:-}
+      WEATHER_LONGITUDE: ${WEATHER_LONGITUDE:-}
+      WEATHER_PLACE: ${WEATHER_PLACE:-}
     volumes:
       - trekker-data:/data
 

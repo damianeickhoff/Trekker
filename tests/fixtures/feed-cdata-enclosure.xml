@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The shape of Screen Rant's and Collider's feeds: one line, CDATA titles, an
+     image enclosure. Invented stories. -->
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>TV News | Screen Rant</title><link>https://example.org</link><item><title><![CDATA[The Last of Us Season 3 Casts <em>Two</em> Newcomers]]></title><link>https://example.org/the-last-of-us-season-3-casting/</link><dc:creator><![CDATA[Someone]]></dc:creator><enclosure url="https://static.example.org/wp-content/uploads/2026/09/tlou.jpg" length="804" type="image/jpeg"/><category><![CDATA[TV]]></category><description><![CDATA[
+      A summary that is never stored.
+    ]]></description><content:encoded><![CDATA[<p>The article body, never stored.</p>]]></content:encoded><pubDate>Thu, 24 Sep 2026 14:00:00 GMT</pubDate></item><item><title><![CDATA[Ten Thrillers Worth Your Weekend]]></title><link>https://example.org/ten-thrillers/</link><enclosure url="https://static.example.org/thrillers.mp3" length="1" type="audio/mpeg"/><description><![CDATA[<p><img src="https://static.example.org/thrillers.jpg" alt="" /> A list.</p>]]></description><pubDate>Tue, 22 Sep 2026 10:00:00 GMT</pubDate></item></channel></rss>

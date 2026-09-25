@@ -1,123 +1,121 @@
 /**
- * Every Best Picture winner, by title and the year the film came out — not the
- * year of the ceremony, which is always the one after.
+ * Every Best Picture winner, by title and the year the film came out (not the
+ * ceremony, which is always the year after). Append the new winner each spring.
  *
- * Matched by name rather than TMDB id on purpose. Ids would have to be looked
- * up and kept in step with TMDB's catalogue; titles are stable, we already
- * store the title on every watched row, and a normalised comparison with a
- * couple of years of slack is enough to be sure. Festival-first films are
- * listed under the year TMDB records, which is why the slack exists at all.
- *
- * Append the new winner here each spring.
+ * Matched by title rather than TMDB id: titles are already on every watched
+ * row and are stable, ids would need looking up and keeping in step, and a
+ * normalised comparison with two years of slack is enough to be sure.
+ * Festival-first films sit under the year TMDB records, which is why the slack
+ * exists at all.
  */
-export const BEST_PICTURE_WINNERS: { title: string; year: number }[] = [
-  { title: "Wings", year: 1927 },
-  { title: "The Broadway Melody", year: 1929 },
-  { title: "All Quiet on the Western Front", year: 1930 },
-  { title: "Cimarron", year: 1931 },
-  { title: "Grand Hotel", year: 1932 },
-  { title: "Cavalcade", year: 1933 },
-  { title: "It Happened One Night", year: 1934 },
-  { title: "Mutiny on the Bounty", year: 1935 },
-  { title: "The Great Ziegfeld", year: 1936 },
-  { title: "The Life of Emile Zola", year: 1937 },
-  { title: "You Can't Take It with You", year: 1938 },
-  { title: "Gone with the Wind", year: 1939 },
-  { title: "Rebecca", year: 1940 },
-  { title: "How Green Was My Valley", year: 1941 },
-  { title: "Mrs. Miniver", year: 1942 },
-  { title: "Casablanca", year: 1942 },
-  { title: "Going My Way", year: 1944 },
-  { title: "The Lost Weekend", year: 1945 },
-  { title: "The Best Years of Our Lives", year: 1946 },
-  { title: "Gentleman's Agreement", year: 1947 },
-  { title: "Hamlet", year: 1948 },
-  { title: "All the King's Men", year: 1949 },
-  { title: "All About Eve", year: 1950 },
-  { title: "An American in Paris", year: 1951 },
-  { title: "The Greatest Show on Earth", year: 1952 },
-  { title: "From Here to Eternity", year: 1953 },
-  { title: "On the Waterfront", year: 1954 },
-  { title: "Marty", year: 1955 },
-  { title: "Around the World in 80 Days", year: 1956 },
-  { title: "The Bridge on the River Kwai", year: 1957 },
-  { title: "Gigi", year: 1958 },
-  { title: "Ben-Hur", year: 1959 },
-  { title: "The Apartment", year: 1960 },
-  { title: "West Side Story", year: 1961 },
-  { title: "Lawrence of Arabia", year: 1962 },
-  { title: "Tom Jones", year: 1963 },
-  { title: "My Fair Lady", year: 1964 },
-  { title: "The Sound of Music", year: 1965 },
-  { title: "A Man for All Seasons", year: 1966 },
-  { title: "In the Heat of the Night", year: 1967 },
-  { title: "Oliver!", year: 1968 },
-  { title: "Midnight Cowboy", year: 1969 },
-  { title: "Patton", year: 1970 },
-  { title: "The French Connection", year: 1971 },
-  { title: "The Godfather", year: 1972 },
-  { title: "The Sting", year: 1973 },
-  { title: "The Godfather Part II", year: 1974 },
-  { title: "One Flew Over the Cuckoo's Nest", year: 1975 },
-  { title: "Rocky", year: 1976 },
-  { title: "Annie Hall", year: 1977 },
-  { title: "The Deer Hunter", year: 1978 },
-  { title: "Kramer vs. Kramer", year: 1979 },
-  { title: "Ordinary People", year: 1980 },
-  { title: "Chariots of Fire", year: 1981 },
-  { title: "Gandhi", year: 1982 },
-  { title: "Terms of Endearment", year: 1983 },
-  { title: "Amadeus", year: 1984 },
-  { title: "Out of Africa", year: 1985 },
-  { title: "Platoon", year: 1986 },
-  { title: "The Last Emperor", year: 1987 },
-  { title: "Rain Man", year: 1988 },
-  { title: "Driving Miss Daisy", year: 1989 },
-  { title: "Dances with Wolves", year: 1990 },
-  { title: "The Silence of the Lambs", year: 1991 },
-  { title: "Unforgiven", year: 1992 },
-  { title: "Schindler's List", year: 1993 },
-  { title: "Forrest Gump", year: 1994 },
-  { title: "Braveheart", year: 1995 },
-  { title: "The English Patient", year: 1996 },
-  { title: "Titanic", year: 1997 },
-  { title: "Shakespeare in Love", year: 1998 },
-  { title: "American Beauty", year: 1999 },
-  { title: "Gladiator", year: 2000 },
-  { title: "A Beautiful Mind", year: 2001 },
-  { title: "Chicago", year: 2002 },
-  { title: "The Lord of the Rings: The Return of the King", year: 2003 },
-  { title: "Million Dollar Baby", year: 2004 },
-  { title: "Crash", year: 2004 },
-  { title: "The Departed", year: 2006 },
-  { title: "No Country for Old Men", year: 2007 },
-  { title: "Slumdog Millionaire", year: 2008 },
-  { title: "The Hurt Locker", year: 2008 },
-  { title: "The King's Speech", year: 2010 },
-  { title: "The Artist", year: 2011 },
-  { title: "Argo", year: 2012 },
-  { title: "12 Years a Slave", year: 2013 },
-  { title: "Birdman", year: 2014 },
-  { title: "Spotlight", year: 2015 },
-  { title: "Moonlight", year: 2016 },
-  { title: "The Shape of Water", year: 2017 },
-  { title: "Green Book", year: 2018 },
-  { title: "Parasite", year: 2019 },
-  { title: "Nomadland", year: 2020 },
-  { title: "CODA", year: 2021 },
-  { title: "Everything Everywhere All at Once", year: 2022 },
-  { title: "Oppenheimer", year: 2023 },
-  { title: "Anora", year: 2024 },
+export const BEST_PICTURE_WINNERS: [title: string, year: number][] = [
+  ["Wings", 1927],
+  ["The Broadway Melody", 1929],
+  ["All Quiet on the Western Front", 1930],
+  ["Cimarron", 1931],
+  ["Grand Hotel", 1932],
+  ["Cavalcade", 1933],
+  ["It Happened One Night", 1934],
+  ["Mutiny on the Bounty", 1935],
+  ["The Great Ziegfeld", 1936],
+  ["The Life of Emile Zola", 1937],
+  ["You Can't Take It with You", 1938],
+  ["Gone with the Wind", 1939],
+  ["Rebecca", 1940],
+  ["How Green Was My Valley", 1941],
+  ["Mrs. Miniver", 1942],
+  ["Casablanca", 1942],
+  ["Going My Way", 1944],
+  ["The Lost Weekend", 1945],
+  ["The Best Years of Our Lives", 1946],
+  ["Gentleman's Agreement", 1947],
+  ["Hamlet", 1948],
+  ["All the King's Men", 1949],
+  ["All About Eve", 1950],
+  ["An American in Paris", 1951],
+  ["The Greatest Show on Earth", 1952],
+  ["From Here to Eternity", 1953],
+  ["On the Waterfront", 1954],
+  ["Marty", 1955],
+  ["Around the World in 80 Days", 1956],
+  ["The Bridge on the River Kwai", 1957],
+  ["Gigi", 1958],
+  ["Ben-Hur", 1959],
+  ["The Apartment", 1960],
+  ["West Side Story", 1961],
+  ["Lawrence of Arabia", 1962],
+  ["Tom Jones", 1963],
+  ["My Fair Lady", 1964],
+  ["The Sound of Music", 1965],
+  ["A Man for All Seasons", 1966],
+  ["In the Heat of the Night", 1967],
+  ["Oliver!", 1968],
+  ["Midnight Cowboy", 1969],
+  ["Patton", 1970],
+  ["The French Connection", 1971],
+  ["The Godfather", 1972],
+  ["The Sting", 1973],
+  ["The Godfather Part II", 1974],
+  ["One Flew Over the Cuckoo's Nest", 1975],
+  ["Rocky", 1976],
+  ["Annie Hall", 1977],
+  ["The Deer Hunter", 1978],
+  ["Kramer vs. Kramer", 1979],
+  ["Ordinary People", 1980],
+  ["Chariots of Fire", 1981],
+  ["Gandhi", 1982],
+  ["Terms of Endearment", 1983],
+  ["Amadeus", 1984],
+  ["Out of Africa", 1985],
+  ["Platoon", 1986],
+  ["The Last Emperor", 1987],
+  ["Rain Man", 1988],
+  ["Driving Miss Daisy", 1989],
+  ["Dances with Wolves", 1990],
+  ["The Silence of the Lambs", 1991],
+  ["Unforgiven", 1992],
+  ["Schindler's List", 1993],
+  ["Forrest Gump", 1994],
+  ["Braveheart", 1995],
+  ["The English Patient", 1996],
+  ["Titanic", 1997],
+  ["Shakespeare in Love", 1998],
+  ["American Beauty", 1999],
+  ["Gladiator", 2000],
+  ["A Beautiful Mind", 2001],
+  ["Chicago", 2002],
+  ["The Lord of the Rings: The Return of the King", 2003],
+  ["Million Dollar Baby", 2004],
+  ["Crash", 2004],
+  ["The Departed", 2006],
+  ["No Country for Old Men", 2007],
+  ["Slumdog Millionaire", 2008],
+  ["The Hurt Locker", 2008],
+  ["The King's Speech", 2010],
+  ["The Artist", 2011],
+  ["Argo", 2012],
+  ["12 Years a Slave", 2013],
+  ["Birdman", 2014],
+  ["Spotlight", 2015],
+  ["Moonlight", 2016],
+  ["The Shape of Water", 2017],
+  ["Green Book", 2018],
+  ["Parasite", 2019],
+  ["Nomadland", 2020],
+  ["CODA", 2021],
+  ["Everything Everywhere All at Once", 2022],
+  ["Oppenheimer", 2023],
+  ["Anora", 2024],
 ];
 
 /**
- * Lower case, no accents, no punctuation, no leading article. "Ben-Hur" and
- * "Ben Hur" are the same film; so are "The Sting" and "Sting, The".
+ * Lower case, accents and punctuation gone, a leading article dropped: "Ben-Hur"
+ * and "Ben Hur" are one film, and so are "The Sting" and "Sting, The".
  */
 export function normaliseTitle(title: string) {
   return title
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, " ")
@@ -125,22 +123,21 @@ export function normaliseTitle(title: string) {
     .trim();
 }
 
-const BY_TITLE = new Map<string, number[]>();
-for (const winner of BEST_PICTURE_WINNERS) {
-  const key = normaliseTitle(winner.title);
-  BY_TITLE.set(key, [...(BY_TITLE.get(key) ?? []), winner.year]);
+const YEARS_BY_TITLE = new Map<string, number[]>();
+for (const [title, year] of BEST_PICTURE_WINNERS) {
+  const key = normaliseTitle(title);
+  YEARS_BY_TITLE.set(key, [...(YEARS_BY_TITLE.get(key) ?? []), year]);
 }
 
 /**
- * Is this watched film a Best Picture winner? The year is only used to break
- * ties — several winners share a title with a remake, and "Titanic" alone
- * should not count the 1953 one.
+ * Whether a watched film won. The year only breaks ties: several winners share
+ * a title with a remake, and the 1953 Titanic should not count.
  */
 export function isBestPictureWinner(title: string, year: number | null) {
-  const years = BY_TITLE.get(normaliseTitle(title));
+  const years = YEARS_BY_TITLE.get(normaliseTitle(title));
   if (!years) return false;
   if (year === null) return true;
-  return years.some((winnerYear) => Math.abs(winnerYear - year) <= 2);
+  return years.some((y) => Math.abs(y - year) <= 2);
 }
 
 export const BEST_PICTURE_COUNT = BEST_PICTURE_WINNERS.length;

@@ -1,0 +1,28 @@
+/*
+ * A title's backdrop settling as it arrives: from 1.04 to 1 over 1.2 s, once
+ * per page, the lettering over it still. Longer than `--slow`, so it lives
+ * here rather than in `globals.css` (STYLE.md, Motion) and only title and
+ * episode pages ship it. The picture is a network request away, so the
+ * settle cannot start at mount: the image rests at the opening frame and
+ * `data-loaded` starts it the moment it has loaded, and `both` holds the
+ * closing frame after. With reduced motion there is no scale at all.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .settle {
+    transform: scale(1.04);
+    transform-origin: 50% 20%;
+  }
+
+  .settle[data-loaded] {
+    animation: settle 1.2s var(--ease-out) both;
+  }
+
+  @keyframes settle {
+    from {
+      transform: scale(1.04);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+}

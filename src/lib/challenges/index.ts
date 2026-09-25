@@ -3,79 +3,36 @@ import { db } from "../db";
 import {
   CHALLENGES_BY_ID,
   challengesFor,
-  monthName,
+  evaluate,
   periodKey,
-  type Challenge,
+  progressLabel,
+  type ChallengeIcon,
+  type ChallengeProgress,
   type ChallengeWindow,
+  type TitleFacts,
 } from "./catalogue";
 
-export { CHALLENGES, CHALLENGES_BY_ID, challengesFor, monthName, periodKey } from "./catalogue";
-
-export type ChallengeState = {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  progress: number;
-  target: number;
-  percent: number;
-  /** Reads as "12 / 20", or "8h / 25h" for the time-based ones. */
-  label: string;
-  xp: number;
-  done: boolean;
-  completedAt: Date | null;
-};
-
-export type MonthlyChallenges = {
-  /** "2026-08". */
-  period: string;
-  /** "August 2026". */
-  monthLabel: string;
-  challenges: ChallengeState[];
-  doneCount: number;
-  /** XP won this month. */
-  earnedXp: number;
-  /** XP still on the table. */
-  remainingXp: number;
-  /** Whole days left, today included. */
-  daysLeft: number;
-};
-
-function formatUnit(value: number, unit: Challenge["unit"]) {
-  if (unit !== "minutes") return value.toLocaleString("en-GB");
-  return `${Math.round(value / 60).toLocaleString("en-GB")}h`;
-}
+export { challengesFor, periodKey } from "./catalogue";
 
 /**
- * One month of viewing, and just enough about the titles in it to judge the
- * genre, language and age challenges.
- *
- * Four indexed reads and no network: this has to be cheap, because the bar it
- * feeds sits at the top of the dashboard.
+ * One month of viewing and just enough about the titles in it: four indexed
+ * reads, no network. The month runs in server time, which for a self-hosted
+ * instance is the household's.
  */
-async function buildWindow(userId: string, month: Date): Promise<ChallengeWindow> {
-  const from = new Date(month.getFullYear(), month.getMonth(), 1);
-  const to = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+export async function challengeWindow(userId: string, now: Date): Promise<ChallengeWindow> {
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
   const [plays, ratings, before] = await Promise.all([
+    // (userId, watchedAt)
     db.play.findMany({
       where: { userId, watchedAt: { gte: from, lt: to } },
-      select: {
-        mediaType: true,
-        tmdbId: true,
-        title: true,
-        seasonNumber: true,
-        episodeNumber: true,
-        runtime: true,
-        watchedAt: true,
-      },
+      select: { mediaType: true, tmdbId: true, seasonNumber: true, episodeNumber: true, runtime: true, watchedAt: true },
       orderBy: { watchedAt: "asc" },
     }),
-    db.rating.findMany({
-      where: { userId, updatedAt: { gte: from, lt: to } },
-      select: { score: true, review: true },
-    }),
-    // "Shows you had never watched before" needs to know what came earlier.
+    // (userId, ...) unique, then a range on a handful of rows
+    db.rating.findMany({ where: { userId, updatedAt: { gte: from, lt: to } }, select: { review: true } }),
+    // (userId, mediaType, tmdbId, watchedAt)
     db.play.findMany({
       where: { userId, mediaType: "tv", watchedAt: { lt: from } },
       select: { tmdbId: true },
@@ -83,14 +40,12 @@ async function buildWindow(userId: string, month: Date): Promise<ChallengeWindow
     }),
   ]);
 
-  const typed = plays.map((play) => ({
-    ...play,
-    mediaType: play.mediaType === "tv" ? ("tv" as const) : ("movie" as const),
-  }));
+  const typed = plays.map((p) => ({ ...p, mediaType: p.mediaType === "tv" ? ("tv" as const) : ("movie" as const) }));
+  const ids = (type: "movie" | "tv") => [...new Set(typed.filter((p) => p.mediaType === type).map((p) => p.tmdbId))];
+  const movieIds = ids("movie");
+  const showIds = ids("tv");
 
-  const movieIds = [...new Set(typed.filter((p) => p.mediaType === "movie").map((p) => p.tmdbId))];
-  const showIds = [...new Set(typed.filter((p) => p.mediaType === "tv").map((p) => p.tmdbId))];
-
+  // (mediaType, tmdbId) unique
   const meta =
     movieIds.length + showIds.length === 0
       ? []
@@ -101,16 +56,17 @@ async function buildWindow(userId: string, month: Date): Promise<ChallengeWindow
               { mediaType: "tv", tmdbId: { in: showIds } },
             ],
           },
+          select: { mediaType: true, tmdbId: true, genres: true, originalLanguage: true, releaseDate: true, runtime: true },
         });
 
-  const facts: ChallengeWindow["facts"] = new Map();
-  for (const row of meta) {
-    const year = row.releaseDate ? Number(row.releaseDate.slice(0, 4)) : NaN;
-    facts.set(`${row.mediaType}-${row.tmdbId}`, {
-      genres: row.genres ? row.genres.split(",").filter(Boolean) : [],
-      originalLanguage: row.originalLanguage,
+  const facts = new Map<string, TitleFacts>();
+  for (const m of meta) {
+    const year = m.releaseDate ? Number(m.releaseDate.slice(0, 4)) : NaN;
+    facts.set(`${m.mediaType}-${m.tmdbId}`, {
+      genres: m.genres.split(",").filter(Boolean),
+      originalLanguage: m.originalLanguage,
       year: Number.isFinite(year) ? year : null,
-      runtime: row.runtime,
+      runtime: m.runtime,
     });
   }
 
@@ -118,142 +74,98 @@ async function buildWindow(userId: string, month: Date): Promise<ChallengeWindow
     plays: typed,
     facts,
     ratings,
-    showsBefore: new Set(before.map((row) => row.tmdbId)),
-    year: month.getFullYear(),
-    month: month.getMonth(),
+    showsBefore: new Set(before.map((b) => b.tmdbId)),
+    year: now.getFullYear(),
   };
 }
 
+/** This month's progress, as plain numbers: what the Home cache holds. */
+export async function measureMonth(userId: string, now: Date): Promise<ChallengeProgress[]> {
+  return evaluate(await challengeWindow(userId, now), challengesFor(now));
+}
+
+export type ChallengeCard = {
+  id: string;
+  name: string;
+  icon: ChallengeIcon;
+  short: string;
+  description: string;
+  label: string;
+  percent: number;
+  xp: number;
+  done: boolean;
+};
+
+export type MonthlyChallenges = {
+  period: string;
+  /** "September". */
+  month: string;
+  cards: ChallengeCard[];
+  open: number;
+  /** What the three are worth together this month, and what has been won of it. */
+  totalXp: number;
+  earnedXp: number;
+  /** Whole days left, today included. */
+  daysLeft: number;
+};
+
 /**
- * This month's three challenges, how far along each is, and anything finished
- * written down on the way past.
+ * The strip: progress (however it was measured) joined to what has been won
+ * this month, with anything newly finished written down.
  *
- * A finished challenge stays finished: the row is what pays the XP, and a
- * deleted play later in the month cannot take back something already won.
+ * A finished challenge stays finished: the run is what pays the XP, and a
+ * play deleted later in the month does not take back something already won.
+ * Writing it here rather than in `recordPlay` keeps the play path free of the
+ * catalogue; the strip is where a finish is noticed, and a finish nobody looks
+ * at is written on the next look.
  */
-export async function getMonthlyChallenges(
+export async function monthlyChallenges(
   userId: string,
-  now: Date = new Date(),
+  now: Date,
+  progress: ChallengeProgress[],
 ): Promise<MonthlyChallenges> {
   const period = periodKey(now);
-  const active = challengesFor(now);
+  const runs = await db.challengeRun.findMany({ where: { userId, period }, select: { key: true, xp: true } });
+  const won = new Map(runs.map((r) => [r.key, r.xp]));
 
-  const [window, runs] = await Promise.all([
-    buildWindow(userId, now),
-    db.challengeRun.findMany({ where: { userId, period } }),
-  ]);
-
-  const done = new Map(runs.map((run) => [run.key, run]));
-  const fresh: { key: string; xp: number }[] = [];
-
-  const challenges = active.map((challenge) => {
-    const raw = Math.max(0, Math.round(challenge.measure(window)));
-    const progress = Math.min(raw, challenge.target);
-    const already = done.get(challenge.id) ?? null;
-
-    if (progress >= challenge.target && !already) {
-      fresh.push({ key: challenge.id, xp: challenge.xp });
+  const cards: ChallengeCard[] = [];
+  for (const { id, progress: value } of progress) {
+    const challenge = CHALLENGES_BY_ID.get(id);
+    if (!challenge) continue;
+    const finished = value >= challenge.target;
+    if (finished && !won.has(id)) {
+      await db.challengeRun
+        .upsert({
+          where: { userId_key_period: { userId, key: id, period } },
+          create: { userId, key: id, period, xp: challenge.xp },
+          update: {},
+        })
+        .catch(() => undefined);
+      won.set(id, challenge.xp);
     }
-
-    const complete = progress >= challenge.target || already !== null;
-
-    return {
-      id: challenge.id,
+    const done = finished || won.has(id);
+    cards.push({
+      id,
       name: challenge.name,
-      description: challenge.description,
       icon: challenge.icon,
-      progress,
-      target: challenge.target,
-      percent: complete
-        ? 100
-        : Math.min(99, Math.floor((progress / challenge.target) * 100)),
-      label: `${formatUnit(progress, challenge.unit)} / ${formatUnit(
-        challenge.target,
-        challenge.unit,
-      )}`,
-      xp: already?.xp ?? challenge.xp,
-      done: complete,
-      completedAt: already?.completedAt ?? null,
-    } satisfies ChallengeState;
-  });
-
-  if (fresh.length > 0) {
-    const at = new Date();
-    await db.challengeRun
-      .createMany({
-        data: fresh.map((entry) => ({ userId, key: entry.key, period, xp: entry.xp, completedAt: at })),
-      })
-      .catch(() => undefined);
-
-    for (const state of challenges) {
-      if (fresh.some((entry) => entry.key === state.id)) state.completedAt = at;
-    }
+      short: challenge.short,
+      description: challenge.description,
+      label: progressLabel(challenge, done ? challenge.target : value),
+      percent: done ? 100 : Math.min(99, Math.floor((value / challenge.target) * 100)),
+      xp: won.get(id) ?? challenge.xp,
+      done,
+    });
   }
 
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const daysLeft = Math.max(
-    1,
-    Math.ceil((endOfMonth.getTime() - new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()) / 86_400_000),
-  );
-
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   return {
     period,
-    monthLabel: monthName(now),
-    challenges,
-    doneCount: challenges.filter((c) => c.done).length,
-    earnedXp: challenges.filter((c) => c.done).reduce((sum, c) => sum + c.xp, 0),
-    remainingXp: challenges.filter((c) => !c.done).reduce((sum, c) => sum + c.xp, 0),
-    daysLeft,
+    month: now.toLocaleDateString("en-GB", { month: "long" }),
+    cards,
+    open: cards.filter((c) => !c.done).length,
+    totalXp: cards.reduce((sum, c) => sum + c.xp, 0),
+    earnedXp: cards.reduce((sum, c) => sum + (c.done ? c.xp : 0), 0),
+    daysLeft: Math.max(1, Math.round((endOfMonth.getTime() - startOfToday.getTime()) / 86_400_000)),
   };
-}
-
-/**
- * Records anything finished without drawing the bar — the same evaluation with
- * the reporting stripped out, so tracking an episode can award a challenge
- * before anyone goes looking at it.
- */
-export async function syncChallenges(userId: string): Promise<string[]> {
-  const now = new Date();
-  const period = periodKey(now);
-
-  const [window, runs] = await Promise.all([
-    buildWindow(userId, now),
-    db.challengeRun.findMany({ where: { userId, period }, select: { key: true } }),
-  ]);
-
-  const known = new Set(runs.map((run) => run.key));
-  const fresh = challengesFor(now).filter(
-    (challenge) =>
-      !known.has(challenge.id) &&
-      Math.round(challenge.measure(window)) >= challenge.target,
-  );
-
-  if (fresh.length === 0) return [];
-
-  await db.challengeRun
-    .createMany({
-      data: fresh.map((challenge) => ({
-        userId,
-        key: challenge.id,
-        period,
-        xp: challenge.xp,
-      })),
-    })
-    .catch(() => undefined);
-
-  return fresh.map((challenge) => challenge.id);
-}
-
-/** Total challenge XP someone has ever won, for the level's breakdown. */
-export async function challengeXp(userId: string) {
-  const [sum, count] = await Promise.all([
-    db.challengeRun.aggregate({ where: { userId }, _sum: { xp: true } }),
-    db.challengeRun.count({ where: { userId } }),
-  ]);
-  return { xp: sum._sum.xp ?? 0, count };
-}
-
-/** A finished challenge's definition, for the notification centre. */
-export function challengeById(key: string) {
-  return CHALLENGES_BY_ID.get(key) ?? null;
 }

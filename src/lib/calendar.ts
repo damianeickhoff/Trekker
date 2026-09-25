@@ -1,283 +1,270 @@
 import "server-only";
-import { mapLimit } from "./concurrency";
+import { addDays, todayKey } from "./dates";
 import { db } from "./db";
-import { getMovie, getSeason, getTv, tmdbConfigured } from "./tmdb";
 
 /**
- * What is *coming*, for this user: episodes of shows they are watching or have
- * queued, series premieres, and release dates for watchlisted films. Nothing
- * here looks at watch history — the calendar is a schedule, not a diary.
+ * What is coming, for one person: air dates for shows they watch or have on
+ * their watchlist, series premieres, and cinema and streaming dates for films
+ * on their watchlist. A schedule, not a diary: watch history only ever adds a
+ * tick to something that is on it anyway.
  *
- * Dates are handled as plain `YYYY-MM-DD` strings throughout. TMDB air dates
- * have no time or zone, and turning them into local Date objects is how an
- * episode ends up on the wrong day for anyone west of UTC.
+ * Rows only. Episodes are `ShowEpisode` by `airDate`, joined to this person's
+ * `TitleState` by primary key; premieres are `TitleState.premiereDate`; films
+ * are the release dates the daily job writes onto `WatchlistItem`. Nothing
+ * here can reach TMDB, which is what lets the calendar be a plain query.
  */
 
-export type CalendarKind = "episode" | "premiere" | "release";
+export type LandingKind = "episode" | "premiere" | "cinema" | "streaming";
 
-/** Episodes worth calling out: the ones people plan an evening around. */
-export type CalendarTag =
-  | "series-premiere"
-  | "season-premiere"
-  | "season-finale"
-  | "finale";
+/** Episodes worth calling out, the ones people plan an evening around. */
+export type LandingTag = "series-premiere" | "season-premiere" | "finale" | null;
 
-export type CalendarEntry = {
+export type Landing = {
   key: string;
   /** YYYY-MM-DD */
   date: string;
-  kind: CalendarKind;
+  kind: LandingKind;
   mediaType: "movie" | "tv";
   tmdbId: number;
   title: string;
-  detail: string;
-  tag: CalendarTag | null;
   poster: string | null;
-  backdrop: string | null;
-};
-
-export type UpcomingOptions = {
-  /** Inclusive YYYY-MM-DD bounds. */
-  from: string;
-  to: string;
-  /** Cap on how many shows are resolved against TMDB. */
-  maxShows?: number;
   /**
-   * `"all"` fetches the season around each show's next episode, which is what
-   * fills out a week. `"next"` uses only TMDB's `next_episode_to_air` — one
-   * request per show instead of two, enough for a short "what is next" list.
+   * The show's backdrop, denormalised on `TitleState` like its poster, for
+   * Home's wide Landing soon cards. Null for films: the watchlist row has
+   * none, and Home looks it up in the cached details (`filmBackdrops`).
    */
-  episodes?: "all" | "next";
+  backdrop: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  episodeName: string | null;
+  runtime: number | null;
+  tag: LandingTag;
+  watched: boolean;
 };
 
-const DEFAULT_MAX_SHOWS = 80;
-const FANOUT = 6;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const num = (v: number | bigint | null) => (v === null ? null : Number(v));
 
-// ---- Date helpers ---------------------------------------------------------
+/**
+ * Every episode airing between two dates, inclusive, of this person's shows,
+ * dropped ones excluded. One statement over the `airDate` index; the watched
+ * tick is a primary-key probe per row.
+ */
+async function episodesBetween(userId: string, from: string, to: string) {
+  type Raw = {
+    date: string;
+    showId: number | bigint;
+    title: string;
+    poster: string | null;
+    backdrop: string | null;
+    seasonNumber: number | bigint;
+    episodeNumber: number | bigint;
+    episodeName: string;
+    runtime: number | bigint | null;
+    episodeType: string | null;
+    watched: number | bigint;
+    followed: number | bigint;
+  };
+  const rows = await db.$queryRaw<Raw[]>`
+    SELECT e."airDate" AS date, e."showId" AS showId, t."showName" AS title, t."showPoster" AS poster, t."backdrop" AS backdrop,
+           e."seasonNumber" AS seasonNumber, e."episodeNumber" AS episodeNumber, e."name" AS episodeName,
+           e."runtime" AS runtime, e."episodeType" AS episodeType,
+           EXISTS (
+             SELECT 1 FROM "WatchedEpisode" w
+             WHERE w."userId" = t."userId" AND w."showId" = e."showId"
+               AND w."seasonNumber" = e."seasonNumber" AND w."episodeNumber" = e."episodeNumber"
+           ) AS watched,
+           (t."watchedCount" > 0) AS followed
+    FROM "ShowEpisode" e
+    JOIN "TitleState" t ON t."showId" = e."showId" AND t."userId" = ${userId}
+    WHERE e."airDate" >= ${from} AND e."airDate" <= ${to} AND e."seasonNumber" > 0
+      AND NOT EXISTS (SELECT 1 FROM "DroppedShow" d WHERE d."userId" = t."userId" AND d."showId" = t."showId")`;
 
-export function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-export function todayKey() {
-  return toDateKey(new Date());
-}
-
-export function addDays(date: string, days: number) {
-  return toDateKey(new Date(new Date(`${date}T00:00:00Z`).getTime() + days * DAY_MS));
-}
-
-export function daysBetween(from: string, to: string) {
-  return Math.round(
-    (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / DAY_MS,
-  );
-}
-
-/** The Monday of the week containing `date`, matching the en-GB week used elsewhere. */
-export function startOfWeek(date: string) {
-  const parsed = new Date(`${date}T00:00:00Z`);
-  return addDays(date, -((parsed.getUTCDay() + 6) % 7));
-}
-
-export function weekDays(weekStart: string) {
-  return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-}
-
-export function isValidDateKey(date: string | undefined): date is string {
-  return typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  return rows.map((r) => {
+    const season = Number(r.seasonNumber);
+    const episode = Number(r.episodeNumber);
+    const showId = Number(r.showId);
+    const tag: LandingTag =
+      episode === 1 ? (season === 1 ? "series-premiere" : "season-premiere") : r.episodeType === "finale" ? "finale" : null;
+    return {
+      landing: {
+        key: `ep-${showId}-${season}-${episode}`,
+        date: r.date,
+        kind: "episode",
+        mediaType: "tv",
+        tmdbId: showId,
+        title: r.title,
+        poster: r.poster,
+        backdrop: r.backdrop,
+        seasonNumber: season,
+        episodeNumber: episode,
+        episodeName: r.episodeName,
+        runtime: num(r.runtime),
+        tag,
+        watched: Boolean(Number(r.watched)),
+      } satisfies Landing,
+      followed: Boolean(Number(r.followed)),
+    };
+  });
 }
 
 /**
- * Soft relative wording. Exact dates read as homework; "in 3 days" is how
- * people actually think about what is next.
+ * Announced shows whose episodes TMDB has not listed yet: the premiere is only
+ * known from the show's first air date. Once season one's first episode has a
+ * date of its own, that row speaks for it and this one stands aside.
  */
-export function relativeDay(date: string, today: string) {
-  const days = daysBetween(today, date);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Tomorrow";
-  if (days < 7) return `In ${days} days`;
-  if (days < 14) return "Next week";
-  return "Over 2 weeks";
+async function premieresBetween(userId: string, from: string, to: string): Promise<Landing[]> {
+  type Raw = { showId: number | bigint; title: string; poster: string | null; backdrop: string | null; date: string };
+  const rows = await db.$queryRaw<Raw[]>`
+    SELECT t."showId" AS showId, t."showName" AS title, t."showPoster" AS poster, t."backdrop" AS backdrop, t."premiereDate" AS date
+    FROM "TitleState" t
+    WHERE t."userId" = ${userId} AND t."premiereDate" >= ${from} AND t."premiereDate" <= ${to}
+      AND NOT EXISTS (
+        SELECT 1 FROM "ShowEpisode" e
+        WHERE e."showId" = t."showId" AND e."seasonNumber" = 1 AND e."episodeNumber" = 1 AND e."airDate" IS NOT NULL
+      )
+      AND NOT EXISTS (SELECT 1 FROM "DroppedShow" d WHERE d."userId" = t."userId" AND d."showId" = t."showId")`;
+  return rows.map((r) => ({
+    key: `premiere-${Number(r.showId)}`,
+    date: r.date,
+    kind: "premiere",
+    mediaType: "tv",
+    tmdbId: Number(r.showId),
+    title: r.title,
+    poster: r.poster,
+    backdrop: r.backdrop,
+    seasonNumber: 1,
+    episodeNumber: 1,
+    episodeName: null,
+    runtime: null,
+    tag: "series-premiere",
+    watched: false,
+  }));
 }
 
-function inRange(date: string | null | undefined, from: string, to: string) {
-  return Boolean(date) && date! >= from && date! <= to;
+/** Watchlisted films reaching cinemas or streaming in the range; one entry per date. */
+async function filmsBetween(userId: string, from: string, to: string): Promise<Landing[]> {
+  const rows = await db.watchlistItem.findMany({
+    where: {
+      userId,
+      mediaType: "movie",
+      OR: [
+        { releaseDate: { gte: from, lte: to } },
+        { streamingDate: { gte: from, lte: to } },
+      ],
+    },
+    select: { tmdbId: true, title: true, poster: true, runtime: true, releaseDate: true, streamingDate: true },
+  });
+  const watched = new Set(
+    rows.length
+      ? (
+          await db.watchedMovie.findMany({
+            where: { userId, movieId: { in: rows.map((r) => r.tmdbId) } },
+            select: { movieId: true },
+          })
+        ).map((w) => w.movieId)
+      : [],
+  );
+
+  const out: Landing[] = [];
+  for (const row of rows) {
+    const base = {
+      mediaType: "movie" as const,
+      tmdbId: row.tmdbId,
+      title: row.title,
+      poster: row.poster,
+      backdrop: null,
+      seasonNumber: null,
+      episodeNumber: null,
+      episodeName: null,
+      runtime: row.runtime,
+      tag: null,
+      watched: watched.has(row.tmdbId),
+    };
+    const inRange = (d: string | null): d is string => d !== null && d >= from && d <= to;
+    if (inRange(row.releaseDate)) out.push({ ...base, key: `cinema-${row.tmdbId}`, date: row.releaseDate, kind: "cinema" });
+    // The same day both ways is one arrival, and "in cinemas" is the news.
+    if (inRange(row.streamingDate) && row.streamingDate !== row.releaseDate) {
+      out.push({ ...base, key: `streaming-${row.tmdbId}`, date: row.streamingDate, kind: "streaming" });
+    }
+  }
+  return out;
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
+function byDate(a: Landing, b: Landing) {
+  return (
+    a.date.localeCompare(b.date) ||
+    a.title.localeCompare(b.title) ||
+    (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) ||
+    (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
+  );
 }
 
-// ---- Data -----------------------------------------------------------------
+/**
+ * Everything landing between two dates, inclusive, in date order: the agenda.
+ * Every episode is listed, not just the first per show, since a week with a
+ * double bill should show both.
+ */
+export async function getAgenda(userId: string, from: string, to: string): Promise<Landing[]> {
+  const [episodes, premieres, films] = await Promise.all([
+    episodesBetween(userId, from, to),
+    premieresBetween(userId, from, to),
+    filmsBetween(userId, from, to),
+  ]);
+  return [...episodes.map((e) => e.landing), ...premieres, ...films].sort(byDate);
+}
 
-export async function getUpcoming(
+/**
+ * The first thing each title has coming in a span, soonest first: the rails.
+ *
+ * One entry per title, since a rail of the same poster four times says less
+ * than four different ones. Watched entries are left out: there is nothing to
+ * look forward to in something already seen. So is anything airing today on a
+ * show already being watched, because that is Up next's to show, not this.
+ */
+export async function getLanding(
   userId: string,
-  { from, to, maxShows = DEFAULT_MAX_SHOWS, episodes = "all" }: UpcomingOptions,
-): Promise<CalendarEntry[]> {
-  if (!tmdbConfigured()) return [];
-
-  const [watchedShows, watchlist] = await Promise.all([
-    db.watchedEpisode.findMany({
-      where: { userId },
-      orderBy: { watchedAt: "desc" },
-      select: { showId: true, showName: true, showPoster: true },
-    }),
-    db.watchlistItem.findMany({ where: { userId } }),
+  { from, to, take, today = todayKey() }: { from: string; to: string; take: number; today?: string },
+): Promise<Landing[]> {
+  const [episodes, premieres, films] = await Promise.all([
+    episodesBetween(userId, from, to),
+    premieresBetween(userId, from, to),
+    filmsBetween(userId, from, to),
   ]);
+  const candidates = [
+    ...episodes.filter((e) => !(e.followed && e.landing.date <= today)).map((e) => e.landing),
+    ...premieres,
+    ...films,
+  ]
+    .filter((l) => !l.watched)
+    .sort(byDate);
 
-  // Most recently watched first, so the cap trims shows they have drifted from.
-  const shows = new Map<number, { title: string; poster: string | null }>();
-  for (const e of watchedShows) {
-    if (!shows.has(e.showId)) shows.set(e.showId, { title: e.showName, poster: e.showPoster });
+  const seen = new Set<string>();
+  const out: Landing[] = [];
+  for (const l of candidates) {
+    const title = `${l.mediaType}-${l.tmdbId}`;
+    if (seen.has(title)) continue;
+    seen.add(title);
+    out.push(l);
+    if (out.length === take) break;
   }
-  for (const item of watchlist) {
-    if (item.mediaType === "tv" && !shows.has(item.tmdbId)) {
-      shows.set(item.tmdbId, { title: item.title, poster: item.poster });
-    }
-  }
-
-  const movies = watchlist.filter((item) => item.mediaType === "movie");
-
-  const [showEntries, movieEntries] = await Promise.all([
-    mapLimit([...shows.entries()].slice(0, maxShows), FANOUT, ([showId, show]) =>
-      showAirings(showId, show, from, to, episodes),
-    ),
-    mapLimit(movies, FANOUT, async (item) => {
-      const detail = await getMovie(item.tmdbId).catch(() => null);
-      if (!detail || !inRange(detail.release_date, from, to)) return [];
-
-      return [
-        {
-          key: `release-${detail.id}`,
-          date: detail.release_date,
-          kind: "release" as const,
-          mediaType: "movie" as const,
-          tmdbId: detail.id,
-          title: detail.title,
-          detail: "Release date",
-          tag: null,
-          poster: detail.poster_path ?? item.poster,
-          backdrop: detail.backdrop_path,
-        },
-      ];
-    }),
-  ]);
-
-  return [...showEntries.flat(), ...movieEntries.flat()].sort(
-    (a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title),
-  );
+  return out;
 }
 
 /**
- * Episodes of one show that air inside the range. TMDB only exposes a single
- * `next_episode_to_air`, so in `"all"` mode the season it belongs to is fetched
- * in full — that is what turns "the next episode" into a week's worth of them.
+ * Home's Landing soon: three weeks starting today, so 21 days counting today
+ * and the last one is `today + 20`. Every title in the span by default, since
+ * the heading counts them; a caller that only draws a few can ask for fewer.
  */
-async function showAirings(
-  showId: number,
-  show: { title: string; poster: string | null },
-  from: string,
-  to: string,
-  mode: "all" | "next",
-): Promise<CalendarEntry[]> {
-  const detail = await getTv(showId).catch(() => null);
-  if (!detail) return [];
+export const LANDING_SOON_DAYS = 21;
 
-  const poster = detail.poster_path ?? show.poster;
-  const backdrop = detail.backdrop_path;
-  const entries: CalendarEntry[] = [];
+export function getLandingSoon(userId: string, today = todayKey(), take = Infinity) {
+  return getLanding(userId, { from: today, to: addDays(today, LANDING_SOON_DAYS - 1), take, today });
+}
 
-  const numbered = detail.seasons.filter((s) => s.season_number > 0);
-  const finalSeason = Math.max(0, ...numbered.map((s) => s.season_number));
-  // TMDB only flips a show to Ended once it is over, so the last episode of the
-  // last season is a series finale rather than a season one only when the show
-  // is already marked done.
-  const showOver = detail.status === "Ended" || detail.status === "Canceled";
-
-  /** `total` is the episode count of the season the episode belongs to. */
-  function tagFor(season: number, episode: number, total: number): CalendarTag | null {
-    if (episode === 1) return season === 1 ? "series-premiere" : "season-premiere";
-    if (total > 0 && episode === total) {
-      return season === finalSeason && showOver ? "finale" : "season-finale";
-    }
-    return null;
-  }
-
-  // A watchlisted show that has not started yet gets a premiere marker.
-  if (!detail.last_episode_to_air && inRange(detail.first_air_date, from, to)) {
-    entries.push({
-      key: `premiere-${showId}`,
-      date: detail.first_air_date,
-      kind: "premiere",
-      mediaType: "tv",
-      tmdbId: showId,
-      title: detail.name,
-      detail: "Series premiere",
-      tag: "series-premiere",
-      poster,
-      backdrop,
-    });
-  }
-
-  const next = detail.next_episode_to_air;
-  // Nothing scheduled, or the whole range sits before the next episode airs.
-  if (!next || next.air_date > to) return entries;
-
-  if (mode === "next") {
-    if (inRange(next.air_date, from, to)) {
-      const total =
-        numbered.find((s) => s.season_number === next.season_number)?.episode_count ?? 0;
-
-      entries.push({
-        key: `episode-${showId}-${next.season_number}-${next.episode_number}`,
-        date: next.air_date,
-        kind: "episode",
-        mediaType: "tv",
-        tmdbId: showId,
-        title: detail.name,
-        detail: `S${pad(next.season_number)}E${pad(next.episode_number)}`,
-        tag: tagFor(next.season_number, next.episode_number, total),
-        poster,
-        backdrop,
-      });
-    }
-    return entries;
-  }
-
-  // A range can straddle a season finale, so look at the following season too.
-  const seasonNumbers = [next.season_number, next.season_number + 1].filter((n) =>
-    detail.seasons.some((s) => s.season_number === n),
-  );
-
-  const seasons = await mapLimit(seasonNumbers, 2, (n) =>
-    getSeason(showId, n).catch(() => null),
-  );
-
-  for (const season of seasons) {
-    // The season's own list is the authoritative episode count — it includes
-    // the ones that have not aired yet, which is what makes a finale a finale.
-    const total = season?.episodes.length ?? 0;
-
-    for (const episode of season?.episodes ?? []) {
-      if (!inRange(episode.air_date, from, to)) continue;
-
-      entries.push({
-        key: `episode-${showId}-${episode.season_number}-${episode.episode_number}`,
-        date: episode.air_date!,
-        kind: "episode",
-        mediaType: "tv",
-        tmdbId: showId,
-        title: detail.name,
-        detail: `S${pad(episode.season_number)}E${pad(episode.episode_number)}${
-          episode.name ? ` · ${episode.name}` : ""
-        }`,
-        tag: tagFor(episode.season_number, episode.episode_number, total),
-        poster,
-        backdrop,
-      });
-    }
-  }
-
-  return entries;
+/** The calendar's Coming up: the eight weeks after the week on screen. */
+export function getComingUp(userId: string, weekEnd: string, today = todayKey(), take = 12) {
+  // A week in the past has nothing "coming up" after it that is not also
+  // after today, so the span starts at whichever is later.
+  const from = addDays(weekEnd, 1) > today ? addDays(weekEnd, 1) : today;
+  return getLanding(userId, { from, to: addDays(from, 55), take, today });
 }

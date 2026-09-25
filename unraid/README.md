@@ -74,9 +74,8 @@ is Unraid's cache or the local image.
 
 ## Which build am I actually running?
 
-Two places, and they agree:
+Ask the health check:
 
-- **The avatar menu**, at the foot: `Trekker · 6aa9ecf`.
 - **`curl -s http://tower:3310/api/health`** → `{"ok":true,"version":"6aa9ecf"}`,
   which needs no session and is the one to script against.
 

@@ -1,30 +1,19 @@
 /**
- * The Trekker mark, as geometry rather than a file.
- *
- * `public/trekker_logo.svg` is the artwork as it was drawn — Figma export,
- * drop shadows and all. Those shadows are why this exists separately: they are
- * `feGaussianBlur` at 3% opacity, invisible at any size an icon is actually
- * seen at, and `ImageResponse` has to rasterise every one of them. What is kept
- * here is the silhouette, which is the part that has to survive being drawn at
- * 16px.
- *
- * One copy, shared by the header mark, the Apple icon and the iOS splash. The
- * two static files that cannot import it — `public/icon.svg`, `src/app/icon.svg`
- * — and `public/boot.html`, which is deliberately self-contained, carry their
- * own copies; change one and change those.
+ * The Trekker mark, as geometry rather than a file: the old app's brand asset,
+ * its silhouette alone, since that is the part that has to survive being drawn
+ * at 16px. One copy, shared by the wordmark (`TrekkerMark`) and the app icons
+ * (`app/icons/[size]`), so the two can never drift.
  */
 
 /** The artwork's own box. The mark is drawn centred in it, so it can be nested. */
 export const MARK_VIEWBOX = "0 0 533 658";
 
-/** Taller than it is wide. Callers sizing by height multiply by this for width. */
+/** Taller than it is wide: a caller sizing by height multiplies by this for the width. */
 export const MARK_ASPECT = 533 / 658;
 
 /**
- * The shapes, uncoloured — the fill comes from whatever renders them, which on
- * the tile is `currentColor` and in the rasterised icons is a literal white.
- * The original's three near-whites (#FEFBF6, #FDFBFB, white) only ever differed
- * where a shadow fell across them, so they are one colour here.
+ * The shapes, uncoloured: the fill comes from whatever draws them, `currentColor`
+ * in the page and a literal black on the icons' amber tile.
  */
 export const MARK_GEOMETRY = `
 <path d="M163.763 344H163.785L187.785 636H166.535C154.395 636 144.155 626.96 142.65 614.914L108.848 344.5H50.836C43.2794 344.5 36.9022 338.879 35.9542 331.382L27.419 263.882C26.2862 254.922 33.2699 247 42.3009 247H156.785L163.763 344Z"/>
@@ -40,15 +29,12 @@ export const MARK_GEOMETRY = `
 `.trim();
 
 /**
- * The mark as a standalone document, for the two places that draw it through
- * `ImageResponse`.
- *
- * Satori will not read the shapes if they are handed to it as JSX — it lays out
- * boxes, and `<circle>` is not one. An `<img>` pointing at the whole thing is,
- * and resvg rasterises it afterwards with the geometry intact. Percent-encoded
- * rather than base64 so this stays the same code on either side of the render.
+ * The mark as a document of its own, for `ImageResponse`: Satori lays out
+ * boxes and will not read `<circle>` as JSX, but an `<img>` of the whole SVG
+ * is rasterised with its geometry intact. Percent-encoded rather than base64
+ * so it is the same code on either side of the render.
  */
-export function markDataUri(fill = "#ffffff") {
+export function markDataUri(fill = "#000000") {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK_VIEWBOX}" fill="${fill}">${MARK_GEOMETRY}</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }

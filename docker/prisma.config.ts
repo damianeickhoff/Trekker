@@ -12,7 +12,7 @@
  * Keep the schema and migration paths in step with `prisma.config.ts` at the
  * root; they are the same project, read by the same CLI.
  */
-export default {
+const config = {
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
@@ -21,3 +21,5 @@ export default {
     url: process.env.DATABASE_URL,
   },
 };
+
+export default config;

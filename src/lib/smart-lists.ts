@@ -1,401 +1,230 @@
 import "server-only";
+import { mapLimit } from "./concurrency";
+import { todayKey } from "./dates";
 import { db } from "./db";
-import { findGenre } from "./genres";
-import { expandProviders } from "./providers";
-import { regionForUser, watchRegion } from "./region";
-import {
-  TV_STATUS_CODES,
-  runtimeBounds,
-  yearBounds,
-  type SmartFilters,
-} from "./smart-filters";
-import { catalogue, tmdbConfigured, trending, type MediaType, type NormalisedItem } from "./tmdb";
+import { regionFor } from "./providers";
+import { wholeRuntime } from "./runtime";
+import { parseFilters, type SmartFilters } from "./smart-filters";
+import { discoverParams, filterTrending, leaveOut, matchTotal, type Found, type ViewerSets } from "./smart-query";
+import { discover, getMovieDetails, getTrending, getTvDetails, tmdbConfigured, type MediaType } from "./tmdb";
 
 /**
- * Answering a smart list.
- *
- * Almost all of this is one TMDB discover query per medium — discover is the
- * endpoint the whole feature is really a friendly face for. Two things it
- * cannot do are handled afterwards, in `exclude`: "trending", which is its own
- * ranked endpoint and takes no filters at all, and the two "hide what I have
- * already dealt with" toggles, which are facts about the viewer rather than
- * about the title.
- *
- * The same function serves the live editor and the nightly refresh. That is on
- * purpose: a preview that ran a different query from the one that gets saved
- * would be a preview of nothing.
+ * Answering a smart list. The same function serves the editor's preview and
+ * the daily rebuild, on purpose: a preview that ran a different query from the
+ * one that gets saved would be a preview of nothing. Everything else that
+ * reads a smart list reads its `MediaListItem` rows.
  */
 
-/** What TMDB returns per page of discover. */
+/** How many titles a saved smart list keeps. */
+export const SMART_LIST_SIZE = 60;
+
+/** What the editor shows of it. */
+export const PREVIEW_SIZE = 20;
+
 const PAGE_SIZE = 20;
+/** However deep a run is asked to go, it stops here: the backstop on TMDB's five hundred pages. */
+const MAX_PAGES = 8;
 
 /**
- * The ceiling on how deep any single run will dig, whatever it is asked for.
- *
- * This is the backstop on the whole feature: "show me more" can be pressed all
- * afternoon, and every press still resolves to one bounded run. Without it a
- * caller asking for a large enough limit would walk TMDB's five hundred pages.
+ * Two pages more than the arithmetic needs, and as deep as the backstop when a
+ * leave-out toggle is on: someone who has seen half of the popular horror
+ * films throws away half of every page, and stopping early would hand back
+ * less than was asked for and call it the end. The run stops as soon as it
+ * has enough, so the depth only costs anything when it is needed.
  */
-const MAX_PAGES = 12;
-
-/**
- * How many pages a run of this size should be willing to fetch.
- *
- * Two more than the arithmetic needs, because filtering throws rows away: a
- * list narrowed to "on Netflix, over 80%" keeps a handful per page, and stopping
- * at exactly `limit / 20` would hand back a quarter of what was asked for and
- * call it the end of the results.
- */
-function pagesFor(limit: number) {
-  return Math.min(MAX_PAGES, Math.ceil(limit / PAGE_SIZE) + 2);
+function pagesFor(limit: number, leavingOut: boolean) {
+  return leavingOut ? MAX_PAGES : Math.min(MAX_PAGES, Math.ceil(limit / PAGE_SIZE) + 2);
 }
 
-/**
- * The vote floor that has to accompany any judgement about score.
- *
- * Without it, `vote_average.desc` and `vote_average.gte` both return a wall of
- * titles with four votes and a perfect ten. `catalogue.ts` carries the same
- * constant for the same reason.
- */
-const VOTE_FLOOR: Record<MediaType, number> = { movie: 300, tv: 100 };
-
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-/**
- * Whether this medium is part of the answer at all.
- *
- * Beyond the obvious kind switch, two filters can rule a whole medium out.
- * A production status only ever describes one of them — nothing is both "in
- * cinemas" and "a returning series" — so picking only TV statuses means the
- * question is not about films. And a genre TMDB has no television equivalent
- * for (horror, romance) cannot narrow a TV search, so honouring it by dropping
- * the whole TV half is the only reading that does not quietly return a pile of
- * shows nobody asked for.
- */
-export function mediumApplies(filters: SmartFilters, mediaType: MediaType): boolean {
-  if (filters.kind !== "both" && filters.kind !== mediaType) return false;
-
-  if (filters.statuses.length > 0) {
-    const relevant = filters.statuses.some((slug) =>
-      mediaType === "tv" ? slug in TV_STATUS_CODES : slug === "released" || slug === "unreleased",
-    );
-    if (!relevant) return false;
-  }
-
-  // Discover carries `with_cast` for films and nothing equivalent for
-  // television — and, worse, accepts the parameter on `/discover/tv` and
-  // ignores it, so asking anyway returns the unfiltered catalogue rather than
-  // an error. Dropping the medium is the only reading that does not quietly
-  // answer a question nobody asked. Same call as the untranslatable genres
-  // below, for the same reason.
-  if (mediaType === "tv" && filters.cast.length > 0) return false;
-
-  if (mediaType === "tv" && filters.genres.length > 0) {
-    const untranslatable = filters.genres.some((slug) => findGenre(slug)?.tvId == null);
-    if (untranslatable) return false;
-  }
-
-  return true;
-}
-
-/** Whether a cast filter is what is keeping television out, for the editor. */
-export function castBlocksTv(filters: SmartFilters): boolean {
-  return filters.cast.length > 0 && filters.kind !== "movie";
-}
-
-/** Genres in the filter that television has no equivalent for, for the editor. */
-export function genresWithoutTv(filters: SmartFilters): string[] {
-  return filters.genres.filter((slug) => findGenre(slug)?.tvId == null);
-}
-
-/**
- * The discover query for one medium, as a path `catalogue()` can take. Null
- * when this medium is not part of the answer.
- */
-function discoverPath(
-  filters: SmartFilters,
-  mediaType: MediaType,
-  region: string = watchRegion(),
-): string | null {
-  if (!mediumApplies(filters, mediaType)) return null;
-
-  const isMovie = mediaType === "movie";
-  const params = new URLSearchParams();
-  const dateField = isMovie ? "primary_release_date" : "first_air_date";
-  const now = today();
-
-  // -- Ordering, which is what the "state" chooser really picks ---------------
-  switch (filters.source) {
-    case "top-rated":
-      params.set("sort_by", "vote_average.desc");
-      params.set("vote_count.gte", String(VOTE_FLOOR[mediaType]));
-      break;
-    case "upcoming":
-      params.set("sort_by", `${dateField}.asc`);
-      params.set(`${dateField}.gte`, now);
-      break;
-    case "newest":
-      params.set("sort_by", `${dateField}.desc`);
-      // Without this, "newest" is a list of things announced for 2031.
-      params.set(`${dateField}.lte`, now);
-      break;
-    case "popular":
-      // What separates this from "Anything" below, which is otherwise the same
-      // query: popularity is a claim about audience size, so it carries a vote
-      // floor. Without one, `popularity.desc` still drags up titles nobody has
-      // rated, and "popular" would mean nothing at all.
-      params.set("sort_by", "popularity.desc");
-      params.set("vote_count.gte", String(VOTE_FLOOR[mediaType]));
-      break;
-    // "trending" never reaches here — it has an endpoint of its own. "all" is
-    // discover with no shelf of its own: popularity order because something has
-    // to come first, and nothing else added, so the other filters are the only
-    // thing narrowing it.
-    default:
-      params.set("sort_by", "popularity.desc");
-      break;
-  }
-
-  // -- Genre: every one of them, not any of them -----------------------------
-  if (filters.genres.length > 0) {
-    const ids = filters.genres
-      .map((slug) => (isMovie ? findGenre(slug)?.movieId : findGenre(slug)?.tvId))
-      .filter((id): id is number => typeof id === "number");
-    if (ids.length > 0) params.set("with_genres", ids.join(","));
-  }
-
-  // -- Who is in it. Films only; `mediumApplies` has already ruled TV out -----
-  if (isMovie && filters.cast.length > 0) {
-    // Comma is AND, as with genres: two names means a film they are both in.
-    params.set("with_cast", filters.cast.map((person) => person.id).join(","));
-  }
-
-  // -- Where it streams ------------------------------------------------------
-  if (filters.providers.length > 0) {
-    const ids = [...expandProviders(filters.providers)];
-    if (ids.length > 0) {
-      // An OR, and only meaningful alongside a region — same as the discover bar.
-      params.set("with_watch_providers", ids.join("|"));
-      params.set("watch_region", region);
-    }
-  }
-
-  // -- Age rating. TMDB carries these for films only -------------------------
-  if (isMovie && filters.certifications.length > 0) {
-    params.set("certification_country", region);
-    params.set("certification", filters.certifications.join("|"));
-  }
-
-  // -- Production status -----------------------------------------------------
-  if (filters.statuses.length > 0) {
-    if (isMovie) {
-      const released = filters.statuses.includes("released");
-      const unreleased = filters.statuses.includes("unreleased");
-      // Both, or neither, is no constraint at all.
-      if (released && !unreleased) params.set(`${dateField}.lte`, now);
-      if (unreleased && !released) params.set(`${dateField}.gte`, now);
-    } else {
-      const codes = filters.statuses
-        .map((slug) => TV_STATUS_CODES[slug])
-        .filter((code): code is number => code !== undefined);
-      if (codes.length > 0) params.set("with_status", codes.join("|"));
-    }
-  }
-
-  // -- Years -----------------------------------------------------------------
-  const years = yearBounds(filters);
-  if (years.from !== null) params.set(`${dateField}.gte`, `${years.from}-01-01`);
-  if (years.to !== null) params.set(`${dateField}.lte`, `${years.to}-12-31`);
-
-  // -- Score, as TMDB counts it (out of ten) ---------------------------------
-  if (filters.scoreMin > 0) {
-    params.set("vote_average.gte", String(filters.scoreMin / 10));
-    // A minimum score without a vote floor is the four-votes-and-a-ten problem.
-    if (!params.has("vote_count.gte")) {
-      params.set("vote_count.gte", String(VOTE_FLOOR[mediaType]));
-    }
-  }
-  if (filters.scoreMax < 100) params.set("vote_average.lte", String(filters.scoreMax / 10));
-
-  // -- Length ----------------------------------------------------------------
-  const runtimes = runtimeBounds(filters);
-  if (runtimes.min !== null) params.set("with_runtime.gte", String(runtimes.min));
-  if (runtimes.max !== null) params.set("with_runtime.lte", String(runtimes.max));
-
-  return `/discover/${mediaType}?${params.toString()}`;
-}
-
-/** The path a smart list would run, for debugging and for the editor's caption. */
-export function describeQuery(filters: SmartFilters): string[] {
-  if (filters.source === "trending") return ["/trending"];
-  return (["movie", "tv"] as const)
-    .map((mediaType) => discoverPath(filters, mediaType))
-    .filter((path): path is string => path !== null);
-}
-
-/** Sets of what the viewer has already seen and already put somewhere. */
-export type ViewerState = {
-  watched: Set<string>;
-  saved: Set<string>;
-  /** Their streaming region. Absent falls back to the instance's. */
-  region?: string;
-};
-
-/**
- * The two things `exclude` needs, as plain id sets.
- *
- * Deliberately not `getWatchStatuses` from `stats.ts`: that one works out how
- * far through each show the viewer is, which costs a TMDB call per show. "Have
- * I touched this at all" is two indexed queries, and it is all the toggle means.
- *
- * "Saved" covers the watchlist, the favourites and every manual list — the
- * toggle says "do not show me things I have already dealt with", and a title
- * sitting on a list the user made themselves is very much dealt with.
- */
-export async function getViewerState(userId: string): Promise<ViewerState> {
-  const [movies, shows, watchlist, favourites, listed, region] = await Promise.all([
+/** Seen at all (a film watched, a show begun) and filed anywhere by hand. */
+export async function viewerSets(userId: string): Promise<ViewerSets> {
+  const [films, shows, watchlist, favourites, listed] = await Promise.all([
     db.watchedMovie.findMany({ where: { userId }, select: { movieId: true } }),
-    db.watchedEpisode.findMany({
-      where: { userId },
-      select: { showId: true },
-      distinct: ["showId"],
-    }),
+    db.watchedEpisode.findMany({ where: { userId }, select: { showId: true }, distinct: ["showId"] }),
     db.watchlistItem.findMany({ where: { userId }, select: { mediaType: true, tmdbId: true } }),
     db.favourite.findMany({ where: { userId }, select: { mediaType: true, tmdbId: true } }),
-    db.mediaListItem.findMany({
-      where: { list: { userId, kind: "manual" } },
-      select: { mediaType: true, tmdbId: true },
-    }),
-    regionForUser(userId),
+    db.mediaListItem.findMany({ where: { list: { userId, kind: "manual" } }, select: { mediaType: true, tmdbId: true } }),
   ]);
-
-  const watched = new Set<string>();
-  for (const m of movies) watched.add(`movie-${m.movieId}`);
-  for (const s of shows) watched.add(`tv-${s.showId}`);
-
-  const saved = new Set<string>();
-  for (const row of [...watchlist, ...favourites, ...listed]) {
-    saved.add(`${row.mediaType}-${row.tmdbId}`);
-  }
-
-  return { watched, saved, region };
+  const watched = new Set<string>([...films.map((f) => `movie-${f.movieId}`), ...shows.map((s) => `tv-${s.showId}`)]);
+  const saved = new Set<string>([...watchlist, ...favourites, ...listed].map((r) => `${r.mediaType}-${r.tmdbId}`));
+  return { watched, saved };
 }
+
+export type SmartAnswer = {
+  items: Found[];
+  /** How many the question matches in all, beyond `limit` (see `matchTotal`). The preview's count. */
+  total: number;
+  /** False when every request failed: an outage, not an empty answer. */
+  ok: boolean;
+};
+
+const NOBODY: ViewerSets = { watched: new Set(), saved: new Set() };
 
 /**
- * Everything discover could not express: the trending endpoint's lack of
- * filters, and the viewer's own history.
- */
-function exclude(
-  items: NormalisedItem[],
-  filters: SmartFilters,
-  viewer: ViewerState,
-  postFilter: boolean,
-): NormalisedItem[] {
-  const years = yearBounds(filters);
-  const seen = new Set<string>();
-
-  return items.filter((item) => {
-    const key = `${item.mediaType}-${item.id}`;
-    // Films and shows are fetched separately and trending returns both, so the
-    // same title can arrive twice.
-    if (seen.has(key)) return false;
-    seen.add(key);
-
-    if (filters.hideWatched && viewer.watched.has(key)) return false;
-    if (filters.hideSaved && viewer.saved.has(key)) return false;
-
-    // Only the trending path needs the rest: everything else was narrowed by
-    // TMDB itself, and re-checking a score TMDB rounded differently would throw
-    // away titles that do match.
-    if (!postFilter) return true;
-
-    if (filters.kind !== "both" && item.mediaType !== filters.kind) return false;
-    if (item.score < filters.scoreMin || item.score > filters.scoreMax) return false;
-
-    if (years.from !== null || years.to !== null) {
-      const year = item.year ? Number(item.year) : null;
-      if (year === null) return false;
-      if (years.from !== null && year < years.from) return false;
-      if (years.to !== null && year > years.to) return false;
-    }
-
-    if (filters.genres.length > 0) {
-      const ids = new Set(item.genreIds ?? []);
-      const wanted = filters.genres.map((slug) =>
-        item.mediaType === "movie" ? findGenre(slug)?.movieId : findGenre(slug)?.tvId,
-      );
-      if (!wanted.every((id) => typeof id === "number" && ids.has(id))) return false;
-    }
-
-    return true;
-  });
-}
-
-/** Trending, deep enough to survive being filtered down afterwards. */
-async function fetchTrending(filters: SmartFilters): Promise<NormalisedItem[]> {
-  const scope = filters.kind === "both" ? "all" : filters.kind;
-  const [week, day] = await Promise.all([
-    trending(scope, "week").catch(() => []),
-    // The daily list overlaps heavily with the weekly one, which is fine — it is
-    // there to give a narrow filter more than twenty rows to work with.
-    trending(scope, "day").catch(() => []),
-  ]);
-  return [...week, ...day];
-}
-
-/**
- * Runs a smart list and returns its titles, best first.
- *
- * Pages are fetched one round at a time and stopped as soon as there is enough,
- * so an unfiltered list costs a single request per medium and only a heavily
- * filtered one goes digging. `viewer` is optional: the nightly refresh has a
- * user, and so does the editor, but the code reads more honestly if "no viewer"
- * simply means the two toggles do nothing.
+ * Runs the filters and returns up to `limit` titles, best first. Pages are
+ * fetched a round at a time and the run stops as soon as there is enough, so
+ * an unnarrowed list costs one request per medium; all of it is read through
+ * the cache, so the editor re-asking the same question is free.
  */
 export async function runSmartList(
-  filters: SmartFilters,
+  f: SmartFilters,
   limit: number,
-  viewer: ViewerState = { watched: new Set(), saved: new Set() },
-): Promise<NormalisedItem[]> {
-  if (!tmdbConfigured()) return [];
+  context: { region: string; today?: string; viewer?: ViewerSets },
+): Promise<SmartAnswer> {
+  if (!tmdbConfigured()) return { items: [], total: 0, ok: false };
+  const viewer = context.viewer ?? NOBODY;
+  const today = context.today ?? todayKey();
 
-  if (filters.source === "trending") {
-    const items = await fetchTrending(filters);
-    return exclude(items, filters, viewer, true).slice(0, limit);
+  if (f.source === "trending") {
+    const scope = f.kind === "both" ? "all" : f.kind;
+    // The daily ranking overlaps the weekly one; it is there to give a narrow
+    // filter more than twenty rows to work with.
+    const [week, day] = await Promise.all([
+      getTrending(scope, "week").catch(() => null),
+      getTrending(scope, "day").catch(() => null),
+    ]);
+    if (!week && !day) return { items: [], total: 0, ok: false };
+    // The ranking is read whole, so what survives the filters is the exact total.
+    const kept = leaveOut(filterTrending([...(week ?? []), ...(day ?? [])], f), f, viewer);
+    return { items: kept.slice(0, limit), total: kept.length, ok: true };
   }
 
-  const paths = (["movie", "tv"] as const)
-    .map((mediaType) => ({ mediaType, path: discoverPath(filters, mediaType, viewer.region) }))
-    .filter((entry): entry is { mediaType: MediaType; path: string } => entry.path !== null);
+  const halves = (["movie", "tv"] as const)
+    .map((mediaType) => ({ mediaType, params: discoverParams(f, mediaType, { region: context.region, today }) }))
+    .filter((h): h is { mediaType: MediaType; params: Record<string, string> } => h.params !== null);
+  if (halves.length === 0) return { items: [], total: 0, ok: true };
 
-  if (paths.length === 0) return [];
-
-  const collected: NormalisedItem[] = [];
-  const depth = pagesFor(limit);
-
+  const collected: Found[] = [];
+  // Each half's latest `total_results`, for the preview's count.
+  const reported = new Map<MediaType, number>();
+  let answered = false;
+  let exhausted = false;
+  const total = (kept: number) => matchTotal({ reported: [...reported.values()], fetched: collected.length, kept, exhausted });
+  const depth = pagesFor(limit, f.hideWatched || f.hideSaved);
   for (let page = 1; page <= depth; page++) {
     const rounds = await Promise.all(
-      paths.map((entry) =>
-        catalogue(entry.path, entry.mediaType, page).catch(() => null),
-      ),
+      halves.map((h) => discover(h.mediaType, { ...h.params, page }).catch(() => null)),
     );
+    if (rounds.some(Boolean)) answered = true;
+    rounds.forEach((r, i) => r && reported.set(halves[i].mediaType, r.totalResults));
+    // Interleaved, so a "both" list is not all the films and then all the shows.
+    const lists = rounds.map((r) => r?.items ?? []);
+    const longest = Math.max(0, ...lists.map((l) => l.length));
+    for (let i = 0; i < longest; i++) for (const l of lists) if (l[i]) collected.push(l[i]);
 
-    // Interleaved rather than concatenated, so a "both" list is not all the
-    // films followed by all the shows — the same trick `fetchGenre` uses.
-    const lists = rounds.map((round) => round?.items ?? []);
-    const longest = Math.max(0, ...lists.map((list) => list.length));
-    for (let i = 0; i < longest; i++) {
-      for (const list of lists) if (list[i]) collected.push(list[i]);
-    }
-
-    const kept = exclude(collected, filters, viewer, false);
-    if (kept.length >= limit) return kept.slice(0, limit);
-
-    // Every medium ran out of pages: there is nothing more to find.
-    if (rounds.every((round) => !round || round.page >= round.totalPages)) break;
+    exhausted = rounds.every((r) => !r || r.page >= r.totalPages);
+    const kept = leaveOut(collected, f, viewer);
+    if (kept.length >= limit) return { items: kept.slice(0, limit), total: total(kept.length), ok: true };
+    if (exhausted) break;
   }
+  const kept = leaveOut(collected, f, viewer);
+  return { items: kept.slice(0, limit), total: total(kept.length), ok: answered };
+}
 
-  return exclude(collected, filters, viewer, false).slice(0, limit);
+/**
+ * Rebuilds one smart list's rows from its filters. The set is thrown away and
+ * rewritten rather than reconciled: nothing is "on" a smart list in a way that
+ * outlives the question, and position is TMDB's ranking. Lengths already known
+ * for a title (on this list yesterday, or on any other) are carried over, so
+ * the daily top-up only asks about what is new.
+ *
+ * An outage leaves yesterday's answer and its stamp alone, so the list is
+ * tried again tomorrow rather than emptied today. A question that genuinely
+ * matches nothing is stamped like any other.
+ *
+ * `added` is what this build found that the last one did not, for
+ * auto-request. Only against a build of the same question: a list never built,
+ * or edited since (both leave `refreshedAt` null), is drawing its first line,
+ * and everything on it would otherwise count as new.
+ */
+export async function rebuildSmartList(listId: string): Promise<{ count: number; ok: boolean; added: Found[] }> {
+  const list = await db.mediaList.findUnique({
+    where: { id: listId },
+    select: {
+      id: true,
+      kind: true,
+      filters: true,
+      userId: true,
+      refreshedAt: true,
+      user: { select: { region: true } },
+      items: { select: { mediaType: true, tmdbId: true } },
+    },
+  });
+  if (!list || list.kind !== "smart") return { count: 0, ok: false, added: [] };
+
+  const f = parseFilters(list.filters);
+  const viewer = f.hideWatched || f.hideSaved ? await viewerSets(list.userId) : undefined;
+  const answer = await runSmartList(f, SMART_LIST_SIZE, { region: regionFor(list.user.region), viewer });
+  if (!answer.ok) return { count: 0, ok: false, added: [] };
+
+  const known = await knownRuntimes(answer.items);
+  await db.$transaction([
+    db.mediaListItem.deleteMany({ where: { listId } }),
+    db.mediaListItem.createMany({
+      data: answer.items.map((item, position) => ({
+        listId,
+        mediaType: item.mediaType,
+        tmdbId: item.id,
+        title: item.title,
+        poster: item.poster,
+        score: item.score || null,
+        year: item.year,
+        runtime: known.get(`${item.mediaType}-${item.id}`) ?? null,
+        position,
+      })),
+    }),
+    db.mediaList.update({ where: { id: listId }, data: { refreshedAt: new Date() } }),
+  ]);
+  const before = new Set(list.items.map((i) => `${i.mediaType}-${i.tmdbId}`));
+  const added = list.refreshedAt ? answer.items.filter((i) => !before.has(`${i.mediaType}-${i.id}`)) : [];
+  return { count: answer.items.length, ok: true, added };
+}
+
+async function knownRuntimes(items: Found[]) {
+  const out = new Map<string, number>();
+  if (!items.length) return out;
+  const rows = await db.mediaListItem.findMany({
+    where: {
+      runtime: { not: null },
+      OR: (["movie", "tv"] as const)
+        .map((t) => ({ mediaType: t, tmdbId: { in: items.filter((i) => i.mediaType === t).map((i) => i.id) } }))
+        .filter((w) => w.tmdbId.in.length),
+    },
+    select: { mediaType: true, tmdbId: true, runtime: true },
+  });
+  for (const r of rows) out.set(`${r.mediaType}-${r.tmdbId}`, r.runtime!);
+  return out;
+}
+
+/** How many titles one daily pass looks up lengths for. Details keep a week, so repeats are cache hits. */
+export const RUNTIME_TOP_UP = 120;
+
+/**
+ * Lengths for list rows that have none, through the cached details: one lookup
+ * per title however many lists hold it. `schedule` is the refresh queue in the
+ * app and a plain call in tests.
+ */
+export async function topUpListRuntimes(
+  schedule: <T>(key: string, task: () => Promise<T>) => Promise<T> = (_key, task) => task(),
+  cap = RUNTIME_TOP_UP,
+) {
+  if (!tmdbConfigured()) return { titles: 0, filled: 0 };
+  const rows = await db.mediaListItem.findMany({
+    where: { runtime: null },
+    select: { mediaType: true, tmdbId: true },
+    distinct: ["mediaType", "tmdbId"],
+    orderBy: { addedAt: "desc" },
+    take: cap,
+  });
+  const results = await mapLimit(rows, 4, async (row) => {
+    const mediaType = row.mediaType === "tv" ? "tv" : "movie";
+    const minutes = await schedule(`runtime:${mediaType}-${row.tmdbId}`, async () => {
+      const d = mediaType === "tv" ? await getTvDetails(row.tmdbId).catch(() => null) : await getMovieDetails(row.tmdbId).catch(() => null);
+      return wholeRuntime(mediaType, d);
+    }).catch(() => null);
+    if (minutes === null) return false;
+    await db.mediaListItem.updateMany({ where: { mediaType, tmdbId: row.tmdbId }, data: { runtime: minutes } });
+    return true;
+  });
+  return { titles: rows.length, filled: results.filter(Boolean).length };
 }

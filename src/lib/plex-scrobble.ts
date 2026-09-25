@@ -1,104 +1,119 @@
 import "server-only";
-import { getPlexConnection, getPlexTmdbId, type PlexHistoryEntry } from "./plex";
-import { recordPlay } from "./plays";
-import { getMovie, getTv, tmdbConfigured } from "./tmdb";
+import { db } from "./db";
+import { recordPlay, type PlayResult } from "./plays";
+import { tmdbFromGuids, tmdbIdForKey, type PlexConnection } from "./plex-server";
+import { episodeLength, filmLength } from "./runtime";
+import { getMovieDetails, getTvDetails, tmdbConfigured } from "./tmdb";
 
 /**
- * Logs a single thing the moment Plex says it was watched.
- *
- * Shared by the webhook and by the now-playing poll, which is the fallback for
- * anyone without a Plex Pass. Both can fire for the same viewing, and they no
- * longer cancel out for free: a repeat used to be a no-op because the row was
- * unique per user and episode, but a play log has no such constraint. What stops
- * the duplicate now is the window inside `recordPlay`, which is a query rather
- * than a per-process cache — the webhook and the poll arrive on different
- * requests and, behind more than one worker, in different processes.
- *
- * This is also the path a genuine rewatch arrives on: watch something twice on
- * Plex and it now counts twice.
- *
- * Nothing here revalidates. Both callers are route handlers, with no page being
- * rendered and no client router to tell, so `revalidatePath("/", "layout")` did
- * nothing for anybody's screen — while emptying the app's entire TMDB cache,
- * which is what that tag reaches. A scrobble that arrives while you are using
- * the app is picked up by the next render either way: none of the pages cache
- * what they read from SQLite.
+ * One thing Plex says was watched, turned into a play. Shared by the webhook,
+ * the now-playing poll's 90% rule and the history sync, so the three agree on
+ * who watched it and what it was. They can all report the same viewing; the
+ * duplicate windows in `recordPlay` are what make that harmless, and a history
+ * entry's own id is what lets a sync run for ever without doubling anything.
  */
-export async function logPlexScrobble(
+
+export type PlexReport = {
+  type: "movie" | "episode";
+  /** The film, or the episode. */
+  ratingKey: string | null;
+  /** For an episode, its show. */
+  grandparentRatingKey: string | null;
+  /** The item's own guids when the report carries them (a film's include its TMDB id). */
+  guids?: { id?: string }[] | null;
+  /** The film's title, or the episode's. */
+  title: string;
+  showTitle: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  watchedAt: Date;
+  /** The source's id for this viewing: a history entry has one, a scrobble does not. */
+  sourceRef?: string | null;
+};
+
+export type ReportOutcome = "logged" | "duplicate" | "unmatched" | "skipped";
+
+/**
+ * Whose viewing it is: the account signed in with that plex.tv id, then one
+ * whose Plex name matches. The name is the fallback that covers a managed
+ * Plex Home profile set up by hand before it ever signed in here.
+ */
+export async function viewerFor(account: { id?: string | number | null; title?: string | null } | null | undefined) {
+  if (!account) return null;
+  const id = account.id !== undefined && account.id !== null && account.id !== "" ? String(account.id) : null;
+  if (id) {
+    const byId = await db.user.findUnique({ where: { plexAccountId: id }, select: { id: true } });
+    if (byId) return byId.id;
+  }
+  const name = account.title?.trim();
+  if (!name) return null;
+  const people = await db.user.findMany({ where: { plexUsername: { not: null } }, select: { id: true, plexUsername: true } });
+  return people.find((p) => p.plexUsername!.toLowerCase() === name.toLowerCase())?.id ?? null;
+}
+
+/** The TMDB title a report is about, or null when the library never matched it to one. */
+export async function tmdbIdForReport(report: PlexReport, conn: PlexConnection | null): Promise<number | null> {
+  if (report.type === "movie") {
+    const own = tmdbFromGuids(report.guids);
+    if (own) return own;
+    return report.ratingKey ? tmdbIdForKey(conn, report.ratingKey, "movie") : null;
+  }
+  // An episode's own guids name the episode, so the show is looked up by its key.
+  return report.grandparentRatingKey ? tmdbIdForKey(conn, report.grandparentRatingKey, "tv") : null;
+}
+
+/**
+ * Logs one report for one account. Specials are left out, as everywhere
+ * else here. The title's details come through the TMDB cache; without TMDB
+ * the play is still logged under Plex's own name for it.
+ */
+export async function logPlexReport(
   userId: string,
-  entry: PlexHistoryEntry,
-): Promise<boolean> {
-  if (!tmdbConfigured()) return false;
-
-  /**
-   * The server's own token, not the viewer's.
-   *
-   * All this asks is which TMDB title a library item is matched to, which is a
-   * fact about the item and has nothing to do with who watched it — so there is
-   * nothing to be gained by asking as the viewer, and something to lose. A
-   * managed Plex Home profile holds a token from the Home switch, and every
-   * failure below is silent: a token the server will not accept means no id,
-   * which means this returns false and the viewing is dropped with no record of
-   * why. Asking as the server takes that whole failure mode off the path.
-   *
-   * Watched *state* is per account and is still read as the viewer — see
-   * `syncPlexHistory`. This is not that.
-   */
-  const connection = await getPlexConnection();
-  if (!connection) return false;
-
-  const key = entry.type === "episode" ? entry.grandparentRatingKey : entry.ratingKey;
-  if (!key) return false;
-
-  const tmdbId = await getPlexTmdbId(connection, key).catch(() => null);
-  if (!tmdbId) {
-    // Said out loud, because this is the end of the line for a viewing that
-    // Plex has already reported. Silent, it looks exactly like a webhook that
-    // never arrived — which is a very different thing to go looking for.
-    console.warn(
-      `Plex scrobble dropped: library item ${key} is not matched to a TMDB id`,
-      { userId, title: entry.title },
-    );
-    return false;
+  report: PlexReport,
+  conn: PlexConnection | null,
+  tmdbId?: number | null,
+): Promise<{ outcome: ReportOutcome; result?: PlayResult }> {
+  if (report.type === "episode") {
+    if (report.seasonNumber === null || report.episodeNumber === null) return { outcome: "skipped" };
+    if (report.seasonNumber === 0) return { outcome: "skipped" };
+  }
+  const id = tmdbId !== undefined ? tmdbId : await tmdbIdForReport(report, conn);
+  if (!id) {
+    // Said out loud: silent, this looks exactly like a webhook that never arrived.
+    console.warn(`Plex report dropped: "${report.showTitle ?? report.title}" is not matched to a TMDB id`);
+    return { outcome: "unmatched" };
   }
 
-  if (entry.type === "movie") {
-    const detail = await getMovie(tmdbId).catch(() => null);
-    if (!detail) return false;
-
-    await recordPlay(userId, {
+  const online = tmdbConfigured();
+  let result: PlayResult;
+  if (report.type === "movie") {
+    const d = online ? await getMovieDetails(id).catch(() => null) : null;
+    result = await recordPlay(userId, {
       mediaType: "movie",
-      tmdbId: detail.id,
-      title: detail.title,
-      poster: detail.poster_path,
-      runtime: detail.runtime ?? 0,
-      score: Math.round(detail.vote_average * 10),
-      watchedAt: entry.watchedAt,
+      tmdbId: id,
+      title: d?.title ?? report.title,
+      poster: d?.poster_path ?? null,
+      runtime: filmLength(d) ?? 0,
+      score: d ? Math.round(d.vote_average * 10) : null,
+      watchedAt: report.watchedAt,
       source: "plex",
+      sourceRef: report.sourceRef ?? null,
     });
-
-    return true;
+  } else {
+    const d = online ? await getTvDetails(id).catch(() => null) : null;
+    result = await recordPlay(userId, {
+      mediaType: "tv",
+      tmdbId: id,
+      title: d?.name ?? report.showTitle ?? report.title,
+      poster: d?.poster_path ?? null,
+      seasonNumber: report.seasonNumber,
+      episodeNumber: report.episodeNumber,
+      episodeName: report.title,
+      runtime: episodeLength(d) ?? 42,
+      watchedAt: report.watchedAt,
+      source: "plex",
+      sourceRef: report.sourceRef ?? null,
+    });
   }
-
-  if (entry.seasonNumber === null || entry.episodeNumber === null) return false;
-  // Specials sit outside the numbered run and are not tracked here.
-  if (entry.seasonNumber === 0) return false;
-
-  const detail = await getTv(tmdbId).catch(() => null);
-  if (!detail) return false;
-
-  await recordPlay(userId, {
-    mediaType: "tv",
-    tmdbId: detail.id,
-    title: detail.name,
-    poster: detail.poster_path,
-    seasonNumber: entry.seasonNumber,
-    episodeNumber: entry.episodeNumber,
-    episodeName: entry.title,
-    runtime: detail.episode_run_time?.[0] ?? 42,
-    watchedAt: entry.watchedAt,
-    source: "plex",
-  });
-
-  return true;
+  return { outcome: result.created ? "logged" : "duplicate", result };
 }
