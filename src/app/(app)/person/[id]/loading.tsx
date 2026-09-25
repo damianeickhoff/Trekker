@@ -31,7 +31,7 @@ export default function PersonLoading() {
     <SkeletonScreen label="person">
       <div className="lg:hidden">
         <div className="flex flex-col bg-night">
-          <div className="flex h-[60px] items-center justify-between px-5 pt-4">
+          <div className="flex h-[66px] items-center justify-between px-5 pt-[22px]">
             <HeroBone className="size-10 rounded-full" />
             <HeroBone className="size-10 rounded-full" />
           </div>

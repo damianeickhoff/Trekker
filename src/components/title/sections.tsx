@@ -18,7 +18,9 @@ import {
 } from "@/lib/title";
 import { normalise, type CastMember, type TmdbListItem, type TvDetails } from "@/lib/tmdb";
 import { db } from "@/lib/db";
+import { friendsBySeasonEpisode } from "@/lib/friends-watched";
 import { StatusMark } from "../artwork";
+import { AvatarStack } from "./avatar-stack";
 import { Icon } from "../icon";
 import { Link } from "../link";
 import { Poster } from "../poster";
@@ -283,7 +285,12 @@ export async function EpisodeList({
   next: NextEpisode | null;
 }) {
   const today = todayKey();
-  const [episodes, seen] = await Promise.all([seasonEpisodes(details.id, season), watchedKeys(userId, details.id)]);
+  // Friends' faces on the rows come from one query for the whole season.
+  const [episodes, seen, friends] = await Promise.all([
+    seasonEpisodes(details.id, season),
+    watchedKeys(userId, details.id),
+    friendsBySeasonEpisode(userId, details.id, season),
+  ]);
   const seasons = numberedSeasons(details);
   const specials = details.seasons.find((s) => s.season_number === 0 && s.episode_count > 0);
   const multi = seasons.length > 1;
@@ -366,6 +373,7 @@ export async function EpisodeList({
                             <span className={`truncate text-sm ${isNext ? "font-bold" : "font-medium"}`}>{e.name}</span>
                             {isNext && <StateChip small>Next</StateChip>}
                           </span>
+                          <AvatarStack people={friends.get(e.episode) ?? []} />
                           <span className="shrink-0 whitespace-nowrap text-xs text-ink-3">
                             {watched ? "Watched" : aired ? (e.runtime ? `${e.runtime} min` : "") : e.airDate ? listDate(e.airDate) : "No date yet"}
                           </span>

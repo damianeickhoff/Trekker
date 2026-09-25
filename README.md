@@ -2567,6 +2567,35 @@ and the build are clean.
 - **Light theme**: the lead and the trailer cards stay dark with white type,
   and the cards sit on the surface.
 
+## The installed app on a phone
+
+After the switch, from the owner's phone:
+
+- **The status bar by theme**, as the old app had it: see-through in dark,
+  the ordinary bar in light, where a see-through bar's always-white clock
+  would vanish. iOS reads the tag as the app opens (`generateMetadata` in the
+  root layout). The page pads itself by `--safe-top`, the top inset, which is
+  0 wherever the page does not run under the bar.
+- **Title artwork under the notch.** The phone heroes of films, series and
+  episodes (and their skeletons) reach back up by `--safe-top`, so the
+  picture runs behind the clock and the island while their buttons stay below.
+- **A pinned top row** on the pages with a hero (film, series, episode,
+  person): back, trailer and the menu stay put as the page scrolls, fixed
+  under the status bar with a spacer holding their place in the hero. The row
+  lets touches through between its buttons.
+- **Top rows 6px lower** on every phone page (66px tall, 22px down), clear of
+  the blur iOS draws along the top edge.
+- **The tab bar lower**: `--tab-float` puts it 12px less than the home
+  indicator's inset off the bottom (22px on an iPhone rather than 34), 18px
+  where there is no inset. The episode page's bar and the smart list editor's
+  foot use it too.
+- **Hero chips one size**: the amber and white chips on film and series
+  heroes are the 24px size the see-through ones are.
+
+`tests/phone-chrome.test.ts` pins these. Checked with a stand-in iPhone (a
+47px top inset and a 34px bottom one set by hand, since a desktop browser has
+neither), not on a device.
+
 ## The image, and replacing the old app on Unraid
 
 The rebuild ships the way the old app did: the same `Dockerfile`,
@@ -2606,6 +2635,82 @@ database, as the image builds; then the standalone server, as the image runs
 it, on a fresh database and on a migrated copy of the old app's local
 database, both answering `/api/health` with `{"ok":true,...}` and serving the
 sign-in page. The image itself is built by CI on push.
+
+## Friends who watched
+
+Asked for by the owner once the household was on it: whether a friend has
+seen a title, and an episode.
+
+- **A film** has a Friends who watched block in its right-hand column: on
+  phones straight after the availability panel, on desktop above How it
+  felt. One row per friend who has seen it, most recent viewing first: their
+  picture, their name, the day they last watched it ("12 Aug", the year only
+  once it is not this one) with "rewatched" or "×3" where there was more than
+  one viewing, and their popcorn as the one bucket and its name where they
+  rated it. A row opens their profile.
+- **A series** has the same block, each friend with how far they are:
+  "Finished" once they have every aired episode of the numbered seasons, else
+  their furthest episode and when they saw it ("S02 · E04 · 12 Aug", written
+  as every other episode code in the app), and their rating of the show.
+  "Aired" is the show's stored episode list (`ShowEpisode`), read once for
+  everybody, so a season announced and not out unfinishes nobody, specials
+  count neither way, and a show the refresh job has not listed yet shows
+  everyone at their furthest episode rather than calling them all finished.
+  Somebody who has seen only specials is not listed.
+- **The episode list** carries, on each episode a friend has seen, their
+  faces, 18px and overlapping, three at most and then "+2", named as one
+  picture for a screen reader ("Watched by Jason and Soraya"). It takes a
+  fixed sliver from the episode's name, which truncates, so the date and the
+  tick stay where they were on a phone.
+- **An episode page** has the block too, above How it felt, with that
+  episode's viewings and each friend's rating of the episode.
+
+**Who counts.** Accepted friends only, from either end of the request: the
+same line `canSeeProfile` draws, since a viewing is part of a profile and
+profiles are private until both sides agree. The condition is inside the
+query that reads the viewings (`friendOf` in `lib/friends-watched.ts`), so a
+stranger's rows, or those of someone whose request is still waiting, are
+never read to be filtered out. This is unlike feelings and comments, which
+everyone signed in sees and which say so.
+
+**Cost.** Rows only, never TMDB. Each block is one Prisma read of the
+watched rows, the friendship its condition and the person and their rating
+selected with it (Prisma fetches those relations in a statement of their
+own, for all the rows at once, never one per friend); the series block also
+reads the show's aired episodes once, beside it. The episode list's faces
+are one query for the whole season beside the ones it already made. Each block streams in its own Suspense boundary with no
+skeleton, since most titles have no friend on them and bones for something
+usually absent would only flicker; the block brings its own box, so nothing
+is left holding a gap while it streams.
+
+**Motion.** None new: a row washes under the pointer (`ROW_WASH`), as the
+friends page's rows do.
+
+No migration: `WatchedMovie`, `WatchedEpisode`, `Rating`, `EpisodeRating`,
+`ShowEpisode` and `Friendship` already held everything.
+
+### To test by hand
+
+- **A film two friends have seen**, one of them twice and with a rating:
+  the block is after availability on a phone and above How it felt on
+  desktop, the most recent viewer first, "rewatched" on the second, their
+  bucket on the right. A friend's row opens their profile.
+- **A film no friend has seen**: no block, no gap where it would be, and no
+  flash of a skeleton while the page loads.
+- **Privacy**: send someone a request and leave it unanswered, and have
+  them watch the film; they do not appear. Accept it and reload; they do.
+  Remove them as a friend; they are gone again.
+- **A series** with one friend at the end of what has aired and one part
+  way: "Finished" for the first, "S0x · E0y · date" for the second. With a
+  new season announced and not out, the first still reads Finished.
+- **The episode list on a phone** (375px wide): an episode two friends have
+  seen shows two faces before the date, the name truncating and the tick
+  unmoved; one four friends have seen shows three and "+1". A screen reader
+  reads "Watched by …" with every name.
+- **An episode page**: the friends who saw that episode, with their episode
+  rating, above How it felt, at both widths.
+- **Light theme and a background variant**: the faces' cut-out ring is the
+  page colour, and the block's words are the page's ink.
 
 ## Running it
 

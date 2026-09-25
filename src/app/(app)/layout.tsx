@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           column does not become a scroller and nothing sticky inside it stops
           sticking.
         */}
-        <main className="min-w-0 grow pb-(--tab-bar-clearance) lg:overflow-x-clip lg:pb-10">
+        <main className="min-w-0 grow pt-(--safe-top) pb-(--tab-bar-clearance) lg:overflow-x-clip lg:pt-0 lg:pb-10">
           <div className="lg:mx-auto lg:max-w-(--column-w)">
             {children}
           </div>

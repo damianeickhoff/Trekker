@@ -34,7 +34,7 @@ export function CacheRefresher() {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed left-1/2 top-[calc(10px+env(safe-area-inset-top))] z-(--z-toast) -translate-x-1/2 rounded-full bg-pill px-3 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-white/80"
+      className="pointer-events-none fixed left-1/2 top-[calc(10px+var(--safe-top))] z-(--z-toast) -translate-x-1/2 rounded-full bg-pill px-3 py-1 font-mono text-[10px] uppercase tracking-[0.06em] text-white/80"
     >
       Updating
     </div>

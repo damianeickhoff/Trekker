@@ -138,7 +138,17 @@
  * the padding and the bar cannot drift apart.
  */
 :root {
-  --tab-bar-clearance: calc(92px + max(18px, env(safe-area-inset-bottom)));
+  /*
+   * The status bar's height where the page runs under it (the installed app in
+   * dark), else 0. Pages pad by it; title heroes reach back up under it.
+   */
+  --safe-top: env(safe-area-inset-top, 0px);
+  /*
+   * How far the floating tab bar sits off the bottom: a little above the home
+   * indicator rather than above the whole inset, and 18px where there is none.
+   */
+  --tab-float: max(18px, calc(env(safe-area-inset-bottom) - 12px));
+  --tab-bar-clearance: calc(92px + var(--tab-float));
 }
 
 /*

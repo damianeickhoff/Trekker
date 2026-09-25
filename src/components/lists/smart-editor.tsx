@@ -319,7 +319,7 @@ export function SmartEditor({ listId, initialName, initialFilters, certification
         <div className="px-5 pb-2">
           <BackHeader back={backButton} title={title} />
         </div>
-        <div className="sticky top-0 z-(--z-top-row) flex flex-col gap-2.5 bg-bg px-5 pb-3 pt-1">
+        <div className="sticky top-(--safe-top) z-(--z-top-row) flex flex-col gap-2.5 bg-bg px-5 pb-3 pt-1">
           <div className="flex items-baseline justify-between">
             <span className="mono-label">Preview</span>
             {matched && <span className="mono-label text-accent-text">{matched}</span>}
@@ -359,7 +359,7 @@ export function SmartEditor({ listId, initialName, initialFilters, certification
         {/* A solid page-colour bar under the button, faded in over its top 24px, so
             the controls scrolling beneath never show through it (they did through
             the disabled button's translucency). */}
-        <div className="fixed inset-x-0 bottom-0 z-(--z-tab-bar) bg-[linear-gradient(to_bottom,transparent,var(--bg)_24px)] px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-6">
+        <div className="fixed inset-x-0 bottom-0 z-(--z-tab-bar) bg-[linear-gradient(to_bottom,transparent,var(--bg)_24px)] px-5 pb-(--tab-float) pt-6">
           <button type="button" disabled={!canSave} onClick={save} className={`${buttonClass("primary", "md")} h-[50px] w-full`}>
             <Icon name="check" size={18} />
             {saving ? "Saving…" : saveLabel}

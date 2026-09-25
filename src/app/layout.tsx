@@ -21,11 +21,19 @@ const display = Bricolage_Grotesque({
 const body = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument", display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap", preload: false });
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  // The status bar by theme, as the old app had it. Dark: see-through, so a
+  // title's artwork runs up under the notch (the page pads itself by
+  // `--safe-top`). Light: the ordinary bar, since a see-through bar's clock is
+  // always white and would vanish on paper. iOS reads this as the app opens.
+  const theme = serverTheme(parseThemePreference((await cookies()).get(THEME_COOKIE)?.value));
+  return { ...metadata, appleWebApp: { capable: true, title: "Trekker", statusBarStyle: theme === "light" ? "default" : "black-translucent" } };
+}
+
+const metadata: Metadata = {
   title: { default: "Trekker", template: "%s · Trekker" },
   description: "A self-hosted tracker for what the household watches.",
   applicationName: "Trekker",
-  appleWebApp: { capable: true, title: "Trekker", statusBarStyle: "black" },
   icons: {
     icon: [{ url: "/icons/32", type: "image/png", sizes: "32x32" }],
     apple: [{ url: "/icons/180", sizes: "180x180" }],

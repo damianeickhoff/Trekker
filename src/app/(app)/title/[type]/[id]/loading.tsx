@@ -23,8 +23,8 @@ export default function TitleLoading() {
   return (
     <SkeletonScreen label="title">
       <div className="lg:hidden">
-        <div className="flex h-[500px] flex-col bg-night">
-          <div className="flex h-[60px] items-center justify-between px-5 pt-4">
+        <div className="-mt-(--safe-top) flex h-[calc(500px+var(--safe-top))] flex-col bg-night pt-(--safe-top)">
+          <div className="flex h-[66px] items-center justify-between px-5 pt-[22px]">
             <HeroBone className="size-10 rounded-full" />
             <div className="flex gap-2">
               <HeroBone className="size-10 rounded-full" />

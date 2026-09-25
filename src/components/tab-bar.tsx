@@ -40,7 +40,7 @@ export function TabBar() {
   if (!showsTabBar(pathname)) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-(--z-tab-bar) px-4 pb-[max(18px,env(safe-area-inset-bottom))] lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-(--z-tab-bar) px-4 pb-(--tab-float) lg:hidden">
       <nav
         aria-label="Main"
         className="pointer-events-auto flex h-16 items-center rounded-[32px] bg-pill px-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[16px]"

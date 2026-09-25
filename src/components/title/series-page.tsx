@@ -28,6 +28,7 @@ import { Icon } from "../icon";
 import { PlexChip, QuietChip, RequestedChip, StateChip } from "../ui";
 import { AsideBones, EpisodeListBones, MoreLikeBones, PanelBones, PeopleRailBones } from "./bones";
 import { BackdropArt, HeroArt, HeroPoster, Score, ScoreRow, TitleFacts, TitleLogo } from "./hero";
+import { FriendsWatchedShow } from "./friends-watched";
 import { FavouriteButton, SaveButton, TitleMoreMenu } from "./keep-buttons";
 import { YourRating } from "./popcorn-picker";
 import {
@@ -166,7 +167,7 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
     <WhenMenuProvider redate={redateFromTitle}>
       <TickScope>
         {/* Phones: the centred hero. */}
-        <div className="relative flex min-h-[500px] flex-col lg:hidden">
+        <div className="relative -mt-(--safe-top) flex min-h-[calc(500px+var(--safe-top))] flex-col pt-(--safe-top) lg:hidden">
           {backdrop ? (
             <BackdropArt path={backdrop}>
               <TickFlash size={52} />
@@ -174,7 +175,8 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
           ) : (
             <HeroArt path={details.poster_path} />
           )}
-          <header className="relative z-(--z-top-row) flex h-[60px] shrink-0 items-center justify-between px-5 pt-4">
+          <div aria-hidden="true" className="h-[66px] shrink-0" />
+          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[66px] items-center justify-between px-5 pt-[22px] *:pointer-events-auto lg:hidden">
             <BackButton kind="glass" />
             <div className="flex gap-2">
               {trailer && (
@@ -195,8 +197,8 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
             <TitleFacts tagline={tagline} facts={facts} centred />
             {scores}
             <div className="flex flex-wrap justify-center gap-1.5">
-              {onPlex && <PlexChip small />}
-              {requested && <RequestedChip small />}
+              {onPlex && <PlexChip />}
+              {requested && <RequestedChip />}
               {quietChips}
             </div>
           </div>
@@ -224,9 +226,9 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
           <div className="relative hidden min-w-0 flex-col gap-[18px] pt-4 text-white lg:col-start-2 lg:row-start-1 lg:flex xl:col-end-4">
             <div className="flex flex-col gap-2.5">
               <div className="flex flex-wrap gap-1.5">
-                <StateChip small>Series</StateChip>
-                {onPlex && <PlexChip small />}
-                {requested && <RequestedChip small />}
+                <StateChip>Series</StateChip>
+                {onPlex && <PlexChip />}
+                {requested && <RequestedChip />}
                 {quietChips}
               </div>
               <TitleLogo logo={logo} title={details.name} />
@@ -277,6 +279,14 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
             <div className="relative order-3 empty:hidden lg:order-none">
               <ProgressPanel userId={user.id} details={details} viewer={viewer} />
             </div>
+            {/* Friends who watched: on phones straight after availability,
+                whose order it shares (DOM order decides between the two), so
+                before progress; from `lg` after progress and above How it
+                felt. Usually absent, so no bones, and the block brings its own
+                box: an empty wrapper waiting on the stream would still take a gap. */}
+            <Suspense fallback={null}>
+              <FriendsWatchedShow userId={user.id} showId={id} className="relative order-2 lg:order-none" />
+            </Suspense>
             <div className="relative order-7 empty:hidden lg:order-none">
               <Suspense fallback={<AsideBones />}>
                 <FeelingsSection userId={user.id} mediaType="tv" tmdbId={id} scope="all-episodes" />

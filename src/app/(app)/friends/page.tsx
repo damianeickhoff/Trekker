@@ -65,7 +65,7 @@ export default async function FriendsPage() {
   return (
     <div className="flex flex-col gap-[18px] px-5 lg:gap-[26px] lg:px-10 lg:pt-7">
       <header className="flex flex-col gap-2 lg:gap-4">
-        <div className="flex h-[60px] items-center justify-between pt-4 lg:h-auto lg:pt-0">
+        <div className="flex h-[66px] items-center justify-between pt-[22px] lg:h-auto lg:pt-0">
           <Back href="/profile" name="Profile" />
           <span className="lg:hidden">
             {!alone && <FindPeopleButton compact />}

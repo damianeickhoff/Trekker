@@ -139,7 +139,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
     <NewsRefresh>
       <ChipMemory chip={chip} named={named !== null} openLast={prefs.openOn === "last"} />
       <PageBody className="lg:gap-6">
-        <header className="flex min-h-[60px] items-center gap-3 pt-4 lg:min-h-0 lg:items-end lg:pt-0">
+        <header className="flex min-h-[66px] items-center gap-3 pt-[22px] lg:min-h-0 lg:items-end lg:pt-0">
           <div className="flex min-w-0 grow items-center gap-3 lg:flex-col lg:items-start lg:gap-2">
             <Back href="/" name="Home" />
             <div className="flex min-w-0 flex-col gap-px lg:flex-row lg:items-baseline lg:gap-3.5">

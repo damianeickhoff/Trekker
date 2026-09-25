@@ -20,6 +20,7 @@ import { Icon } from "../icon";
 import { PlexChip, QuietChip, RequestedChip, StateChip } from "../ui";
 import { AsideBones, MoreLikeBones, PanelBones, PeopleRailBones } from "./bones";
 import { BackdropArt, HeroArt, HeroPoster, Score, ScoreRow, TitleFacts, TitleLogo } from "./hero";
+import { FriendsWatchedFilm } from "./friends-watched";
 import { FavouriteButton, SaveButton, TitleMoreMenu } from "./keep-buttons";
 import { YourRating } from "./popcorn-picker";
 import { AvailabilityPanel, CastRail, CommentsSection, FeelingsSection, MoreLikeThis } from "./sections";
@@ -97,11 +98,11 @@ export async function FilmPage({ id }: { id: number }) {
   );
   const chips = (
     <>
-      {cinemas && <StateChip small>In cinemas</StateChip>}
+      {cinemas && <StateChip>In cinemas</StateChip>}
       {onPlex ? (
-        <PlexChip small />
+        <PlexChip />
       ) : avail?.overseerrStatus === "requested" ? (
-        <RequestedChip small />
+        <RequestedChip />
       ) : (
         plexConnected && <QuietChip onHero>Not on Plex</QuietChip>
       )}
@@ -115,7 +116,7 @@ export async function FilmPage({ id }: { id: number }) {
   return (
     <WhenMenuProvider redate={redateFromTitle}>
       <TickScope>
-        <div className="relative flex min-h-[500px] flex-col lg:hidden">
+        <div className="relative -mt-(--safe-top) flex min-h-[calc(500px+var(--safe-top))] flex-col pt-(--safe-top) lg:hidden">
           {backdrop ? (
             <BackdropArt path={backdrop}>
               <TickFlash size={52} />
@@ -123,7 +124,8 @@ export async function FilmPage({ id }: { id: number }) {
           ) : (
             <HeroArt path={details.poster_path} />
           )}
-          <header className="relative z-(--z-top-row) flex h-[60px] shrink-0 items-center justify-between px-5 pt-4">
+          <div aria-hidden="true" className="h-[66px] shrink-0" />
+          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[66px] items-center justify-between px-5 pt-[22px] *:pointer-events-auto lg:hidden">
             <BackButton kind="glass" />
             <div className="flex gap-2">
               {trailer && (
@@ -168,7 +170,7 @@ export async function FilmPage({ id }: { id: number }) {
           <div className="relative hidden min-w-0 flex-col gap-[18px] pt-4 text-white lg:col-start-2 lg:row-start-1 lg:flex xl:col-end-4">
             <div className="flex flex-col gap-2.5">
               <div className="flex flex-wrap gap-1.5">
-                <StateChip small>Film</StateChip>
+                <StateChip>Film</StateChip>
                 {chips}
               </div>
               <TitleLogo logo={logo} title={details.title} />
@@ -207,6 +209,13 @@ export async function FilmPage({ id }: { id: number }) {
                 <AvailabilityPanel userId={user.id} mediaType="movie" tmdbId={id} inCinemas={cinemas} />
               </Suspense>
             </div>
+            {/* Friends who watched: straight after availability on phones (the
+                same order, where DOM order decides), above How it felt from
+                `lg`. Usually absent, so no bones, and the block brings its own
+                box: an empty wrapper waiting on the stream would still take a gap. */}
+            <Suspense fallback={null}>
+              <FriendsWatchedFilm userId={user.id} tmdbId={id} className="relative order-2 lg:order-none" />
+            </Suspense>
             <div className="relative order-5 lg:order-none">
               <Suspense fallback={<AsideBones />}>
                 <FeelingsSection userId={user.id} mediaType="movie" tmdbId={id} scope={{ season: 0, episode: 0 }} />

@@ -28,6 +28,7 @@ import { SectionHead } from "../section-head";
 import { PlexChip } from "../ui";
 import { AsideBones, PeopleRailBones } from "./bones";
 import { EpisodeArrival } from "./episode-travel";
+import { FriendsWatchedEpisode } from "./friends-watched";
 import { BackdropArt, HeroArt, TitleLogo } from "./hero";
 import { SaveButton, TitleMoreMenu } from "./keep-buttons";
 import { PersonTile } from "./people";
@@ -118,7 +119,7 @@ async function Navigator({ details, season, episode, list }: { details: TvDetail
       <nav
         aria-label="Episodes"
         data-episode-nav=""
-        className="fixed inset-x-4 bottom-[max(18px,env(safe-area-inset-bottom))] z-(--z-tab-bar) flex h-[60px] items-center justify-between rounded-[30px] bg-pill px-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[16px] lg:hidden"
+        className="fixed inset-x-4 bottom-(--tab-float) z-(--z-tab-bar) flex h-[60px] items-center justify-between rounded-[30px] bg-pill px-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] backdrop-blur-[16px] lg:hidden"
       >
         {side(prev, "prev")}
         {index > 0 && (
@@ -246,9 +247,10 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
       <TickScope>
         {/* Phones */}
         <div className="lg:hidden">
-          <div className="relative flex h-[296px] flex-col">
+          <div className="relative -mt-(--safe-top) flex h-[calc(296px+var(--safe-top))] flex-col pt-(--safe-top)">
             {art}
-            <header className="relative z-(--z-top-row) flex h-[60px] shrink-0 items-center justify-between px-5 pt-4">
+            <div aria-hidden="true" className="h-[66px] shrink-0" />
+          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[66px] items-center justify-between px-5 pt-[22px] *:pointer-events-auto lg:hidden">
               <BackButton kind="glass" />
               <div className="flex gap-2">
                 <SaveButton title={title} initial={viewer.saved} lists={viewer.lists} className={GLASS_ICON_SM} />
@@ -334,6 +336,13 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
         <div className="relative flex flex-col gap-4 px-5 pt-4 lg:gap-7 lg:px-10 lg:pt-7">
           <Suspense fallback={<PeopleRailBones />}>
             <EpisodeCast showId={id} credits={ep?.credits ?? (ep ? { cast: [], guest_stars: ep.guest_stars ?? [], crew: [] } : undefined)} />
+          </Suspense>
+          {/* Friends who watched this episode, above How it felt as on a film.
+              Usually absent, so no bones. Capped on desktop at the rating
+              panel's width, or a friend's popcorn would sit a screen away
+              from their name. */}
+          <Suspense fallback={null}>
+            <FriendsWatchedEpisode userId={user.id} showId={id} season={season} episode={episode} className="lg:max-w-[460px]" />
           </Suspense>
           <Suspense fallback={<AsideBones />}>
             <FeelingsSection userId={user.id} mediaType="tv" tmdbId={id} scope={{ season, episode }} />

@@ -184,7 +184,7 @@ export async function CastPage({ mediaType, id, filter }: { mediaType: "movie" |
         the filters share the title's row.
       */}
       <header className="flex flex-col gap-2 lg:gap-4">
-        <div className="flex h-[60px] items-center pt-4 lg:h-auto lg:pt-0">
+        <div className="flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0">
           <Back href={base} name={data.name} history />
         </div>
         <div className="flex flex-wrap items-center gap-4">

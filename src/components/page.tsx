@@ -38,7 +38,7 @@ export function MobileTop({
 }) {
   return (
     <header
-      className={`relative z-(--z-top-row) flex h-[60px] shrink-0 items-center justify-between px-5 pt-4 lg:hidden ${onHero ? "text-white" : ""}`}
+      className={`relative z-(--z-top-row) flex h-[66px] shrink-0 items-center justify-between px-5 pt-[22px] lg:hidden ${onHero ? "text-white" : ""}`}
     >
       {title === "wordmark" ? (
         <Link href="/" aria-label="Trekker home">
@@ -79,7 +79,7 @@ export function DesktopHeader({ title, children }: { title: string; children?: R
 export function BackHeader({ back, title, meta }: { back: ReactNode; title: ReactNode; meta?: ReactNode }) {
   return (
     <header className="flex flex-col gap-2 lg:gap-4">
-      <div className="flex h-[60px] items-center pt-4 lg:h-auto lg:pt-0">{back}</div>
+      <div className="flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0">{back}</div>
       <div className="flex min-w-0 flex-col gap-1.5">
         <h1 className="m-0 font-display text-[26px] font-extrabold leading-[1.05] tracking-[-0.035em] lg:text-[30px] lg:font-bold lg:tracking-[-0.025em]">
           {title}
@@ -94,7 +94,7 @@ export function BackHeader({ back, title, meta }: { back: ReactNode; title: Reac
 export function BackHeaderBones() {
   return (
     <div className="flex flex-col gap-2 lg:gap-4">
-      <div className="flex h-[60px] items-center pt-4 lg:h-auto lg:pt-0">
+      <div className="flex h-[66px] items-center pt-[22px] lg:h-auto lg:pt-0">
         <Bone className="size-10 rounded-full lg:hidden" />
         <Bone className="hidden h-4 w-20 rounded lg:block" />
       </div>
