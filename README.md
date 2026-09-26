@@ -2571,11 +2571,12 @@ and the build are clean.
 
 After the switch, from the owner's phone:
 
-- **The status bar by theme**, as the old app had it: see-through in dark,
-  the ordinary bar in light, where a see-through bar's always-white clock
-  would vanish. iOS reads the tag as the app opens (`generateMetadata` in the
-  root layout). The page pads itself by `--safe-top`, the top inset, which is
-  0 wherever the page does not run under the bar.
+- **A see-through status bar** in both themes, so the page scrolls on up
+  behind the clock and the island instead of vanishing at an opaque bar. In
+  light the always-white clock is faint on paper; that is the trade. iOS
+  reads the tag as the app opens (`metadata` in the root layout). The page
+  pads itself by `--safe-top`, the top inset, which is 0 wherever the page
+  does not run under the bar.
 - **Title artwork under the notch.** The phone heroes of films, series and
   episodes (and their skeletons) reach back up by `--safe-top`, so the
   picture runs behind the clock and the island while their buttons stay below.

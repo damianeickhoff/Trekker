@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /*
- * The installed app on a phone: the status bar by theme, pages clear of it,
+ * The installed app on a phone: a see-through status bar, pages clear of it,
  * title artwork running up under the notch, the tab bar just above the home
  * indicator, and hero chips all one size.
  */
@@ -13,8 +13,8 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const css = read("src/app/globals.css");
 
 describe("the status bar", () => {
-  it("is see-through in dark, so artwork can reach the notch, and ordinary in light", () => {
-    expect(read("src/app/layout.tsx")).toContain('statusBarStyle: theme === "light" ? "default" : "black-translucent"');
+  it("is see-through in both themes, so the page and title artwork run up under the notch", () => {
+    expect(read("src/app/layout.tsx")).toContain('statusBarStyle: "black-translucent"');
   });
 
   it("is padded for on every page, and title heroes reach back up under it", () => {

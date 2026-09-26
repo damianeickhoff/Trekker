@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Suspense } from "react";
 import {
   ChallengeBannerBones,
@@ -6,6 +7,7 @@ import {
   TrendingBones,
   UpNextBones,
 } from "@/components/home-skeleton";
+import { FreshHome } from "@/components/home/fresh-home";
 import {
   ChallengesTier,
   FriendsWatchedTier,
@@ -33,10 +35,16 @@ import { longDate, todayKey } from "@/lib/dates";
  * with width is which piece draws Also waiting, never where things sit: from
  * `xl` the card carries it and its own section hides.
  */
+/** Names this render, so `FreshHome` can tell a restored copy from a new one. */
+function renderId() {
+  return randomUUID();
+}
+
 export default function HomePage() {
   return (
     <>
       <MobileTop title="wordmark" />
+      <FreshHome render={renderId()} />
       <WhenMenuProvider>
         <PageBody>
           <h1 className="order-0 m-0 hidden shrink-0 font-display text-[26px] font-bold leading-[1.05] tracking-[-0.025em] lg:block">

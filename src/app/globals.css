@@ -139,8 +139,8 @@
  */
 :root {
   /*
-   * The status bar's height where the page runs under it (the installed app in
-   * dark), else 0. Pages pad by it; title heroes reach back up under it.
+   * The status bar's height where the page runs under it (the installed app),
+   * else 0. Pages pad by it; title heroes reach back up under it.
    */
   --safe-top: env(safe-area-inset-top, 0px);
   /*
