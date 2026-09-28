@@ -26,6 +26,7 @@ import { Icon } from "../icon";
 import { Link } from "../link";
 import { Rail } from "../rail";
 import { SectionHead } from "../section-head";
+import { PinnedTopRow } from "../page";
 import { PlexChip } from "../ui";
 import { AsideBones, PeopleRailBones } from "./bones";
 import { EpisodeArrival } from "./episode-travel";
@@ -255,13 +256,15 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
           <div className="relative -mt-(--safe-top) flex h-[calc(296px+var(--safe-top))] flex-col pt-(--safe-top)">
             {art}
             <div aria-hidden="true" className="h-[71px] shrink-0" />
-          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[71px] items-center justify-between px-5 pt-[27px] *:pointer-events-auto lg:hidden">
-              <BackButton kind="glass" />
-              <div className="flex gap-2">
-                <SaveButton title={title} initial={viewer.saved} lists={viewer.lists} className={GLASS_ICON_SM} />
-                <TitleMoreMenu title={title} className={GLASS_ICON_SM} />
-              </div>
-            </header>
+            <PinnedTopRow
+              left={<BackButton kind="glass" />}
+              right={
+                <>
+                  <SaveButton title={title} initial={viewer.saved} lists={viewer.lists} className={GLASS_ICON_SM} />
+                  <TitleMoreMenu title={title} className={GLASS_ICON_SM} />
+                </>
+              }
+            />
             <EpisodeArrival className="relative z-(--z-lift) flex grow items-end px-5">
               <span className="relative block h-[196px] w-full overflow-hidden rounded-t-[14px] shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
                 {image("size-full", "(min-width: 64rem) 640px, 100vw")}

@@ -2582,8 +2582,10 @@ After the switch, from the owner's phone:
   picture runs behind the clock and the island while their buttons stay below.
 - **A pinned top row** on the pages with a hero (film, series, episode,
   person): back, trailer and the menu stay put as the page scrolls, fixed
-  under the status bar with a spacer holding their place in the hero. The row
-  lets touches through between its buttons.
+  under the status bar with a spacer holding their place in the hero. It is
+  two small fixed boxes, one at each end (`PinnedTopRow`), not a strip across
+  the screen: Safari paints the status bar's area to match a full-width fixed
+  bar at the top edge, which drew a black band over the hero's artwork.
 - **Top rows 6px lower** on every phone page (66px tall, 22px down), clear of
   the blur iOS draws along the top edge.
 - **The tab bar lower**: `--tab-float` puts it 12px less than the home

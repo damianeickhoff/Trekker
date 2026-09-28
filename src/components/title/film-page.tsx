@@ -18,6 +18,7 @@ import { Back, BackButton } from "../back-button";
 import { TickFlash, TickScope } from "../home/tick-flash";
 import { WhenMenuProvider } from "../home/when-menu";
 import { Icon } from "../icon";
+import { PinnedTopRow } from "../page";
 import { PlexChip, QuietChip, RequestedChip, StateChip } from "../ui";
 import { AsideBones, MoreLikeBones, PanelBones, PeopleRailBones } from "./bones";
 import { BackdropArt, HeroArt, HeroPoster, Score, ScoreRow, TitleFacts, TitleLogo } from "./hero";
@@ -130,17 +131,19 @@ export async function FilmPage({ id }: { id: number }) {
             <HeroArt path={details.poster_path} />
           )}
           <div aria-hidden="true" className="h-[71px] shrink-0" />
-          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[71px] items-center justify-between px-5 pt-[27px] *:pointer-events-auto lg:hidden">
-            <BackButton kind="glass" />
-            <div className="flex gap-2">
-              {trailer && (
-                <a href={`https://www.youtube.com/watch?v=${trailer}`} target="_blank" rel="noreferrer" aria-label="Trailer" className={GLASS_ICON_SM}>
-                  <Icon name="film" size={20} />
-                </a>
-              )}
-              <TitleMoreMenu title={title} recommend className={GLASS_ICON_SM} />
-            </div>
-          </header>
+          <PinnedTopRow
+            left={<BackButton kind="glass" />}
+            right={
+              <>
+                {trailer && (
+                  <a href={`https://www.youtube.com/watch?v=${trailer}`} target="_blank" rel="noreferrer" aria-label="Trailer" className={GLASS_ICON_SM}>
+                    <Icon name="film" size={20} />
+                  </a>
+                )}
+                <TitleMoreMenu title={title} recommend className={GLASS_ICON_SM} />
+              </>
+            }
+          />
           <div className="relative z-(--z-lift) flex grow flex-col items-center justify-end gap-3 px-5 pb-[18px] pt-3.5 text-center text-white">
             {!backdrop && (
               <HeroPoster path={details.poster_path} title={details.title} className="block h-[210px] w-[140px] rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.5)]">

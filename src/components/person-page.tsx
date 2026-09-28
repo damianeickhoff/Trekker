@@ -8,6 +8,7 @@ import { Back } from "./back-button";
 import { FollowButton } from "./follow-button";
 import { Link } from "./link";
 import { Poster } from "./poster";
+import { PinnedTopRow } from "./page";
 import { IconLink, StateChip, filterChipClass } from "./ui";
 import { HeroArt } from "./title/hero";
 import { PersonPhoto } from "./title/people";
@@ -86,12 +87,8 @@ export async function PersonPage({ id, filter }: { id: number; filter: PersonFil
   // The hero's top row: the way back top-left, search top-right. A person has
   // too many ways in (any cast, the search, an episode) for the page to know
   // the name of where the way back leads, so the desktop link says "Back".
-  const topRow = (
-    <>
-      <Back href="/" name="Back" history onHero />
-      <IconLink href="/search" icon="search" label="Search" kind="glass" />
-    </>
-  );
+  const back = <Back href="/" name="Back" history onHero />;
+  const search = <IconLink href="/search" icon="search" label="Search" kind="glass" />;
 
   // Portrait 128px wide on phones and 220px on desktop, 4:5 like every person.
   const header = (big: boolean) => (
@@ -173,7 +170,7 @@ export async function PersonPage({ id, filter }: { id: number; filter: PersonFil
         <div className="relative flex flex-col">
           <HeroArt path={row?.knownForBackdrop ?? null} />
           <div aria-hidden="true" className="h-[71px] shrink-0" />
-          <header className="pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row) flex h-[71px] items-center justify-between px-5 pt-[27px] *:pointer-events-auto lg:hidden">{topRow}</header>
+          <PinnedTopRow left={back} right={search} />
           <div className="relative z-(--z-lift) px-5 pb-6 pt-3">{header(false)}</div>
         </div>
         <div className="flex flex-col gap-4 px-5 pt-1">
@@ -202,7 +199,10 @@ export async function PersonPage({ id, filter }: { id: number; filter: PersonFil
       <div className="hidden flex-col gap-7 lg:flex">
         <div className="relative flex flex-col gap-6 px-10 pb-12 pt-7">
           <HeroArt path={row?.knownForBackdrop ?? null} />
-          <div className="relative flex items-center justify-between">{topRow}</div>
+          <div className="relative flex items-center justify-between">
+            {back}
+            {search}
+          </div>
           <div className="relative">{header(true)}</div>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-10 px-10 xl:grid-cols-[minmax(0,1fr)_340px]">

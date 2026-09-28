@@ -54,13 +54,18 @@ describe("the top row on phones", () => {
     expect(read("src/components/profile/hero.tsx")).toContain("lg:h-[60px] lg:pt-4");
   });
 
-  it("stays pinned under the status bar on the pages with a hero, with a spacer holding its place", () => {
+  it("stays pinned under the status bar on the pages with a hero, as two boxes rather than a strip, with a spacer holding its place", () => {
     for (const file of ["title/film-page", "title/series-page", "title/episode-page", "person-page"]) {
       const src = read(`src/components/${file}.tsx`);
       expect(src, file).toContain('<div aria-hidden="true" className="h-[71px] shrink-0" />');
-      expect(src, file).toContain("pointer-events-none fixed inset-x-0 top-(--safe-top) z-(--z-top-row)");
-      expect(src, file).toContain("*:pointer-events-auto lg:hidden");
+      expect(src, file).toContain("<PinnedTopRow");
+      // A full-width fixed strip at the top edge is what Safari paints the status bar's area to match.
+      expect(src, file).not.toContain("fixed inset-x-0 top-(--safe-top)");
     }
+    const page = read("src/components/page.tsx");
+    expect(page).toContain("fixed top-[calc(var(--safe-top)+27px)] z-(--z-top-row) flex h-11 items-center gap-2 lg:hidden");
+    expect(page).toContain("left-5");
+    expect(page).toContain("right-5");
   });
 });
 

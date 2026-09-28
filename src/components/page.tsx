@@ -60,6 +60,25 @@ export function MobileTop({
   );
 }
 
+/**
+ * Phones: the top row of a page with a hero (film, series, episode, person),
+ * pinned under the status bar while the page scrolls, over a spacer the page
+ * keeps in the hero. Two small fixed boxes, one at each end, rather than one
+ * strip across the screen: Safari fills the status bar's area with the colour
+ * of a full-width fixed bar against the top edge, and a see-through bar came
+ * out as a black band over the notch where the hero's artwork should show.
+ * The boxes sit where the 71px row's buttons did, 27px down and 44px tall.
+ */
+export function PinnedTopRow({ left, right }: { left: ReactNode; right?: ReactNode }) {
+  const box = "fixed top-[calc(var(--safe-top)+27px)] z-(--z-top-row) flex h-11 items-center gap-2 lg:hidden";
+  return (
+    <>
+      <div className={`${box} left-5`}>{left}</div>
+      {right && <div className={`${box} right-5`}>{right}</div>}
+    </>
+  );
+}
+
 /** Desktop: the title row at the top of the content column. */
 export function DesktopHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
