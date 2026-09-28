@@ -133,9 +133,8 @@
 
 /*
  * What the phone tab bar covers, for the content column to clear: 28px of air
- * above the 64px pill, which sits on the larger of its 18px float and the
- * home-indicator inset (the same `max` as the bar's own padding). One number so
- * the padding and the bar cannot drift apart.
+ * above the 64px pill, which sits on `--tab-float` (the same `max` as the
+ * bar's own padding). One number so the padding and the bar cannot drift apart.
  */
 :root {
   /*
@@ -160,7 +159,10 @@
  * avatar menu, every `Dialog`), and anything in the flow that has to carry a
  * menu over what follows it takes a step of its own here.
  *
+ *   under     a pseudo-element behind its own isolated box (a row's wash)
  *   lift      content standing on its own card's or hero's art
+ *   over      what stands over a lifted layer (the calendar strip's words
+ *             over its sliding pill)
  *   card      a card lifted over the sections after it, so the menu it
  *             carries opens across them (Up next)
  *   top-row   a page's top row and sticky bars, over the cards: the menus in a
@@ -175,7 +177,11 @@
  * The screensaver (100) is a screen of its own over all of it.
  */
 :root {
+  /* A pseudo-element behind its own isolated box: a row's wash. */
+  --z-under: -1;
   --z-lift: 1;
+  /* What stands over a lifted layer: the calendar strip's words over its pill. */
+  --z-over: 2;
   --z-card: 10;
   --z-top-row: 20;
   --z-popover: 30;
@@ -770,8 +776,13 @@
     animation: motion-bump var(--base) var(--ease-out);
   }
 
-  /* The calendar strip's dots as a week arrives: a fade over `--base`, a day (`--i`) at a time, 30ms apart. */
-  .motion-dots {
+  /*
+   * The calendar strip's dots as a week arrives: a fade over `--base`, a day
+   * (`--i`) at a time, 30ms apart. Only under a travelled-to week
+   * (`WeekArrival` sets `data-travel`): a fresh visit paints them, as rule 4
+   * has it.
+   */
+  [data-travel] .motion-dots {
     animation: motion-fade var(--base) var(--ease-out) calc(var(--i, 0) * 30ms) both;
   }
 

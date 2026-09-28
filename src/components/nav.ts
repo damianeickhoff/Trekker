@@ -9,7 +9,7 @@ export const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: "/badges", label: "Badges", icon: "trophy" },
 ];
 
-/** The sidebar's one entry beyond the tabs: News, under Calendar, with its unread count (T2). A phone reaches it from Home. */
+/** The sidebar's one entry beyond the tabs: News, under Calendar, with its unread count (T2). A phone has it in the tab bar instead (`PHONE_TABS`). */
 export const SIDEBAR_NEWS = { href: "/news", label: "News", icon: "newspaper" as IconName, after: "/calendar" };
 
 /**

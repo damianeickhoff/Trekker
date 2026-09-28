@@ -23,7 +23,7 @@ import { runtimeLabel } from "../title/film-page";
 import { HeroArt, TitleLogo } from "../title/hero";
 import { GLASS_46, WHITE_46 } from "../title/styles";
 import { buttonClass, iconButtonClass, IconLink, StateChip } from "../ui";
-import { EmptyNote } from "./parts";
+import { EmptyState } from "../empty-state";
 import { PickCard } from "./tiles";
 
 /*
@@ -93,20 +93,23 @@ export async function ResultsScreen({ search }: { search: Record<string, string 
             <IconLink href={close} icon="x" label="Close and go back to Discover" />
           </div>
           <span className="mono-label text-accent-text!">{line}</span>
-          <EmptyNote title="Nothing quite fit">
-            <p className="m-0">
-              That combination came back empty{rejected.length ? ", once the ones you turned down were left out" : ""}. Try a
-              different mood, or give yourself a bit more time.
-            </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Link href={anotherMood} className={buttonClass("primary", "sm")}>
-                Pick another mood
-              </Link>
-              <Link href={QUIZ_PATH} className={buttonClass("ghost", "sm")}>
-                Start over
-              </Link>
-            </div>
-          </EmptyNote>
+          <EmptyState
+            icon="sparkle"
+            title="Nothing quite fit"
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link href={anotherMood} className={buttonClass("primary", "sm")}>
+                  Pick another mood
+                </Link>
+                <Link href={QUIZ_PATH} className={buttonClass("ghost", "sm")}>
+                  Start over
+                </Link>
+              </div>
+            }
+          >
+            That combination came back empty{rejected.length ? ", once the ones you turned down were left out" : ""}. Try a
+            different mood, or give yourself a bit more time.
+          </EmptyState>
         </div>
       </>
     );

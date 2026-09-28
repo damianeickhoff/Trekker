@@ -14,7 +14,7 @@ import { EXIT, usePresence } from "./presence";
 import { ThemePicker } from "./theme-picker";
 
 /**
- * The avatar menu: Profile, Settings, the screensaver, the theme and Sign out,
+ * The avatar menu: Profile, Badges, Settings, the screensaver, the theme and Sign out,
  * from the sidebar's profile card on desktop and the avatar top-right of a tab
  * page on phones. One control where the card used to carry two icons beside
  * the name, which cut the level line short.

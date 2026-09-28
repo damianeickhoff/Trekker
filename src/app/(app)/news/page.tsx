@@ -274,7 +274,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                   ))}
                 </div>
               )}
-              <Link href={channelHref("for-you", null)} replace scroll={false} className="pt-2 text-[13px] font-semibold text-accent-text hover:underline">
+              <Link href={channelHref("for-you", null)} replace scroll={false} className="pt-2 text-[13px] font-semibold text-ink-2 hover:text-ink">
                 Everything you follow ›
               </Link>
             </section>
@@ -295,7 +295,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 <span className="py-1 text-xs text-ink-3">Follow someone, or watch or save a show, and each gets a button here.</span>
               )}
               <div className="flex items-center gap-3.5 pt-2">
-                <Link href={channelHref("for-you", null)} replace scroll={false} className="text-[13px] font-semibold text-accent-text hover:underline">
+                <Link href={channelHref("for-you", null)} replace scroll={false} className="text-[13px] font-semibold text-ink-2 hover:text-ink">
                   Everything you follow ›
                 </Link>
                 <span className="grow" />

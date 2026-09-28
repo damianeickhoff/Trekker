@@ -7,16 +7,16 @@ import { PHONE_TABS, isActive, showsTabBar } from "./nav";
 
 /**
  * Phones: a floating dark pill in both themes, so artwork keeps the whole
- * width. It is one of the two places `backdrop-filter` is allowed; it does not
- * scroll, so the blur is composited once rather than every frame.
+ * width. It is one of the three places `backdrop-filter` is allowed (STYLE.md);
+ * it does not scroll, so the blur is composited once rather than every frame.
  *
  * Pinned to the viewport by a full-width fixed strip at `bottom: 0` that pads
  * itself up rather than by a `bottom` offset: the inset lives in padding, where
  * every standalone WebKit reports it, and the strip itself never depends on how
- * tall the page is. The padding is the larger of an 18px float and the
- * home-indicator inset, not their sum: in a browser tab the inset is 0 and the
- * bar floats, and in the installed app it sits just above the indicator rather
- * than 18px above that. The strip lets touches through; only the pill takes
+ * tall the page is. The padding is `--tab-float`, the larger of an 18px float
+ * and the home-indicator inset less 12px, not their sum: in a browser tab the
+ * inset is 0 and the bar floats, and in the installed app it sits just above
+ * the indicator rather than 18px above that. The strip lets touches through; only the pill takes
  * them. `main` clears it with `--tab-bar-clearance` (see `globals.css`), which
  * uses the same `max`.
  *

@@ -24,7 +24,8 @@ export function PhoneAccount({ onHero = false }: { onHero?: boolean }) {
  * Phones: the page's own top row. Tab pages carry search, the bell and the
  * avatar top-right; `right` replaces them where a page needs its own
  * controls, ending with `PhoneAccount` on a tab page. The wordmark is 28px,
- * a fifth over the 24px it was, its mark still at cap height in the 60px row.
+ * a fifth over the 24px it was, its mark still at cap height in the 71px row
+ * (27px of it above the controls, clear of the status bar).
  */
 export function MobileTop({
   title,
@@ -74,7 +75,7 @@ export function DesktopHeader({ title, children }: { title: string; children?: R
  * this, Comments): the way back alone on the top row (`Back`: a round button
  * on phones, a text link naming the destination on desktop), then the title
  * and a quiet line under it. On phones the top row stands where `MobileTop`
- * would, 60px with the same 16px of air.
+ * would, 71px with the same 27px above.
  */
 export function BackHeader({ back, title, meta }: { back: ReactNode; title: ReactNode; meta?: ReactNode }) {
   return (

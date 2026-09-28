@@ -10,7 +10,7 @@ import { PRESS, ROW_WASH } from "../motion";
 import { Poster } from "../poster";
 
 import { Swap } from "../swap";
-import { buttonClass } from "../ui";
+import { StateChip, buttonClass } from "../ui";
 import { CardMoreMenu } from "./more-menu";
 
 import { TickFlash, TickScope } from "./tick-flash";
@@ -32,19 +32,12 @@ function left(row: UpNextRow) {
 const label = (row: UpNextRow) => `${episodeCode(row.seasonNumber, row.episodeNumber)} of ${row.showName}`;
 
 /**
- * Every chip on the card shares one box: 24px tall at every width, a 1px
- * border (transparent on the amber one) and a fixed line height, so the
- * state chip and the facts beside it sit on the same line and the same
- * baseline. The shared `StateChip` is 20px when small and borderless, which
- * is what put the two out of step.
+ * The card's fact chips share the full-size `StateChip`'s box, 24px tall with
+ * a 1px border inside it, so the amber Up next chip (`StateChip`, not small)
+ * and the facts beside it sit on the same line and the same baseline.
  */
 const CHIP_BOX =
   "h-6 items-center whitespace-nowrap rounded-md border px-[9px] font-mono text-[11px] leading-[14px] uppercase tracking-[0.05em]";
-
-/** Amber is state: the card's Up next. */
-function UpNextChip() {
-  return <span className={`${CHIP_BOX} inline-flex border-transparent bg-accent font-semibold text-black`}>Up next</span>;
-}
 
 /** Facts on the card: outlined, with a fill so they read over any artwork. */
 function CardChip({ children, className = "inline-flex" }: { children: React.ReactNode; className?: string }) {
@@ -147,7 +140,7 @@ export function UpNextCard({
           className="relative z-(--z-lift) flex min-w-0 grow flex-col justify-center gap-2.5 lg:gap-3.5"
         >
           <div className="flex flex-wrap items-center gap-1.5">
-            <UpNextChip />
+            <StateChip>Up next</StateChip>
             {scoreShort && <CardChip className="inline-flex lg:hidden">{scoreShort}</CardChip>}
             {scoreLong && <CardChip className="hidden lg:inline-flex">{scoreLong}</CardChip>}
           </div>

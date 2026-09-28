@@ -28,7 +28,8 @@ import { SectionHead } from "../section-head";
 import { HeroArt } from "../title/hero";
 import { buttonClass, iconButtonClass, PageTitle } from "../ui";
 import { BillboardBones, EyebrowBones, GenreBones, PosterRailBones } from "./bones";
-import { BAND, BandArt, CategoryChips, EmptyNote, TypeChips } from "./parts";
+import { EmptyState } from "../empty-state";
+import { BAND, BandArt, CategoryChips, TypeChips } from "./parts";
 import { TopCarousel, type SpotlightItem } from "./top-carousel";
 import { GenreTile, RankedTile, SpotlightCard } from "./tiles";
 
@@ -149,9 +150,9 @@ export async function DiscoverScreen({ type }: { type: DiscoverType }) {
         <CategoryChips type={type} />
 
         {items.length === 0 ? (
-          <EmptyNote title="Trending could not be loaded">
+          <EmptyState icon="refresh" title="Trending could not be loaded">
             TMDB did not answer and nothing is stored here for this hour yet. Try again in a minute.
-          </EmptyNote>
+          </EmptyState>
         ) : (
           <>
             {/*

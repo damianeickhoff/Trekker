@@ -14,8 +14,8 @@ import { TrekkerMark } from "./trekker-mark";
 
 /**
  * Primary is ink-on-bg and inverts per theme; on a hero it is white. Glass is
- * for hero buttons only, and is one of the two places `backdrop-filter` is
- * allowed; everywhere else the secondary button is a plain surface, whose
+ * for hero buttons only, and is one of the three places `backdrop-filter` is
+ * allowed (STYLE.md); everywhere else the secondary button is a plain surface, whose
  * fill lifts one step under a pointer. Every kind presses (`PRESS`).
  */
 export type ButtonKind = "primary" | "white" | "amber" | "glass" | "ghost";

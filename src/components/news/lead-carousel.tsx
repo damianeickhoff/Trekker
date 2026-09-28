@@ -5,7 +5,7 @@ import { CarouselFrame, DwellArt } from "../discover/top-carousel";
 import type { PressRow } from "@/lib/press";
 import { tagLabel } from "@/lib/news-words";
 import type { CarouselState } from "@/lib/spotlight";
-import { StateChip } from "../ui";
+import { ArtChip, StateChip } from "../ui";
 import { NewsPicture } from "./no-picture";
 import { TitleLink, type Relation } from "./press-cards";
 
@@ -64,9 +64,7 @@ function Slide({ slide, state, i }: { slide: LeadSlide; state: CarouselState; i:
       >
         <span className="flex items-center gap-1.5">
           {row.tag && <StateChip small>{tagLabel(row.tag)}</StateChip>}
-          <span className="inline-flex h-5 items-center rounded-md bg-black/45 px-[7px] font-mono text-[10px] font-semibold uppercase tracking-[0.05em] text-white">
-            Lead story
-          </span>
+          <ArtChip small>Lead story</ArtChip>
         </span>
         <a
           {...out(row.link)}

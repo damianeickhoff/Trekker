@@ -23,20 +23,22 @@ export type StripDay = {
  * shape that slides between days over `--base` (`SegmentPill`, as the
  * segmented controls and the tab bar move theirs) rather than jumping, and it
  * passes over the other days' tiles but under their words. Today keeps its
- * date in amber when the pill has moved away from it. The dots fade in as the
- * week arrives (`motion-dots`), a day at a time.
+ * date in amber when the pill has moved away from it. The dots fade in as a
+ * travelled-to week arrives (`motion-dots`, under `WeekArrival`'s
+ * `data-travel`), a day at a time; a fresh visit paints them.
  */
 export function DayStrip({ days, today }: { days: StripDay[]; today: string }) {
   const [at, setAt] = useState(days.some((d) => d.day === today) ? today : null);
   return (
-    <div role="list" aria-label="Days" className="relative grid grid-cols-7 gap-1.5">
+    // Isolated, so the pill and the words stack on the strip's own steps of the scale.
+    <div role="list" aria-label="Days" className="relative isolate grid grid-cols-7 gap-1.5">
       <SegmentPill className="z-(--z-lift) rounded-[14px] bg-accent" />
       {days.map((d, i) => {
         const on = d.day === at;
         const isToday = d.day === today;
         const tile = (
           // Over the pill, which is over the tiles' own fill.
-          <span className="relative z-2 flex flex-col items-center gap-1">
+          <span className="relative z-(--z-over) flex flex-col items-center gap-1">
             <span className="font-mono text-[10px] uppercase tracking-[0.06em] text-ink-3 in-data-on:text-black">{d.weekday.slice(0, 3)}</span>
             <span className={`font-display text-[22px] font-bold leading-none ${isToday ? "text-accent-text" : ""} in-data-on:text-black`}>{d.date}</span>
             <span className="flex h-[5px] gap-[3px]" aria-hidden="true">

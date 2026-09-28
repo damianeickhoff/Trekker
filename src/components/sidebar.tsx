@@ -144,7 +144,7 @@ export function Sidebar() {
 
       <span className="grow" />
 
-      {/* The whole card opens the avatar menu: Profile, Settings, the screensaver, the theme, Sign out. */}
+      {/* The whole card opens the avatar menu: Profile, Badges, Settings, the screensaver, the theme, Sign out. */}
       <div className="w-full collapsed:hidden">
         <AvatarMenu variant="sidebar" />
       </div>

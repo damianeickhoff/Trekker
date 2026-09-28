@@ -142,7 +142,8 @@ export async function NowWatchingTier() {
  * its poster) with the kind chip, a followed person's face on its corner, the
  * headline in two lines and "Lanterns · 2 h". The head's count is unread For
  * you news, as the sidebar's is; the chevron goes to `/news`. Absent when
- * there is none, so it has no bones. Headlines from feeds never come here.
+ * there is none, so it has no bones. Headlines from feeds fill in behind your
+ * own news (`HomePressCard`), so the rail shows on a fresh install.
  */
 const NEWS_RAIL = 5;
 /** How many cards the rail holds once headlines fill in behind your own news. */

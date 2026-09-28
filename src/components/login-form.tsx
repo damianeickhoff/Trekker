@@ -21,13 +21,13 @@ export function LoginForm({ plexProblem = null }: { plexProblem?: string | null 
       <a
         href="/api/plex/pin"
         onClick={() => setLeaving(true)}
-        className="inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-full border-0 bg-accent px-5 text-[15px] font-bold text-black"
+        className={buttonClass("amber", "lg", "w-full")}
       >
         <Icon name="play" size={18} />
         {leaving ? "Opening Plex" : "Continue with Plex"}
       </a>
       {plexProblem && (
-        <p role="alert" className="m-0 text-center text-[13px] font-semibold text-accent-text">
+        <p role="alert" className="m-0 text-center text-[13px] font-semibold text-ink">
           {plexProblem}
         </p>
       )}
@@ -52,7 +52,7 @@ export function LoginForm({ plexProblem = null }: { plexProblem?: string | null 
         />
         <Field label="Password" name="password" type="password" autoComplete="current-password" required />
         {state.error && (
-          <p role="alert" className="m-0 text-[13px] font-semibold text-accent-text">
+          <p role="alert" className="m-0 text-[13px] font-semibold text-ink">
             {state.error}
           </p>
         )}

@@ -91,7 +91,7 @@
 }
 
 .nextLabel {
-  color: var(--color-accent, #f2b233);
+  color: var(--accent);
 }
 
 .nextTitle {
@@ -157,7 +157,7 @@
 .barFill {
   height: 100%;
   border-radius: 2px;
-  background: #f2b233;
+  background: var(--accent);
 }
 
 .queue {

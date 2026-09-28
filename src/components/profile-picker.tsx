@@ -58,7 +58,7 @@ export function ProfilePicker({ profiles }: { profiles: Choice[] }) {
           </div>
         )}
         {state.error && (
-          <p role="alert" className="m-0 text-[13px] font-semibold text-accent-text">
+          <p role="alert" className="m-0 text-[13px] font-semibold text-ink">
             {state.error}
           </p>
         )}

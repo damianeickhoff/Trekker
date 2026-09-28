@@ -19,9 +19,9 @@ export type TileItem = Pick<ListItem, "id" | "mediaType" | "title" | "poster" | 
  * it, the spotlight's cards, and the plain poster the category and genre grids
  * use. Rails of posters and the wide billboard are the shared poster system
  * (`poster-card.tsx`); these are what Discover has that nothing else does.
- * Every poster carries what a poster carries everywhere: the score
- * bottom-left, the Plex or requested mark bottom-right, the watched tick
- * top-right.
+ * Every poster carries what a poster carries everywhere (`PosterFurniture`):
+ * the score top-right, or the watched tick in its place, and the Plex or
+ * requested mark bottom-right.
  */
 
 /**

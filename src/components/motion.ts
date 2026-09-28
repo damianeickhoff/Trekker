@@ -22,13 +22,13 @@ export const PRESS =
  * background and under its content.
  */
 export const ROW_WASH =
-  "relative isolate before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-2 before:-z-10 before:rounded-xl before:bg-ink/6 before:opacity-0 before:transition-opacity before:duration-(--fast) before:ease-out hover:before:opacity-100";
+  "relative isolate before:pointer-events-none before:absolute before:inset-y-0 before:-inset-x-2 before:z-(--z-under) before:rounded-xl before:bg-ink/6 before:opacity-0 before:transition-opacity before:duration-(--fast) before:ease-out hover:before:opacity-100";
 
 /*
  * Artwork answering the pointer (every poster, wide card, chart card, person
  * and genre tile, list mosaic and spotlight card): the picture zooms to 1.04
  * inside its rounded frame, which clips it, and the frame's shadow deepens
- * with it, both over `--base`. Three parts, because a clip and a shadow
+ * with it, the zoom over `--slow` and the shadow over `--base`. Three parts, because a clip and a shadow
  * cannot be the same box (the clip would cut the shadow off):
  *
  *   ZOOM_GROUP   on the link or card the pointer is over (a named group, so

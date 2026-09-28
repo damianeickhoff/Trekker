@@ -9,7 +9,8 @@ import { tmdbConfigured } from "@/lib/tmdb";
 import { Back } from "../back-button";
 import { BackHeader } from "../page";
 import { FilterPanel } from "./filter-panel";
-import { EmptyNote, GRID_POSTER_SIZES, Pager, POSTER_GRID } from "./parts";
+import { EmptyState } from "../empty-state";
+import { GRID_POSTER_SIZES, Pager, POSTER_GRID } from "./parts";
 import { GridTile } from "./tiles";
 
 /*
@@ -40,9 +41,9 @@ export async function FiltersScreen({ search }: { search: Search }) {
 async function Results({ userId, search, page }: { userId: string; search: Search; page: number }) {
   if (!tmdbConfigured()) {
     return (
-      <EmptyNote title="TMDB is not set up">
+      <EmptyState icon="link" title="TMDB is not set up">
         Filters ask TMDB. Add <code>TMDB_API_KEY</code> to the server&apos;s environment and restart it.
-      </EmptyNote>
+      </EmptyState>
     );
   }
   const state = readFilterQuery(search);
@@ -54,9 +55,9 @@ async function Results({ userId, search, page }: { userId: string; search: Searc
   });
   if (!result) {
     return (
-      <EmptyNote title="This page could not be loaded">
+      <EmptyState icon="refresh" title="This page could not be loaded">
         TMDB did not answer and nothing is stored here for it yet. Try again in a minute.
-      </EmptyNote>
+      </EmptyState>
     );
   }
 
@@ -85,11 +86,11 @@ async function Results({ userId, search, page }: { userId: string; search: Searc
           })}
         </div>
       ) : (
-        <EmptyNote title="Nothing matches">
+        <EmptyState icon="sliders" title="Nothing matches">
           {result.total > 0
             ? "Everything on this page was left out. Try the next page, or let the leave-outs go."
             : "Loosen a filter or two."}
-        </EmptyNote>
+        </EmptyState>
       )}
       <Pager page={result.page} totalPages={result.totalPages} hrefFor={(p) => filterHref(state, p)} />
     </section>

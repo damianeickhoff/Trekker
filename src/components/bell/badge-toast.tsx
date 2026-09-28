@@ -70,7 +70,8 @@ export function BadgeToast() {
   if (!mounted || !badgeShown) return null;
   const me = data?.me;
   return (
-    <div className="pointer-events-none fixed inset-x-4 top-3.5 z-(--z-toast) flex justify-center lg:inset-x-auto lg:bottom-8 lg:right-8 lg:top-auto">
+    // 14px below the status bar, which the installed app's page runs under (`--safe-top`).
+    <div className="pointer-events-none fixed inset-x-4 top-[calc(var(--safe-top)+14px)] z-(--z-toast) flex justify-center lg:inset-x-auto lg:bottom-8 lg:right-8 lg:top-auto">
       <div
         role="status"
         data-state={state}
@@ -79,7 +80,7 @@ export function BadgeToast() {
         <span
           aria-hidden="true"
           className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at 12% 50%, rgba(242,178,51,0.35), transparent 45%)" }}
+          style={{ background: "radial-gradient(circle at 12% 50%, color-mix(in srgb, var(--accent) 35%, transparent), transparent 45%)" }}
         />
         <Medal tier={badgeShown.tier} icon={badgeShown.icon} size={52} ring="#0b0c10" className="relative" />
         <span className="relative flex min-w-0 grow flex-col gap-[3px]">
@@ -92,7 +93,7 @@ export function BadgeToast() {
             {me && !me.maxed ? ` Level ${me.level + 1} is ${formatNumber(me.toNextLevel)} XP away.` : ""}
           </span>
         </span>
-        <Link href="/badges" onClick={() => setShown(null)} className="relative whitespace-nowrap text-[13px] font-semibold text-accent">
+        <Link href="/badges" onClick={() => setShown(null)} className="relative whitespace-nowrap text-[13px] font-semibold text-white hover:underline">
           See it
         </Link>
       </div>

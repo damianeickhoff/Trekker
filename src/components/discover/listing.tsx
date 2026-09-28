@@ -20,7 +20,8 @@ import type { ListItem } from "@/lib/tmdb";
 import { Back } from "../back-button";
 import { Link } from "../link";
 import { BackHeader } from "../page";
-import { CategoryChips, EmptyNote, GRID_POSTER_SIZES, Pager, POSTER_GRID, TypeChips } from "./parts";
+import { EmptyState } from "../empty-state";
+import { CategoryChips, GRID_POSTER_SIZES, Pager, POSTER_GRID, TypeChips } from "./parts";
 import { GridTile } from "./tiles";
 
 /*
@@ -84,9 +85,9 @@ async function decorate(userId: string, items: ListItem[]) {
 }
 
 const unreachable = (
-  <EmptyNote title="This page could not be loaded">
+  <EmptyState icon="refresh" title="This page could not be loaded">
     TMDB did not answer and nothing is stored here for it yet. Try again in a minute.
-  </EmptyNote>
+  </EmptyState>
 );
 
 export async function CategoryScreen({ slug, type, page }: { slug: CategorySlug; type: DiscoverType; page: number }) {
@@ -113,7 +114,7 @@ export async function CategoryScreen({ slug, type, page }: { slug: CategorySlug;
       items={items}
       seen={seen}
       marks={marks}
-      empty={result ? <EmptyNote title="Nothing here">TMDB has nothing on this page.</EmptyNote> : unreachable}
+      empty={result ? <EmptyState icon="compass" title="Nothing here">TMDB has nothing on this page.</EmptyState> : unreachable}
       pager={result && <Pager base={base} type={type} page={result.page} totalPages={result.totalPages} />}
     />
   );
@@ -151,7 +152,7 @@ export async function GenreScreen({ slug, type, page }: { slug: string; type: Di
         result === null ? (
           unreachable
         ) : (
-          <EmptyNote title="Nothing here">
+          <EmptyState icon="compass" title="Nothing here">
             {noTv && type === "tv" ? (
               <>
                 There are no {genre.label.toLowerCase()} shows to list.{" "}
@@ -163,7 +164,7 @@ export async function GenreScreen({ slug, type, page }: { slug: string; type: Di
             ) : (
               "TMDB has nothing on this page."
             )}
-          </EmptyNote>
+          </EmptyState>
         )
       }
       pager={result && <Pager base={base} type={type} page={page} totalPages={result.totalPages} />}
@@ -199,9 +200,9 @@ export async function ForYouScreen({ type, page }: { type: DiscoverType; page: n
         all === null ? (
           unreachable
         ) : (
-          <EmptyNote title="Nothing to go on yet">
+          <EmptyState icon="sparkle" title="Nothing to go on yet">
             Recommendations come from what you watch. Mark something watched and this fills up.
-          </EmptyNote>
+          </EmptyState>
         )
       }
       pager={<Pager base={base} type={type} page={shown} totalPages={totalPages} />}

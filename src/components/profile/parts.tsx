@@ -303,7 +303,8 @@ export function WeekBars({ weekdays }: { weekdays: Weekdays }) {
  * colours rather than theme tokens: they rank five things, and a rank should
  * read the same in either theme.
  */
-const GENRE_SHADES = ["#F2B233", "#C98A2A", "#9A6D2F", "#6E5537", "#4E4238"];
+// The accent itself, then four shades of it towards the dark surface: data colours, the same in either theme.
+const GENRE_SHADES = ["var(--accent)", "#C98A2A", "#9A6D2F", "#6E5537", "#4E4238"];
 
 export function GenreBalance({ genres }: { genres: GenreShare[] }) {
   if (genres.length === 0) {

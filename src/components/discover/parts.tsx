@@ -1,5 +1,4 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
 import type { DiscoverType } from "@/lib/discover";
 import { categoryHops, withType } from "@/lib/discover";
 import { Icon } from "../icon";
@@ -109,16 +108,6 @@ export function Pager({
         <span />
       )}
     </nav>
-  );
-}
-
-/** A page with nothing to show, in the dashed empty-state style. */
-export function EmptyNote({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-ink-3 px-6 py-7 text-center">
-      <p className="m-0 font-display text-lg font-bold">{title}</p>
-      <div className="m-0 max-w-[380px] text-[13px] leading-[1.45] text-ink-2">{children}</div>
-    </div>
   );
 }
 

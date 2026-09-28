@@ -6,7 +6,7 @@ import { addNewsFeed, deleteNewsFeed, saveNewsFeed, saveNewsPush, saveNewsReadin
 import { Icon } from "../icon";
 import { PRESS, SEGMENT_TRACK, SEGMENT_TRACK_PILL, segmentOption } from "../motion";
 import { SegmentPill } from "../segment-pill";
-import { buttonClass, iconButtonClass } from "../ui";
+import { StateChip, buttonClass, iconButtonClass } from "../ui";
 import { Problem, Switch, useSaved } from "./controls";
 import { useSettingFact } from "./facts";
 
@@ -140,7 +140,7 @@ export function NewsSources({ initialSources, initialFeeds }: { initialSources: 
             <span className="flex min-w-0 grow flex-col gap-0.5">
               <span className="flex min-w-0 items-center gap-2">
                 <span className={`truncate text-sm font-semibold ${f.enabled ? "text-ink" : "text-ink-3"}`}>{f.name}</span>
-                <YoursChip />
+                <StateChip small>Yours</StateChip>
               </span>
               <span className="truncate text-[11px] text-ink-3">{f.url}</span>
             </span>
@@ -165,14 +165,6 @@ export function NewsSources({ initialSources, initialFeeds }: { initialSources: 
       <AddFeed count={feeds.length} onAdded={(f) => setFeeds((all) => [...all, f])} />
       <Problem error={error} />
     </NewsCard>
-  );
-}
-
-function YoursChip() {
-  return (
-    <span className="inline-flex h-5 shrink-0 items-center rounded-md bg-accent px-[7px] font-mono text-[10px] font-semibold uppercase tracking-[0.05em] text-black">
-      Yours
-    </span>
   );
 }
 
