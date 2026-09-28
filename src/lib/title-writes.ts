@@ -354,10 +354,25 @@ export async function setFeeling(
   return true;
 }
 
-export async function addComment(userId: string, mediaType: MediaType, tmdbId: number, body: string) {
+/**
+ * A comment on a film, a show, or one episode of a show. A film has no
+ * episodes, so whatever numbers come with one are dropped rather than
+ * trusted: a film's thread is always its 0 and 0.
+ */
+export async function addComment(
+  userId: string,
+  mediaType: MediaType,
+  tmdbId: number,
+  body: string,
+  scope: { season: number; episode: number } = { season: 0, episode: 0 },
+) {
   const text = body.trim();
   if (!text || text.length > COMMENT_MAX) return null;
-  return db.comment.create({ data: { userId, mediaType, tmdbId, body: text }, select: { id: true } });
+  const where = mediaType === "tv" ? scope : { season: 0, episode: 0 };
+  return db.comment.create({
+    data: { userId, mediaType, tmdbId, seasonNumber: where.season, episodeNumber: where.episode, body: text },
+    select: { id: true },
+  });
 }
 
 /** Only your own, and its replies go with it. */

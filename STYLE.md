@@ -130,8 +130,9 @@ of them in the same change.
   themes. All from the cached details.
 - **The desktop title page's hero row** holds only the poster and the
   details, so the backdrop shows whole. From `xl` the right-hand column
-  (availability, friends who watched, progress, how it felt, comments, more
-  like this; `TITLE_ASIDE` in `title/styles.ts`) starts in the next row, level with
+  (availability, your viewings on a film, friends who watched, progress, how
+  it felt, comments, Trakt's comments on a film, more like this;
+  `TITLE_ASIDE` in `title/styles.ts`) starts in the next row, level with
   the season chips (a film's cast), on the page's own colours rather than the
   artwork's white, and runs to a closing `1fr` row so a long column never
   opens a gap between the episodes and the cast.
@@ -162,7 +163,9 @@ of them in the same change.
   and hue rings, the profile picker's ring, the popcorn bucket picked, the
   calendar strip's day pill, a ticked list in Save or a friend in
   Recommend), a focus ring, a favourite's heart, a title just
-  added, a comment's avatar ring, and the sparkle (smart lists, and
+  added, a comment's avatar ring (someone on this instance: a comment
+  from Trakt carries none, which is how a stranger reads as one), and the
+  sparkle (smart lists, and
   Discover's Pick for me, which is a plain ghost button with only its
   sparkle amber). In What to watch the chosen answer is ringed and ticked in
   amber, and the progress line is amber. The profile's charts mark the peak,
@@ -245,6 +248,8 @@ of them in the same change.
 - **Filter chips** are pills from `filterChipClass`: `primary` when chosen,
   `ghost` otherwise. They carry sorts, filters and seasons, and change the
   address with `replace` so they do not pile up in history (`SortChips`).
+  A viewing's sheet uses them for the places it suggests under Where,
+  where choosing one fills the field and choosing it again empties it.
 - **News's kind chips** (Round 10): a `StateChip` (amber) on your own news
   wherever it shows, since it is about what you follow, and on artwork (the
   lead story, a big card's picture, Home's own-news cards); a `QuietChip` on
@@ -514,13 +519,13 @@ answers to data, not loops, and are not exceptions.
 | Ghost buttons and unchosen chips lift their fill | the same builders (`hover:bg-surface-2`) | `--fast` | `--ease-out` | a fill fade; pointer devices only |
 | Artwork zooms under the pointer | `ZOOM`, `ZOOM_SHADOW`, `ZOOM_GROUP` in `motion.ts`: every `PosterCard` and `WideCard`, Discover's ranked, grid, pick and genre cards and the top five's #4 and #5 (desktop; not the carousel's art, which has its slow zoom instead), people tiles, More like this, a person's filmography, the list grids and the Lists page's mosaics, the calendar's Coming up, Backlog and day posters, the profile's Most watched and Ratings, search rows; the News page's big and small cards, your news's cards and New trailers, and Home's News cards (Round 10); every rail keeps 12px of room for the shadow from `lg` (`rail.tsx`) | `--slow` the zoom, `--base` the shadow | `--ease-out` | the picture alone scales to 1.04 inside its clipping frame, which takes a layer of its own (`zoom-art` rule in `globals.css`) so Chrome keeps its rounded clip mid-transition; the frame's deeper shadow is a pseudo-element fading in; chips, scrims, words and captions stay; with reduced motion no zoom, the shadow simply appears |
 | A genre tile's wash lifts | `GenreTile` (`discover/tiles.tsx`) | `--base` | `--ease-out` | the tint overlay's opacity from 0.9 to 0.75 as its artwork zooms |
-| Rows wash under the pointer | `ROW_WASH` in `motion.ts`: Also waiting, notifications, search, friends, a title's and an episode's Friends who watched (`title/friends-watched.tsx`), Most watched, the calendar's day lists, a fold's header row (`FoldRow`); history, agenda and habit tiles and the episode page's previous and next cards lift their fill (`hover:bg-surface-2`) | `--fast` | `--ease-out` | a pseudo-element's opacity or a fill fade; no movement |
+| Rows wash under the pointer | `ROW_WASH` in `motion.ts`: Also waiting, notifications, search, friends, a title's and an episode's Friends who watched (`title/friends-watched.tsx`), a film's and an episode's Your viewings (`title/viewings.tsx`), Most watched, the calendar's day lists, a fold's header row (`FoldRow`); history, agenda and habit tiles and the episode page's previous and next cards lift their fill (`hover:bg-surface-2`) | `--fast` | `--ease-out` | a pseudo-element's opacity or a fill fade; no movement |
 | Segmented controls' pill slides | `SegmentPill` (`segment-pill.tsx`) with `segmentOption`/`segmentChip` (the profile's range and the calendar strip style their own options): Theme, Screensaver, the smart list's mode, the review's Year/Month, Discover's Everything/Shows/Films, every `SortChips` row (a list, the watchlist, favourites), the badges' groups, All/In progress/Earned and tiers, the profile's range, the News page's chips, Settings › News's Open on and Keep stories for (Round 10) | `--base` | `--ease-out` | translate, measured; width set, not animated |
 | The calendar strip's amber pill | `DayStrip` (`calendar/day-strip.tsx`) on `SegmentPill`: today, then the day tapped | `--base` | `--ease-out` | translate; it passes over the other days' tiles and under their words |
 | The calendar strip's dots | `motion-dots` in `globals.css` | `--base`, a day 30ms after the one before | `--ease-out` | opacity, as a travelled-to week arrives (the rule is scoped to `WeekArrival`'s `data-travel`); a fresh visit paints them |
 | A new week arrives | `WeekArrival` (`calendar/week-swipe.tsx`), `div[data-travel]` | `--base` | `--ease-out` | translateX 16px from the side travelled towards (chevrons or a swipe) and a fade; never on a fresh visit |
 | Switches | `switchTrackClass`, `switchKnobClass` in `ui.tsx` | `--fast` | `--ease-out` | the knob by translate, the amber a fill fade |
-| Dialogs and sheets arrive and leave | `motion-sheet`, `motion-scrim` in `globals.css`, on `Dialog` (`lists/dialog.tsx`) inside a `Presence`: the lists' dialogs, Plex, Overseerr and Trakt, Delete my account, Recommend, a badge's detail | `--base` | in `--ease-out`, out `--ease-in` | below 40rem up from the foot (translateY); above it from scale 0.96 and faded; the shade fades |
+| Dialogs and sheets arrive and leave | `motion-sheet`, `motion-scrim` in `globals.css`, on `Dialog` (`lists/dialog.tsx`) inside a `Presence`: the lists' dialogs, Plex, Overseerr and Trakt, Delete my account, Recommend, a badge's detail, a viewing's sheet | `--base` | in `--ease-out`, out `--ease-in` | below 40rem up from the foot (translateY); above it from scale 0.96 and faded; the shade fades |
 | A sheet dragged down by its grab bar | `Dialog`'s grab bar, phones only | follows the finger; springs back over `--fast` | `--ease-out` | translate; past 80px it closes from where it was let go |
 | Popovers open and close | `motion-pop` via `MENU` and `usePopover` (`title/popover.tsx`): every title and list menu, Request's question, the card's more-menu; the bell, the avatar menu, the when-menu and the rating put `motion-pop` on directly with a fixed origin | `--fast` | in `--ease-out`, out `--ease-in` | scale from 0.94 and fade, from the anchor's corner (`menuOrigin`, used by the list, watch and keep menus) |
 | Menu rows wash | `MENU_ITEM`, the avatar menu's rows | `--fast` | `--ease-out` | a fill fade |

@@ -109,7 +109,9 @@ function Comment({ c }: { c: CommentItem }) {
 /**
  * The newest few comments, "All N" for the rest in place, and a box to add
  * one. `href` is the full comments page, a chevron at the head's end like
- * every other section's; the page itself passes none, and shows them all.
+ * every other section's; the page itself passes none, and shows them all, and
+ * so does an episode, whose thread has no page of its own. A `where` with a
+ * season and an episode posts to that episode's thread.
  */
 export function Comments({
   where,
@@ -117,7 +119,7 @@ export function Comments({
   shown = 2,
   href,
 }: {
-  where: Pick<Where, "mediaType" | "tmdbId">;
+  where: Pick<Where, "mediaType" | "tmdbId"> & Partial<Pick<Where, "season" | "episode">>;
   items: CommentItem[];
   shown?: number;
   href?: string;
@@ -165,7 +167,7 @@ export function Comments({
           const body = text.trim();
           if (!body) return;
           startTransition(async () => {
-            if (await postComment(where.mediaType, where.tmdbId, body)) setText("");
+            if (await postComment(where.mediaType, where.tmdbId, body, where.season ?? 0, where.episode ?? 0)) setText("");
           });
         }}
       >

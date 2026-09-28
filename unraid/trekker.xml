@@ -177,7 +177,7 @@
     Target="TRAKT_CLIENT_ID"
     Default=""
     Mode=""
-    Description="Optional fallback. Trakt is configured per user under Settings -> Trakt; setting this means users enter only their username. Create an app at https://trakt.tv/oauth/applications."
+    Description="Optional fallback. Trakt is configured per user under Settings -> Trakt; setting this means users enter only their username, and everyone sees Trakt comments on films and episodes. Create an app at https://trakt.tv/oauth/applications."
     Type="Variable"
     Display="advanced"
     Required="false"

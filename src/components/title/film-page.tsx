@@ -13,6 +13,7 @@ import {
   viewerOf,
 } from "@/lib/title";
 import type { MovieDetails } from "@/lib/tmdb";
+import { placesFor, viewingsOf } from "@/lib/viewings";
 import { Back, BackButton } from "../back-button";
 import { TickFlash, TickScope } from "../home/tick-flash";
 import { WhenMenuProvider } from "../home/when-menu";
@@ -23,7 +24,8 @@ import { BackdropArt, HeroArt, HeroPoster, Score, ScoreRow, TitleFacts, TitleLog
 import { FriendsWatchedFilm } from "./friends-watched";
 import { FavouriteButton, SaveButton, TitleMoreMenu } from "./keep-buttons";
 import { YourRating } from "./popcorn-picker";
-import { AvailabilityPanel, CastRail, CommentsSection, FeelingsSection, MoreLikeThis } from "./sections";
+import { AvailabilityPanel, CastRail, CommentsSection, FeelingsSection, MoreLikeThis, TraktCommentsSection } from "./sections";
+import { Viewings } from "./viewings";
 import {
   ACTIONS_MOBILE,
   TITLE_ASIDE,
@@ -68,12 +70,15 @@ export async function FilmPage({ id }: { id: number }) {
   const { details, logo } = loaded;
   const today = todayKey();
 
-  const [viewer, avail, friends, admin] = await Promise.all([
+  const [viewer, avail, friends, admin, viewings] = await Promise.all([
     viewerOf(user.id, "movie", id),
     availabilityRow("movie", id),
     friendsAverage(user.id, "movie", id),
     instanceAdmin(),
+    viewingsOf(user.id, { mediaType: "movie", tmdbId: id }),
   ]);
+  // The sheet's suggestions, only for someone with a viewing to open it on.
+  const places = viewings.length ? await placesFor(user.id) : [];
 
   const facts = filmMeta(details);
   const tagline = taglineOf(details);
@@ -209,6 +214,11 @@ export async function FilmPage({ id }: { id: number }) {
                 <AvailabilityPanel userId={user.id} mediaType="movie" tmdbId={id} inCinemas={cinemas} />
               </Suspense>
             </div>
+            {/* Your viewings, then your friends': after availability on phones
+                (both at order 2, where DOM order decides) and in the same
+                place in the column from `lg`. Rows only, drawn with the page;
+                absent until watched. */}
+            <Viewings items={viewings} places={places} className="relative order-2 lg:order-none" />
             {/* Friends who watched: straight after availability on phones (the
                 same order, where DOM order decides), above How it felt from
                 `lg`. Usually absent, so no bones, and the block brings its own
@@ -224,6 +234,13 @@ export async function FilmPage({ id }: { id: number }) {
             <div className="relative order-6 lg:order-none lg:col-span-2 xl:col-span-1">
               <Suspense fallback={<AsideBones rows={1} />}>
                 <CommentsSection userId={user.id} mediaType="movie" tmdbId={id} />
+              </Suspense>
+            </div>
+            {/* Trakt's comments follow the instance's own, in the same cell's
+                shape. It may wait on Trakt and is often absent, so no bones. */}
+            <div className="relative order-6 empty:hidden lg:order-none lg:col-span-2 xl:col-span-1">
+              <Suspense fallback={null}>
+                <TraktCommentsSection userId={user.id} target={{ kind: "movie", tmdbId: id }} watched={seen !== null} />
               </Suspense>
             </div>
             {/* From `xl` More like this runs on under Comments in this column,

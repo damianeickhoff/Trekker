@@ -2,9 +2,11 @@
 
 import { refresh, updateTag } from "next/cache";
 import { getCurrentUser } from "./auth";
+import { db } from "./db";
 import { isDateKey, localMidday, todayKey } from "./dates";
 import { viewingChanged } from "./viewing";
-import { redatePlay, removePlay } from "./plays";
+import { describePlay, redatePlay, removePlay, removePlayById } from "./plays";
+import { cleanLine, cleanNote, PLACE_MAX } from "./viewing-words";
 import { bellTag } from "./notifications";
 import { sendToUser } from "./push";
 import { recommendTargets, recommendTitle, type RecommendOutcome, type RecommendTarget } from "./recommend";
@@ -177,10 +179,12 @@ export async function chooseFeeling(
   return ok;
 }
 
-export async function postComment(mediaType: "movie" | "tv", tmdbId: number, body: string) {
+/** A comment on a title, or with `season` and `episode` on one episode of a show. */
+export async function postComment(mediaType: "movie" | "tv", tmdbId: number, body: string, season = 0, episode = 0) {
   const user = await getCurrentUser();
   if (!user || !isMedia(mediaType) || !isId(tmdbId) || typeof body !== "string") return false;
-  const made = await addComment(user.id, mediaType, tmdbId, body);
+  if (!isIndex(season) || !isIndex(episode)) return false;
+  const made = await addComment(user.id, mediaType, tmdbId, body, { season, episode });
   if (made) refresh();
   return Boolean(made);
 }
@@ -233,4 +237,38 @@ export async function recommendTo(toUserId: string, mediaType: "movie" | "tv", t
     tag: `rec:${user.id}:${mediaType}:${tmdbId}`,
   }, "friends").catch(() => undefined);
   return outcome;
+}
+
+/**
+ * The edit sheet on an episode's viewing: its day, where it was, and a line
+ * about it. The day moves the viewing (which can reorder Up next, so it goes
+ * through `viewingChanged`); the place and the note move nothing derived, so
+ * they only re-render the page. The day comes from the browser, which knows
+ * what today is where the person is; a day in the future is refused.
+ */
+export async function saveViewing(playId: string, about: { day: string; place: string; note: string }): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user || typeof playId !== "string" || typeof about !== "object" || about === null) return false;
+  if (!isDateKey(about.day) || about.day > todayKey()) return false;
+
+  const described = await describePlay(user.id, playId, { place: cleanLine(about.place, PLACE_MAX), note: cleanNote(about.note) });
+  if (!described) return false;
+
+  const play = await db.play.findFirst({ where: { id: playId, userId: user.id }, select: { watchedAt: true } });
+  if (play && todayKey(play.watchedAt) !== about.day) {
+    await redatePlay(user.id, playId, localMidday(about.day));
+    viewingChanged(user.id);
+  } else {
+    refresh();
+  }
+  return true;
+}
+
+/** One particular viewing, from its sheet; the rest of the title's stay. */
+export async function removeViewing(playId: string): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user || typeof playId !== "string") return false;
+  const removed = await removePlayById(user.id, playId);
+  if (removed) viewingChanged(user.id);
+  return removed;
 }

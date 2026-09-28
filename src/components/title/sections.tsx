@@ -4,7 +4,7 @@ import { listDate, pastDay, todayKey } from "@/lib/dates";
 import { marksFor } from "@/lib/home";
 import { titleKey, type Mark } from "@/lib/marks";
 import { hoursAndMinutes, progressVerdict, seasonToCome, verdictOnScore } from "@/lib/progress";
-import { commentsFor, feelingTally, type FeelingScope } from "@/lib/social";
+import { commentsFor, feelingTally, type CommentScope, type FeelingScope } from "@/lib/social";
 import {
   availabilityFor,
   hasAired,
@@ -19,6 +19,7 @@ import {
 import { normalise, type CastMember, type TmdbListItem, type TvDetails } from "@/lib/tmdb";
 import { db } from "@/lib/db";
 import { friendsBySeasonEpisode } from "@/lib/friends-watched";
+import { traktClientFor, traktThread, type TraktTarget } from "@/lib/trakt-comments";
 import { StatusMark } from "../artwork";
 import { AvatarStack } from "./avatar-stack";
 import { Icon } from "../icon";
@@ -30,6 +31,7 @@ import { ArtChip, buttonClass, filterChipClass, StateChip } from "../ui";
 import { RequestButton } from "./keep-buttons";
 import { PersonTile } from "./people";
 import { Comments, FeelingsPicker, FeelingsTally } from "./social";
+import { TraktComments } from "./trakt-comments";
 import { EpisodeTick, MarkSeasonButton } from "./watch-buttons";
 import { FILL, fillTo, ZOOM, ZOOM_GROUP, ZOOM_SHADOW } from "../motion";
 import { Swap } from "../swap";
@@ -563,19 +565,71 @@ export async function FeelingsSection({
   );
 }
 
+/**
+ * A title's conversation, or with `episode` one episode's. An episode's has no
+ * page of its own to lead to: "All N" opens the rest where it stands, so the
+ * head carries no chevron (Section heads: nowhere to go, no chevron).
+ */
 export async function CommentsSection({
   userId,
   mediaType,
   tmdbId,
+  episode,
 }: {
   userId: string;
   mediaType: "movie" | "tv";
   tmdbId: number;
+  episode?: CommentScope;
 }) {
-  const items = await commentsFor(userId, mediaType, tmdbId);
+  const items = await commentsFor(userId, mediaType, tmdbId, episode);
   return (
     <section aria-label="Comments">
-      <Comments where={{ mediaType, tmdbId }} items={items} href={`/title/${mediaType}/${tmdbId}/comments`} />
+      <Comments
+        where={{ mediaType, tmdbId, ...episode }}
+        items={items}
+        href={episode ? undefined : `/title/${mediaType}/${tmdbId}/comments`}
+      />
+    </section>
+  );
+}
+
+/**
+ * What people on Trakt said about a film or one episode. Streams after the page, since
+ * it may wait on Trakt; absent when Trakt does not know the title or cannot be
+ * reached with nothing cached. With no client id to ask with, it says where
+ * one goes rather than leaving the feature to be guessed at.
+ */
+export async function TraktCommentsSection({
+  userId,
+  target,
+  watched,
+}: {
+  userId: string;
+  target: TraktTarget;
+  /** Seen already, so there is nothing left for a spoiler to spoil. */
+  watched: boolean;
+}) {
+  const noun = target.kind === "movie" ? "this film" : "this episode";
+  const clientId = await traktClientFor(userId);
+  if (!clientId) {
+    return (
+      <section aria-label="Comments on Trakt" className="flex flex-col gap-1.5">
+        <span className="mono-label">Comments · Trakt</span>
+        <p className="m-0 text-[13px] text-ink-3">
+          Link Trakt in{" "}
+          <Link href="/settings/connections" className="font-semibold text-ink-2 hover:text-ink">
+            Settings
+          </Link>{" "}
+          to read what people there said about {noun}.
+        </p>
+      </section>
+    );
+  }
+  const thread = await traktThread(clientId, target);
+  if (!thread) return null;
+  return (
+    <section aria-label="Comments on Trakt">
+      <TraktComments thread={thread} watched={watched} noun={noun} />
     </section>
   );
 }

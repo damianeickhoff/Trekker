@@ -426,6 +426,13 @@ model Play {
   /// backfilled rows never collide with each other — only the sourced ones do,
   /// which is exactly the deduplication wanted.
   sourceRef     String?
+  /// Where it was watched, in the person's own words ("Netflix", "Plex", "on
+  /// the plane"). Free text with suggestions rather than a fixed set: nobody
+  /// tallies it, so there is nothing a fixed set would make readable.
+  place         String?
+  /// A line about this viewing in particular: who it was with, what happened.
+  /// A review says what the title was like; this says what the evening was.
+  note          String?
 
   @@unique([userId, source, sourceRef])
   @@index([userId, watchedAt])
@@ -798,6 +805,15 @@ model Comment {
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaType        String
   tmdbId           Int
+  /// Which episode the conversation is about. Zero for a film, and for a
+  /// show's own conversation, which is where everything written before
+  /// episodes had one stays.
+  ///
+  /// Zero rather than null for `Feeling`'s reason: a pair of zeros is a value
+  /// the index below can match, so "the show's own" is the same query as "this
+  /// episode's" with different numbers.
+  seasonNumber     Int               @default(0)
+  episodeNumber    Int               @default(0)
   body             String
   parentId         String?
   /// Cascading is what makes deleting a comment take its replies with it.
@@ -807,8 +823,8 @@ model Comment {
   updatedAt        DateTime          @updatedAt
   commentReactions CommentReaction[]
 
-  /// The read the title page makes: everything said about one title, in order.
-  @@index([mediaType, tmdbId, createdAt])
+  /// The read a title or an episode page makes: everything said about it, in order.
+  @@index([mediaType, tmdbId, seasonNumber, episodeNumber, createdAt])
   @@index([parentId])
   @@index([userId])
 }
@@ -974,9 +990,13 @@ model ShowEpisode {
 /// library again. A table survives that, and a lifetime per endpoint (details a
 /// week, seasons a day, trending an hour) means rarely-changing answers are not
 /// refetched hourly. `key` is the path plus its sorted query parameters.
+///
+/// Trakt's comment threads under an episode (`lib/trakt-comments.ts`) keep
+/// their answers here too, under keys starting `trakt:`, which no TMDB path
+/// does: the same reasons apply, and a second table would only copy this one.
 model TmdbCache {
   key       String   @id
-  /// The response exactly as TMDB sent it, as JSON text.
+  /// The response exactly as TMDB (or Trakt) sent it, as JSON text.
   body      String
   fetchedAt DateTime @default(now())
   /// Past this the entry is refetched on read. It is kept until then and

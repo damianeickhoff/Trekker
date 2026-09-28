@@ -51,12 +51,28 @@ export type CommentItem = {
 };
 
 /**
- * Everything said about a title, oldest first, since a conversation reads
- * downwards. One level of replies, as the current app wrote them.
+ * Which conversation: a film's or a show's own (the default, 0 and 0), or one
+ * episode's. A show's page never gathers its episodes' threads the way it
+ * gathers their feelings: a tally reads the same summed, but a conversation
+ * about episode 3 read under the whole show is a spoiler waiting to happen.
  */
-export async function commentsFor(viewerId: string, mediaType: MediaType, tmdbId: number): Promise<CommentItem[]> {
+export type CommentScope = { season: number; episode: number };
+
+const SHOW_ITSELF: CommentScope = { season: 0, episode: 0 };
+
+/**
+ * Everything said about a title or an episode, oldest first, since a
+ * conversation reads downwards. One level of replies, as the current app wrote
+ * them.
+ */
+export async function commentsFor(
+  viewerId: string,
+  mediaType: MediaType,
+  tmdbId: number,
+  scope: CommentScope = SHOW_ITSELF,
+): Promise<CommentItem[]> {
   const rows = await db.comment.findMany({
-    where: { mediaType, tmdbId },
+    where: { mediaType, tmdbId, seasonNumber: scope.season, episodeNumber: scope.episode },
     orderBy: { createdAt: "asc" },
     select: { id: true, body: true, createdAt: true, parentId: true, userId: true, user: { select: { name: true } } },
   });

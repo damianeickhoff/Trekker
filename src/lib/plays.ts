@@ -375,6 +375,26 @@ export async function recordPlays(userId: string, inputs: PlayInput[]): Promise<
 }
 
 /**
+ * Deletes viewings, and records the sourced ones in `DeletedPlay` so the next
+ * sync does not bring them back. A ref-less viewing has nothing a sync could
+ * match, so it is not recorded.
+ */
+async function bury(tx: Tx, userId: string, doomed: { id: string; source: string; sourceRef: string | null }[]) {
+  if (doomed.length) {
+    await tx.play.deleteMany({ where: { id: { in: doomed.map((p) => p.id) } } });
+  }
+  for (const play of doomed) {
+    if (play.sourceRef === null) continue;
+    const key = { userId, source: play.source, sourceRef: play.sourceRef };
+    await tx.deletedPlay.upsert({
+      where: { userId_source_sourceRef: key },
+      create: key,
+      update: {},
+    });
+  }
+}
+
+/**
  * Removes viewings, and reverses everything `recordPlay` wrote for them.
  *
  * "last" drops the most recent viewing and leaves the rest: after a mis-tap the
@@ -404,19 +424,7 @@ export async function removePlay(
             .findFirst({ where, orderBy: { watchedAt: "desc" }, select: { id: true, source: true, sourceRef: true } })
             .then((p) => (p ? [p] : []));
 
-    if (doomed.length) {
-      await tx.play.deleteMany({ where: { id: { in: doomed.map((p) => p.id) } } });
-    }
-    for (const play of doomed) {
-      if (play.sourceRef === null) continue;
-      const key = { userId, source: play.source, sourceRef: play.sourceRef };
-      await tx.deletedPlay.upsert({
-        where: { userId_source_sourceRef: key },
-        create: key,
-        update: {},
-      });
-    }
-
+    await bury(tx, userId, doomed);
     const current = await settle(tx, userId, normalised);
     return { remaining: current?.plays ?? 0, lastWatchedAt: current?.lastWatchedAt ?? null };
   });
@@ -460,4 +468,42 @@ export async function redatePlay(
     );
     return true;
   });
+}
+
+/**
+ * Removes one particular viewing, picked from the list on its page rather than
+ * "the latest": a rewatch logged on the wrong episode is rarely the newest row
+ * by the time anyone notices. Everything else is `removePlay`'s: the watched
+ * row, the show's place and the counts follow from what is left.
+ */
+export async function removePlayById(userId: string, playId: string): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const play = await tx.play.findFirst({
+      where: { id: playId, userId },
+      select: { id: true, source: true, sourceRef: true, mediaType: true, tmdbId: true, seasonNumber: true, episodeNumber: true },
+    });
+    if (!play) return false;
+    await bury(tx, userId, [play]);
+    await settle(tx, userId, {
+      mediaType: play.mediaType === "tv" ? "tv" : "movie",
+      tmdbId: play.tmdbId,
+      seasonNumber: play.seasonNumber,
+      episodeNumber: play.episodeNumber,
+    });
+    return true;
+  });
+}
+
+/**
+ * Where a viewing was and a line about it. Neither is watched state, so
+ * nothing derived from the log moves and no `settle` is needed; it lives
+ * here anyway so that every write to `Play` is in one file. Null clears.
+ */
+export async function describePlay(
+  userId: string,
+  playId: string,
+  about: { place: string | null; note: string | null },
+): Promise<boolean> {
+  const { count } = await db.play.updateMany({ where: { id: playId, userId }, data: { place: about.place, note: about.note } });
+  return count > 0;
 }

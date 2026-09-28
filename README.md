@@ -2713,6 +2713,90 @@ No migration: `WatchedMovie`, `WatchedEpisode`, `Rating`, `EpisodeRating`,
 - **Light theme and a background variant**: the faces' cut-out ring is the
   page colour, and the block's words are the page's ink.
 
+## Episode comments, Trakt's comments, and your viewings (episodes and films)
+
+Asked for by the owner, who missed TV Time's reactions under each episode.
+An episode page now has three new things, in this order under Cast: Your
+viewings (above Friends who watched), then after How it felt the episode's
+own comments and what people on Trakt said about it. A film page has the
+last two of those as well: Your viewings after availability (above Friends
+who watched), and Trakt's comments after the film's own. A show's page has
+neither: a show is watched and talked about an episode at a time.
+
+- **Episode comments.** A comment written on an episode page belongs to that
+  episode (`Comment.seasonNumber`/`episodeNumber`, zero for a film and for a
+  show's own thread, which is where every older comment stays). A show's page
+  shows only the show's own thread and never gathers its episodes' the way
+  it gathers their feelings: a tally reads the same summed, a conversation
+  about episode 3 read under the whole show is a spoiler. Same component,
+  same rules (everyone signed in reads them, one level of replies, delete
+  your own); no comments page of its own, so "All N" opens the rest in place
+  and the head has no chevron.
+- **Trakt's comments** (`lib/trakt-comments.ts`). The twenty most liked on
+  Trakt for the film or the episode, three shown and More for the rest, then a link to
+  the whole thread on Trakt ("All 57 on Trakt"). Each has the writer (linked
+  to their Trakt profile), the day, their rating out of 10, likes and a
+  replies link to Trakt. Nothing is written back and there is no reply box:
+  the conversation lives on Trakt. Trakt's routes take Trakt's own ids, so
+  the film or show is looked up once (`/search/tmdb`, kept a month, a miss a
+  day) and the thread kept an hour; both in the TMDB cache table under
+  `trakt:` keys, served stale when Trakt is down. A spoiler (marked by its
+  writer or carrying `[spoiler]` tags) is veiled behind "Spoiler. Show it"
+  until you have watched it. Asked with your own Trakt client id,
+  else the instance's `TRAKT_CLIENT_ID`, never somebody else's; with neither
+  the section says to link Trakt in Settings. Trakt has its own rate gate
+  (one call per 300ms).
+- **Your viewings** (`lib/viewings.ts`, `title/viewings.tsx`). Every time you
+  watched the film or the episode, newest first, with "Once", "Twice", "3 times" at the
+  head: the day, where it was (or "From Plex"/"From Trakt" when a sync
+  logged it), and your note. A row opens a sheet to move the day, say where
+  (a free field, with Plex, the services you pay for and places you have
+  used before offered as chips), write a line about it (280 characters), or
+  remove that one viewing. Removing a synced viewing buries it in
+  `DeletedPlay` like any other removal, so the next sync does not bring it
+  back. `Play.place` and `Play.note` hold the words; `describePlay` and
+  `removePlayById` in `plays.ts` write them, keeping every write to `Play`
+  in that file.
+
+**Migration** `20260928120000_episode_comments_viewings`: plain ADD COLUMNs
+on `Comment` and `Play` and one index swapped; no table rebuilt. Back up the
+database first.
+
+**Motion.** None new: the rows wash (`ROW_WASH`), the sheet is the shared
+`Dialog`, and comments posted rise in as on a title page.
+
+**Not done.** A show's own page has no viewings block and no Trakt thread:
+there is no single viewing of a show to describe, and its episodes carry both.
+
+### To test by hand
+
+- **Apply the migration** on a copy of the live database and check existing
+  comments still show on their show's and film's pages.
+- **An episode's comments**: post one on an episode; it shows there, not on
+  the show's page nor on the next episode. Delete it; it collapses away.
+- **Trakt, with a client id** (your own in Settings › Connections, or
+  `TRAKT_CLIENT_ID`): a popular episode (Breaking Bad S05E14) shows three
+  comments, More shows up to twenty, and "All N on Trakt" opens the episode
+  on trakt.tv. On an episode you have not watched, a spoiler is veiled until
+  pressed; tick the episode and reload, and it is not.
+- **Trakt, without one**: the section says to link Trakt in Settings, and the
+  link goes to Connections.
+- **A film**: Trakt's comments sit after the film's own comments ("All N on
+  Trakt" opens trakt.tv/movies/…), and Your viewings after availability once
+  it is watched, with the same sheet. Mark it watched from the page and the
+  block appears with "Once".
+- **Trakt unreachable** (block api.trakt.tv): a thread read before still
+  shows; one never read is simply absent and the page is otherwise whole.
+- **Your viewings**: an episode you have not watched has no block. Watch it,
+  then Watched it again from the button's menu; the block says "Twice". Open
+  a row: move the day to last week, pick a place chip, write a two-line note,
+  Save; the row shows all three and Up next follows the new day. Remove one
+  viewing; the other stays, and the button's date follows it.
+- **A Plex-synced viewing**: the row says "From Plex"; remove it and run
+  Sync now; it does not come back.
+- **Phones and light theme**: the sheet comes up from the foot, the chips
+  wrap, and the date field opens the phone's picker.
+
 ## Running it
 
 ```sh

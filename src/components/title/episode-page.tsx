@@ -18,6 +18,7 @@ import { episodeRatingOf } from "@/lib/title-writes";
 import { getEpisode, type EpisodeDetails, type TvDetails } from "@/lib/tmdb";
 import { tmdbSrc } from "@/lib/tmdb-image-loader";
 import { db } from "@/lib/db";
+import { placesFor, viewingsOf } from "@/lib/viewings";
 import { BackButton } from "../back-button";
 import { TickFlash, TickScope } from "../home/tick-flash";
 import { WhenMenuProvider } from "../home/when-menu";
@@ -33,7 +34,8 @@ import { BackdropArt, HeroArt, TitleLogo } from "./hero";
 import { SaveButton, TitleMoreMenu } from "./keep-buttons";
 import { PersonTile } from "./people";
 import { PopcornPicker } from "./popcorn-picker";
-import { FeelingsSection, Panel } from "./sections";
+import { CommentsSection, FeelingsSection, Panel, TraktCommentsSection } from "./sections";
+import { Viewings } from "./viewings";
 import { GHOST_46, GLASS_46, GLASS_ICON_SM, PRIMARY_46, WHITE_46 } from "./styles";
 import { TitleUnavailable } from "./unavailable";
 import { WatchToggle } from "./watch-buttons";
@@ -179,7 +181,7 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
   const { details, logo } = loaded;
   const today = todayKey();
 
-  const [ep, list, viewer, avail, watched, mine, friends, admin] = await Promise.all([
+  const [ep, list, viewer, avail, watched, mine, friends, admin, viewings] = await Promise.all([
     getEpisode(id, season, episode).catch(() => null),
     seasonEpisodes(id, season),
     viewerOf(user.id, "tv", id),
@@ -191,7 +193,10 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
     episodeRatingOf(user.id, id, season, episode),
     friendsEpisodeAverage(user.id, id, season, episode),
     instanceAdmin(),
+    viewingsOf(user.id, { mediaType: "tv", tmdbId: id, season, episode }),
   ]);
+  // The sheet's suggestions, only for someone with a viewing to open it on.
+  const places = viewings.length ? await placesFor(user.id) : [];
   const row = list.find((e) => e.episode === episode);
   if (!ep && !row) return <TitleUnavailable />;
 
@@ -337,6 +342,10 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
           <Suspense fallback={<PeopleRailBones />}>
             <EpisodeCast showId={id} credits={ep?.credits ?? (ep ? { cast: [], guest_stars: ep.guest_stars ?? [], crew: [] } : undefined)} />
           </Suspense>
+          {/* Your own viewings first, then your friends', the same width and
+              shape so the two read as one question asked of two sets of
+              people. Rows only, drawn with the page; absent until watched. */}
+          <Viewings items={viewings} places={places} className="lg:max-w-[460px]" />
           {/* Friends who watched this episode, above How it felt as on a film.
               Usually absent, so no bones. Capped on desktop at the rating
               panel's width, or a friend's popcorn would sit a screen away
@@ -347,6 +356,23 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
           <Suspense fallback={<AsideBones />}>
             <FeelingsSection userId={user.id} mediaType="tv" tmdbId={id} scope={{ season, episode }} />
           </Suspense>
+          {/* This episode's own conversation, then Trakt's about it. Capped
+              like the blocks above: a comment box the page's width is a
+              long way to read across. */}
+          <div className="lg:max-w-[640px]">
+            <Suspense fallback={<AsideBones rows={1} />}>
+              <CommentsSection userId={user.id} mediaType="tv" tmdbId={id} episode={{ season, episode }} />
+            </Suspense>
+          </div>
+          <div className="lg:max-w-[640px]">
+            <Suspense fallback={null}>
+              <TraktCommentsSection
+                userId={user.id}
+                target={{ kind: "episode", showId: id, season, episode }}
+                watched={watched !== null}
+              />
+            </Suspense>
+          </div>
           <Suspense fallback={null}>
             <Navigator details={details} season={season} episode={episode} list={list} />
           </Suspense>
