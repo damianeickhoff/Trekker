@@ -46,7 +46,7 @@ export type Feed = { url: string; name: string | null; own?: boolean };
 
 /**
  * Checked by hand on 24 September 2026, each with one plain GET answering RSS
- * (README, Round 9). Empire had none that answered and was left out; TVLine's
+ * (docs/build-log.md, Round 9). Empire had none that answered and was left out; TVLine's
  * old address redirects, so its new one is listed.
  */
 export const DEFAULT_FEEDS: Feed[] = [

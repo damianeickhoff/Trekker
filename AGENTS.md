@@ -2,7 +2,8 @@
 
 A self-hosted TV and film tracker. Next.js 16 (App Router, React 19, Server
 Actions), Tailwind v4, SQLite via Prisma 7 (better-sqlite3), TMDB for the
-catalogue. The README is thorough and current — read it for what a feature is
+catalogue. The README is the tour for people deciding whether to run it;
+`docs/build-log.md` is thorough and current — read it for what a feature is
 *for* before changing how it works.
 
 ## Commands
