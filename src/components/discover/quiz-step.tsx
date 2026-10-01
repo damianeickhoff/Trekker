@@ -161,7 +161,7 @@ function ArtTile({ option, on, pop, onChoose }: { option: Option; on: boolean; p
       role="radio"
       aria-checked={on}
       onClick={onChoose}
-      className={`${PRESS} relative h-[120px] w-full overflow-hidden rounded-[14px] border-0 bg-surface-2 p-0 text-left lg:h-[140px] ${on ? ON_RING : "shadow-elevation"}`}
+      className={`${PRESS} relative h-[120px] w-full overflow-hidden rounded-[14px] border-0 art-empty p-0 text-left lg:h-[140px] ${on ? ON_RING : "shadow-elevation"}`}
     >
       {art && (
         <>

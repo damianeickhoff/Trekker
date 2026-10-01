@@ -82,7 +82,7 @@ const CARD_RAIL = "gap-(--card-gap)";
  */
 export function RailImage(props: Parameters<typeof Poster>[0]) {
   const visible = useContext(RailVisible);
-  if (!visible && props.path) return <span aria-hidden="true" className={`block shrink-0 bg-surface-2 ${props.className ?? ""}`} />;
+  if (!visible && props.path) return <span aria-hidden="true" className={`art-empty block shrink-0 ${props.className ?? ""}`} />;
   return <Poster {...props} />;
 }
 
@@ -94,7 +94,7 @@ export function RailImage(props: Parameters<typeof Poster>[0]) {
  */
 export function RailBackdrop({ path, className = "" }: { path: string; className?: string }) {
   const visible = useContext(RailVisible);
-  if (!visible) return <span aria-hidden="true" className={`block bg-surface-2 ${className}`} />;
+  if (!visible) return <span aria-hidden="true" className={`art-empty block ${className}`} />;
   return (
     <Image
       unoptimized

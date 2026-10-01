@@ -174,7 +174,7 @@ export function WideCard({
       aria-label={label}
       className={`${ZOOM_GROUP} block h-(--wide-card-h) w-(--wide-card) shrink-0 rounded-xl ${ZOOM_SHADOW}`}
     >
-      <span className="relative block size-full overflow-hidden rounded-xl bg-surface-2 shadow-elevation">
+      <span className="relative block size-full overflow-hidden rounded-xl art-empty shadow-elevation">
         {/* Only the picture zooms; the chips, the scrim and the words at the foot stay. */}
         {backdrop ? (
           <RailBackdrop path={backdrop} className={`size-full ${ZOOM}`} />

@@ -15,7 +15,18 @@ export const SIDEBAR_KEY = "trekker:sidebar";
 const BACKGROUND_PART = `try{var b=document.cookie.match(/(?:^|; )${BACKGROUND_COOKIE}=([^;]*)/);var v=b?decodeURIComponent(b[1]).toLowerCase():"";var c=/^colour-([0-9]{1,3})$/.exec(v);if(v==="gradient"||v==="artwork")d.dataset.background=v;else if(c&&[${BACKGROUND_HUES.join(",")}].indexOf(+c[1])>=0){d.dataset.background="colour";d.style.setProperty("--bg-hue",c[1])}else delete d.dataset.background;if(v==="artwork"){var a=localStorage.getItem("${BACKGROUND_ART_KEY}");if(a&&/^[/][A-Za-z0-9_-]{1,64}[.](jpg|jpeg|png|webp)$/.test(a))d.style.setProperty("--bg-art",'url("https://image.tmdb.org/t/p/w92'+a+'")')}}catch(e){}`;
 
 /**
- * Runs in <head> before the body paints. Three jobs, all about not flashing:
+ * A TMDB picture that fails to load (TMDB down, a dead path, offline with
+ * nothing cached) would show the browser's broken-image icon over the
+ * empty-artwork face it carries (`globals.css`). Caught here, in the capture
+ * phase because image errors do not bubble, and from <head> so one that fails
+ * before hydration is caught too: a photo becomes a transparent pixel marked
+ * `data-art-missing`, which keeps the face; anything else (a logo) is hidden.
+ */
+const ART_FAIL_PART = `try{addEventListener("error",function(e){var t=e.target;if(!t||t.tagName!=="IMG"||t.src.indexOf("https://image.tmdb.org/t/p/")!==0)return;if(/[.]jpg$/.test(t.src)){t.dataset.artMissing="";t.removeAttribute("srcset");t.src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"}else t.style.visibility="hidden"},true)}catch(e){}`;
+
+/**
+ * Runs in <head> before the body paints. Three jobs, all about not flashing,
+ * and a fourth about not showing a broken picture (`ART_FAIL_PART`):
  *
  * - The theme is re-read from the cookie here, not trusted from the markup,
  *   because the service worker serves cached HTML that may predate the last
@@ -28,7 +39,7 @@ const BACKGROUND_PART = `try{var b=document.cookie.match(/(?:^|; )${BACKGROUND_C
  * Each part is wrapped on its own: storage can throw in private windows, and a
  * failure in one must not cost the other.
  */
-export const BOOT_SCRIPT = `(function(){var d=document.documentElement;try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=([^;]*)/);var p=m?decodeURIComponent(m[1]):"dark";d.dataset.theme=p==="light"?"light":p==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):"dark"}catch(e){}try{if(localStorage.getItem("${SIDEBAR_KEY}")==="collapsed")d.dataset.sidebar="collapsed"}catch(e){}${BACKGROUND_PART}})();`;
+export const BOOT_SCRIPT = `(function(){var d=document.documentElement;try{var m=document.cookie.match(/(?:^|; )${THEME_COOKIE}=([^;]*)/);var p=m?decodeURIComponent(m[1]):"dark";d.dataset.theme=p==="light"?"light":p==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):"dark"}catch(e){}try{if(localStorage.getItem("${SIDEBAR_KEY}")==="collapsed")d.dataset.sidebar="collapsed"}catch(e){}${BACKGROUND_PART}${ART_FAIL_PART}})();`;
 
 /**
  * Registered from <head> rather than on `load`: the shell this worker caches is

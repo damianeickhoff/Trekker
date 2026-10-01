@@ -151,7 +151,7 @@ function Wide({
       aria-label={item.title}
       className={`${ZOOM_GROUP} block shrink-0 ${ZOOM_SHADOW} ${radius} ${className}`}
     >
-      <span className="relative block size-full overflow-hidden rounded-[inherit] bg-surface-2 shadow-elevation">
+      <span className="relative block size-full overflow-hidden rounded-[inherit] art-empty shadow-elevation">
       {priority ? <Poster {...image} priority /> : <RailImage {...image} />}
       <span aria-hidden="true" className="absolute inset-0 bg-linear-to-b from-black/0 from-40% to-black/72" />
       {top && <span className={`absolute top-2.5 flex gap-1.5 ${topRight ? "right-2" : "left-2.5"}`}>{top}</span>}

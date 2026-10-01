@@ -339,7 +339,7 @@ export function SmartEditor({ listId, initialName, initialFilters, certification
                     className="h-[108px] w-[72px] rounded-lg"
                   />
                 ))
-              : Array.from({ length: 5 }, (_, n) => <span key={n} className="block h-[108px] w-[72px] shrink-0 rounded-lg bg-surface-2" />)}
+              : Array.from({ length: 5 }, (_, n) => <span key={n} className="art-empty block h-[108px] w-[72px] shrink-0 rounded-lg" />)}
           </div>
           </Swap>
           <PreviewState preview={preview} previewing={previewing} />

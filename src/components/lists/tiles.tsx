@@ -54,7 +54,7 @@ export function Mosaic({
             className={`w-full object-[center_25%] ${cellClass}`}
           />
         ) : (
-          <span key={i} className={`block w-full bg-surface-2 ${cellClass}`} />
+          <span key={i} className={`art-empty block w-full ${cellClass}`} />
         ),
       )}
     </span>

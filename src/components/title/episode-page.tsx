@@ -226,7 +226,7 @@ export async function EpisodePage({ id, season, episode }: { id: number; season:
     still ? (
       <Image src={tmdbSrc(still)} alt="" width={780} height={439} sizes={sizes} priority className={`block object-cover ${className}`} />
     ) : (
-      <span className={`block bg-white/10 ${className}`} />
+      <span className={`art-empty-dark block ${className}`} />
     );
 
   const ratingPanel = (big: boolean) => (

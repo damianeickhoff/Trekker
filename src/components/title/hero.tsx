@@ -175,7 +175,7 @@ export function TitleLogo({
           height={height}
           sizes={sizes}
           priority={size !== "small"}
-          className={`block h-auto w-auto object-contain ${box}`}
+          className={`block h-auto w-auto object-contain [background:none] ${box}`}
         />
       </Tag>
     );
