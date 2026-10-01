@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { requireUser } from "@/lib/title";
-import { vibeArtwork } from "@/lib/what-to-watch";
+import { answerArtwork, vibeArtwork } from "@/lib/what-to-watch";
 import {
   AUDIENCES,
   KINDS,
@@ -19,6 +19,7 @@ import {
   type Audience,
   type KindId,
   type QuestionId,
+  type Read,
 } from "@/lib/what-to-watch-quiz";
 import { MobileTop } from "../page";
 import { Bone } from "../skeleton";
@@ -71,8 +72,9 @@ export async function QuizScreen({ search }: { search: Record<string, string | s
           {close}
         </div>
         <QuizProgress step={step} line={answersLine(read)} />
-        {/* The question and its answers slide in from the side travelled towards (`QuizSlide`). */}
-        <QuizSlide>
+        {/* The question and its answers slide in from the side travelled towards (`QuizSlide`). Keyed by
+            the question: the last one is left faded out by its exit, and a reused element would keep that. */}
+        <QuizSlide key={question}>
         <div className="flex flex-col gap-1.5 lg:gap-2">
           <h2 className="m-0 font-display text-[30px] font-extrabold leading-[0.98] tracking-[-0.035em] text-balance lg:text-[44px]">
             {heading.title(read.audience, read.kind?.value ?? null)}
@@ -84,7 +86,9 @@ export async function QuizScreen({ search }: { search: Record<string, string | s
             <VibeStep audience={read.audience!} kind={read.kind!.value} given={given} was={was} />
           </Suspense>
         ) : (
-          <PlainStep question={question} given={given} kind={read.kind?.value ?? null} was={was} />
+          <Suspense fallback={<VibeBones count={question === "who" ? 4 : 3} row={question !== "who"} />}>
+            <AnswerStep question={question} read={read} given={given} was={was} />
+          </Suspense>
         )}
         </QuizSlide>
       </div>
@@ -116,25 +120,33 @@ export function QuizProgress({ step, line }: { step: number; line: string }) {
   );
 }
 
-function PlainStep({
+/** Who, film or show, and how long: each answer over a poster that looks like it (`answerArtwork`), the placeholder where the cache holds none. */
+async function AnswerStep({
   question,
+  read,
   given,
-  kind,
   was,
 }: {
   question: Exclude<QuestionId, "vibe">;
+  read: Read;
   given: Partial<Answers>;
-  kind: KindId | null;
   was?: string;
 }) {
-  const choices = question === "who" ? AUDIENCES : question === "kind" ? KINDS : timesFor(kind!);
+  const choices = question === "who" ? AUDIENCES : question === "kind" ? KINDS : timesFor(read.kind!.value);
+  const art = await answerArtwork(question, read);
   return (
     <QuizStep
       layout={question === "who" ? "grid" : "row"}
       initial={was}
       back={backHref(given, question)}
       backLabel={question === "who" ? "Discover" : "Back"}
-      options={choices.map((c) => ({ value: c.value, label: c.label, hint: c.hint, href: answerHref(given, question, c.value) }))}
+      options={choices.map((c) => ({
+        value: c.value,
+        label: c.label,
+        hint: c.hint,
+        poster: art[c.value] ?? null,
+        href: answerHref(given, question, c.value),
+      }))}
     />
   );
 }
@@ -144,7 +156,7 @@ async function VibeStep({ audience, kind, given, was }: { audience: Audience; ki
   const art = await vibeArtwork(audience, kind);
   return (
     <QuizStep
-      layout="art"
+      layout="grid"
       initial={was}
       back={backHref(given, "vibe")}
       backLabel="Back"
@@ -159,10 +171,10 @@ async function VibeStep({ audience, kind, given, was }: { audience: Audience; ki
   );
 }
 
-export function VibeBones({ count }: { count: number }) {
+export function VibeBones({ count, row = false }: { count: number; row?: boolean }) {
   return (
     <>
-      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3.5">
+      <div className={row ? "grid grid-cols-1 gap-2.5 lg:grid-cols-3 lg:gap-3.5" : "grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3.5"}>
         {Array.from({ length: count }, (_, i) => (
           <Bone key={i} className="h-[120px] rounded-[14px] lg:h-[140px]" />
         ))}

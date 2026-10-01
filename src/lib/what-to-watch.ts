@@ -32,7 +32,18 @@ import {
   type Ranked,
   type ViewerFacts,
 } from "./what-to-watch-picks";
-import { openTime, type Audience, type KindId, type TimeChoice, type Vibe } from "./what-to-watch-quiz";
+import {
+  AUDIENCES,
+  KINDS,
+  openTime,
+  timesFor,
+  type Audience,
+  type KindId,
+  type QuestionId,
+  type Read,
+  type TimeChoice,
+  type Vibe,
+} from "./what-to-watch-quiz";
 import type { MediaType } from "./smart-query";
 
 /**
@@ -295,31 +306,79 @@ async function detail(
  * instead, so the next visit has their artwork and the results find the rows.
  */
 export async function vibeArtwork(audience: Audience, kind: KindId): Promise<Record<string, string | null>> {
-  const empty = Object.fromEntries(audience.vibes.map((v) => [v.value, null])) as Record<string, string | null>;
-  if (!tmdbConfigured()) return empty;
   const medium: MediaType = kind === "tv" ? "tv" : "movie";
   const time = openTime(kind);
+  return artworkFor(audience.vibes.map((vibe) => ({ value: vibe.value, medium, audience, vibe, time })));
+}
+
+/** One tile's artwork: the answer it stands for, and the quiz query whose first page it is read from. */
+type ArtAsk = { value: string; medium: MediaType; audience: Audience; vibe: Vibe; time: TimeChoice };
+
+/**
+ * The same, for the questions that are not about the mood, each tile read
+ * under a query that looks like its answer:
+ *
+ * - who: every audience under its own first mood, so Family shows a family
+ *   film and Partner a romance; films, the medium with the most posters cached;
+ * - kind: the chosen audience's first mood as a film, as a show, and its
+ *   second mood for Surprise me, so the third tile is not the first again;
+ * - time: the chosen mood under each length, so the short answer shows a
+ *   short film and the long one an epic.
+ *
+ * Every answer gets an entry, with or without a poster; null for the mood,
+ * which `vibeArtwork` answers, or for answers the address has not reached.
+ */
+export async function answerArtwork(question: Exclude<QuestionId, "vibe">, read: Read): Promise<Record<string, string | null>> {
+  if (question === "who") {
+    return artworkFor(AUDIENCES.map((audience) => ({ value: audience.value, medium: "movie", audience, vibe: audience.vibes[0], time: openTime("movie") })));
+  }
+  const audience = read.audience;
+  if (!audience) return {};
+  if (question === "kind") {
+    return artworkFor(
+      KINDS.map((k) => {
+        const medium: MediaType = k.value === "tv" ? "tv" : "movie";
+        const vibe = audience.vibes[k.value === "both" ? 1 : 0] ?? audience.vibes[0];
+        return { value: k.value, medium, audience, vibe, time: openTime(k.value) };
+      }),
+    );
+  }
+  const kind = read.kind?.value;
+  const vibe = read.vibe;
+  if (!kind || !vibe) return {};
+  const medium: MediaType = kind === "tv" ? "tv" : "movie";
+  return artworkFor(timesFor(kind).map((time) => ({ value: time.value, medium, audience, vibe, time })));
+}
+
+/**
+ * A poster per answer from the cache only, no two the same; misses are asked
+ * for behind the page, so the next visit has them.
+ */
+async function artworkFor(answers: ArtAsk[]): Promise<Record<string, string | null>> {
+  const empty = Object.fromEntries(answers.map((a) => [a.value, null])) as Record<string, string | null>;
+  if (!tmdbConfigured()) return empty;
   // The region only reaches a query narrowed to services, which this is not.
   const region = regionFor(null);
   const day = today();
-  const asks = audience.vibes.map((vibe) =>
-    quizParams({ medium, pool: "popular", audience, vibe, time, loose: false, providers: [], region, today: day }),
-  );
+  const asks = answers.map(({ medium, audience, vibe, time }) => ({
+    medium,
+    params: quizParams({ medium, pool: "popular", audience, vibe, time, loose: false, providers: [], region, today: day }),
+  }));
   const pages = await Promise.all(
-    asks.map((params) => tmdbPeek<{ results?: { poster_path?: string | null }[] }>(`/discover/${medium}`, params)),
+    asks.map(({ medium, params }) => tmdbPeek<{ results?: { poster_path?: string | null }[] }>(`/discover/${medium}`, params)),
   );
 
   const missing = asks.filter((_, i) => pages[i] === null);
   // Deliberately not awaited, and bounded like any other fan-out; the client
   // shares a request already in flight, so two visitors ask once.
-  if (missing.length) void mapLimit(missing, FAN_OUT, (params) => discover(medium, params).catch(() => null));
+  if (missing.length) void mapLimit(missing, FAN_OUT, ({ medium, params }) => discover(medium, params).catch(() => null));
 
   const used = new Set<string>();
   const out = { ...empty };
-  audience.vibes.forEach((vibe, i) => {
+  answers.forEach((answer, i) => {
     const poster = (pages[i]?.results ?? []).map((r) => r.poster_path).find((p): p is string => Boolean(p) && !used.has(p!));
     if (poster) used.add(poster);
-    out[vibe.value] = poster ?? null;
+    out[answer.value] = poster ?? null;
   });
   return out;
 }

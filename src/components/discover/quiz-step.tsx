@@ -75,8 +75,8 @@ export function QuizStep({
   backLabel,
 }: {
   options: Option[];
-  /** `art`: the mood tiles. `grid`: four plain answers. `row`: three. */
-  layout: "art" | "grid" | "row";
+  /** `grid`: four answers, two a row on a phone. `row`: three, one a row on a phone. */
+  layout: "grid" | "row";
   /** The answer this question had, when coming back to it. */
   initial?: string;
   back: string;
@@ -100,13 +100,9 @@ export function QuizStep({
   return (
     <>
       <div role="radiogroup" aria-label="Answers" className={grid}>
-        {options.map((o) =>
-          layout === "art" ? (
-            <ArtTile key={o.value} option={o} on={o.value === chosen} pop={pressed} onChoose={() => choose(o.value)} />
-          ) : (
-            <PlainTile key={o.value} option={o} on={o.value === chosen} pop={pressed} tall={layout === "grid"} onChoose={() => choose(o.value)} />
-          ),
-        )}
+        {options.map((o) => (
+          <ArtTile key={o.value} option={o} on={o.value === chosen} pop={pressed} onChoose={() => choose(o.value)} />
+        ))}
       </div>
       <div className="flex items-center justify-between pt-1">
         <Link
@@ -149,9 +145,10 @@ function ChosenTick({ pop }: { pop: boolean }) {
 }
 
 /**
- * A mood: its artwork cropped to the faces under a scrim, the name and a hint
- * over it. Without artwork it is the placeholder tile, the surface with the
- * words in ink, so a mood the cache has no poster for is still a tile to choose.
+ * An answer: artwork that looks like it, cropped to the faces under a scrim,
+ * the name and a hint over it. Without artwork it is the placeholder tile, the
+ * mark on the surface with the words in ink, so an answer the cache has no
+ * poster for is still a tile to choose.
  */
 function ArtTile({ option, on, pop, onChoose }: { option: Option; on: boolean; pop: boolean; onChoose: () => void }) {
   const art = Boolean(option.poster);
@@ -185,19 +182,3 @@ function ArtTile({ option, on, pop, onChoose }: { option: Option; on: boolean; p
   );
 }
 
-/** An answer with no artwork: a panel with the answer and its hint. */
-function PlainTile({ option, on, pop, tall, onChoose }: { option: Option; on: boolean; pop: boolean; tall: boolean; onChoose: () => void }) {
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={on}
-      onClick={onChoose}
-      className={`${PRESS} relative flex flex-col justify-end gap-1 rounded-[14px] border-0 bg-surface px-4 py-3.5 pr-10 text-left text-ink ${tall ? "min-h-[120px] lg:min-h-[140px]" : "min-h-[76px]"} ${on ? ON_RING : "shadow-elevation"}`}
-    >
-      <span className="font-display text-base font-bold leading-[1.1] tracking-[-0.02em] lg:text-lg">{option.label}</span>
-      {option.hint && <span className="text-xs text-ink-2">{option.hint}</span>}
-      {on && <ChosenTick pop={pop} />}
-    </button>
-  );
-}

@@ -19,7 +19,7 @@ import {
 } from "@/lib/discover";
 import { DEFAULT_FILTER_STATE, filterQuery, readFilterQuery, toSmartFilters } from "@/lib/discover-filters";
 import { recordPlay } from "@/lib/plays";
-import { findPicks, vibeArtwork } from "@/lib/what-to-watch";
+import { answerArtwork, findPicks, vibeArtwork } from "@/lib/what-to-watch";
 import {
   choose,
   collect,
@@ -445,9 +445,45 @@ describe("the mood tiles", () => {
     await vi.waitFor(async () => {
       const again = await vibeArtwork(partner, "movie");
       expect(Object.values(again).every(Boolean)).toBe(true);
-    });
+      // Longer than the default second: with every test file running at once, the writes behind the page can take it.
+    }, { timeout: 5_000 });
     // Each mood asked once: later visits read the rows the first one wrote.
     expect(stub.count("/discover/movie")).toBe(partner.vibes.length);
+  });
+});
+
+describe("the other questions' tiles", () => {
+  // These ask for artwork behind the page, for audiences other tests use too:
+  // each test waits for its own asks to finish, so none lands in a later test's stub.
+  const settle = async () => {
+    let seen = -1;
+    while (seen !== stub!.calls.length) {
+      seen = stub!.calls.length;
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+  };
+
+  it("have a tile per answer at once, artwork or not, without waiting on TMDB", async () => {
+    stub = stubTmdb({ "/discover/movie": () => new Promise((resolve) => setTimeout(() => resolve(new Error("slow")), 400)) });
+    const answer = await Promise.race([
+      answerArtwork("who", readAnswers({})),
+      new Promise<"waited">((resolve) => setTimeout(() => resolve("waited"), 300)),
+    ]);
+    expect(answer).not.toBe("waited");
+    expect(Object.keys(answer as object)).toEqual(["solo", "partner", "family", "friends"]);
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    await settle();
+  });
+
+  it("read the film-or-show tiles under the chosen audience, and the length tiles under the chosen mood", async () => {
+    stub = stubTmdb({});
+    expect(Object.keys(await answerArtwork("kind", readAnswers({ who: "family" })))).toEqual(["movie", "tv", "both"]);
+    const family = findAudience("family")!;
+    const time = await answerArtwork("time", readAnswers({ who: "family", kind: "movie", vibe: family.vibes[0].value }));
+    expect(Object.keys(time)).toEqual(["short", "standard", "long"]);
+    // Without the answers before it, a question has nothing to read its tiles under.
+    expect(await answerArtwork("time", readAnswers({ who: "family" }))).toEqual({});
+    await settle();
   });
 });
 
