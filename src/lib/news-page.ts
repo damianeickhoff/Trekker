@@ -243,11 +243,13 @@ export type TrailerCard = {
   title: string;
   /** "Series · 2026", "Film · 2026", or a headline's source. */
   line: string;
-  /** Where the card goes: the trailer on YouTube, as a title page opens it, or the article. */
+  /** Where the card goes: the trailer on YouTube, or the article. */
   href: string;
   backdrop: string | null;
   poster: string | null;
   imageUrl: string | null;
+  /** The trailer's YouTube key, which plays it here (`TrailerButton`); null for a headline, which opens its article. */
+  video: string | null;
   /** A headline's site, written small on the surface when there is no picture. */
   source: string | null;
 };
@@ -275,6 +277,7 @@ export function trailersFrom(yours: NewsRow[], press: PressRow[], art: Map<strin
       backdrop: a?.backdrop ?? null,
       poster: a?.poster ?? row.image,
       imageUrl: null,
+      video,
       source: null,
     });
   }
@@ -290,6 +293,7 @@ export function trailersFrom(yours: NewsRow[], press: PressRow[], art: Map<strin
       backdrop: p.imageUrl ? null : (a?.backdrop ?? null),
       poster: p.imageUrl ? null : (a?.poster ?? p.match?.poster ?? null),
       imageUrl: p.imageUrl,
+      video: null,
       source: p.source,
     });
   }

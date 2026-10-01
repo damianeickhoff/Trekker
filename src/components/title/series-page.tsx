@@ -25,6 +25,7 @@ import { Back, BackButton } from "../back-button";
 import { TickFlash, TickScope } from "../home/tick-flash";
 import { WhenMenuProvider } from "../home/when-menu";
 import { Icon } from "../icon";
+import { TrailerButton } from "../trailer";
 import { PinnedTopRow } from "../page";
 import { PlexChip, QuietChip, RequestedChip, StateChip } from "../ui";
 import { AsideBones, EpisodeListBones, MoreLikeBones, PanelBones, PeopleRailBones } from "./bones";
@@ -182,9 +183,9 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
             right={
               <>
                 {trailer && (
-                  <a href={`https://www.youtube.com/watch?v=${trailer}`} target="_blank" rel="noreferrer" aria-label="Trailer" className={GLASS_ICON_SM}>
+                  <TrailerButton videoKey={trailer} title={details.name} label="Trailer" className={GLASS_ICON_SM}>
                     <Icon name="film" size={20} />
-                  </a>
+                  </TrailerButton>
                 )}
                 <TitleMoreMenu title={title} stop={stop} recommend className={GLASS_ICON_SM} />
               </>
@@ -245,10 +246,10 @@ export async function SeriesPage({ id, season: asked }: { id: number; season: nu
                 <span className={DISABLED_WHITE}>{idleText}</span>
               )}
               {trailer && (
-                <a href={`https://www.youtube.com/watch?v=${trailer}`} target="_blank" rel="noreferrer" className={GLASS_BUTTON}>
+                <TrailerButton videoKey={trailer} title={details.name} className={GLASS_BUTTON}>
                   <Icon name="film" size={18} />
                   Trailer
-                </a>
+                </TrailerButton>
               )}
               {/* The icon buttons wrap as one, so More is never left on a line of its own. */}
               <span className="flex shrink-0 items-center gap-2">

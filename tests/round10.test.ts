@@ -221,7 +221,7 @@ describe("chips", () => {
     const art = new Map([["tv:100", { backdrop: "/bd.jpg", poster: "/p.jpg", year: "2026" }]]);
     const cards = trailersFrom([trailer, old, renewal], [pTrailer, pRenewed], art, NOW);
     expect(cards.map((c) => c.id)).toEqual([trailer.id, pTrailer.id]);
-    expect(cards[0]).toMatchObject({ href: "https://www.youtube.com/watch?v=abcdefghijk", line: "Series · 2026", backdrop: "/bd.jpg" });
+    expect(cards[0]).toMatchObject({ href: "https://www.youtube.com/watch?v=abcdefghijk", video: "abcdefghijk", line: "Series · 2026", backdrop: "/bd.jpg" });
     expect(cards[1].href).toBe(pTrailer.link);
   });
 });

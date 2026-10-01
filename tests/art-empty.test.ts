@@ -71,3 +71,10 @@ describe("a TMDB picture that fails to load", () => {
     fail({ tagName: "SCRIPT", src: "https://image.tmdb.org/t/p/x.jpg" });
   });
 });
+
+describe("a trailer played here", () => {
+  it("embeds YouTube's privacy-enhanced player, playing at once and inline", async () => {
+    const { trailerEmbed } = await import("@/components/trailer");
+    expect(trailerEmbed("abc_DEF-123")).toBe("https://www.youtube-nocookie.com/embed/abc_DEF-123?autoplay=1&playsinline=1&rel=0");
+  });
+});
