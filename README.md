@@ -93,6 +93,7 @@ Trekker tells you what it cost you.
   </tr>
 </table>
 
+- **Trailers** play right on the page, no trip to YouTube.
 - **Popcorn ratings**, one to five buckets, for titles and single episodes.
 - **How it felt**: tap a feeling (Loved it, Tense, Made me laugh…) and see
   what everyone else picked.
