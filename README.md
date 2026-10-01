@@ -32,6 +32,22 @@ Overseerr and Trakt if you have them.
 The catalogue comes from [TMDB](https://www.themoviedb.org/). Everything else,
 your history, lists, ratings and friends, stays in your database.
 
+### At a glance
+
+- **[Up next](#up-next-without-thinking-about-it)**: the next episode of every show, one tap to mark it watched
+- **[Calendar](#a-calendar-of-whats-airing)**: what airs this week, what's coming, and your backlog
+- **[Title pages](#title-pages-worth-opening)**: series, films, episodes and people, with popcorn ratings, comments and your viewings
+- **[Discover and What to watch](#discover-and-a-hand-picking-tonights-watch)**: the week's top titles, rails and filters, and four questions to pick tonight's watch
+- **[Lists](#lists-including-ones-that-keep-themselves)**: a watchlist, favourites, your own lists and smart lists that rebuild every night
+- **[Your numbers](#your-numbers)**: time watched, streaks, hours per year, and a year in review
+- **[Badges and challenges](#badges-levels-and-monthly-challenges)**: XP, levels, 62 badges and three challenges a month
+- **[News](#news-about-what-you-follow)**: renewals, casting, dates and trailers for what you follow
+- **[Friends](#friends)**: shared profiles, recommendations, and who in the house has seen what
+- **[Plex, Overseerr and Trakt](#plex-overseerr-and-trakt)**: sign in with Plex, automatic logging, requests and Trakt import
+- **[On your phone](#made-for-the-phone-too)**: an installable app with push notifications
+- **[And more](#and-a-few-more)**: light and dark themes, backgrounds, a screensaver, search
+- **[Running it](#running-it)**: Docker Compose, Unraid or from source
+
 ---
 
 ## What it does
