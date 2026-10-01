@@ -205,7 +205,8 @@ Trekker is a PWA: add it to your home screen and it opens like an app, with a
 floating tab bar, artwork running under the notch, and a cached shell that
 paints straight away (about 50 ms on a warm launch). Push notifications cover
 what airs today, friend requests and recommendations, new monthly challenges,
-requests arriving on Plex, and news.
+requests arriving on Plex, and news; they need a little setup, see
+[Push notifications](#push-notifications).
 
 <p align="center">
   <img src="docs/screenshots/phone-film.jpg" width="200" alt="A film page on a phone" />
@@ -282,6 +283,42 @@ each one.
 
 Plex, Overseerr and Trakt accounts are linked in **Settings › Connections**,
 not through the environment.
+
+### Push notifications
+
+Push is off until three things are in place.
+
+1. **Keys.** Generate a pair once and give them to the container as
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, with a contact
+   address in `VAPID_SUBJECT` (`mailto:you@example.com`). Keep them: new keys
+   make every phone subscribe again.
+
+   ```sh
+   npx web-push generate-vapid-keys
+   ```
+
+2. **HTTPS.** Browsers only allow push on a secure address, so Trekker has to
+   be reached through your reverse proxy, not `http://192.168.x.x:3000`.
+3. **Turn it on per device** in **Settings › Notifications**. On an iPhone,
+   add Trekker to the home screen first (Safari, Share, Add to Home Screen) and
+   turn it on from there: iOS (16.4 or later) only lets installed web apps
+   receive push.
+
+Some notifications go out the moment something happens: a friend request, a
+recommendation, and a title you requested arriving on Plex (that one needs
+Overseerr's webhook pointed at Trekker). The others go out once a day: what
+airs today, news about what you follow, and the new challenges on the 1st.
+Trekker doesn't schedule that daily round itself, because its own nightly jobs
+run at 04:00, which is no time to buzz a phone. Instead, call it from outside at
+an hour you like, with `CRON_SECRET` set:
+
+```sh
+curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/notifications/run
+```
+
+A daily cron entry at 17:00 does it. On Unraid, `unraid/trekker-daily.sh` in
+the User Scripts plugin does exactly this, see
+[the Unraid notes](unraid/README.md#5-daily-jobs-optional).
 
 ### From source
 

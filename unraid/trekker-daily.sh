@@ -8,9 +8,11 @@
 #   /api/notifications/run   the "what is on tonight" push, one per user per day
 #   /api/lists/refresh       rebuilds smart lists that have aged out
 #
-# Neither is load-bearing. Push simply does not fire without the first; smart
-# lists rebuild themselves on first view without the second, they are just slow
-# that once. So a failure here is a degraded day, not an outage.
+# Neither is load-bearing. The daily push does not fire without the first
+# (pushes for friend requests, recommendations and arrivals on Plex go out as
+# they happen and do not need it); smart lists rebuild themselves on first view
+# without the second, they are just slow that once. So a failure here is a
+# degraded day, not an outage.
 #
 # Install: User Scripts -> Add New Script -> name it "trekker-daily", paste this
 # in, set the schedule to Custom with `0 17 * * *` (5pm — early enough that

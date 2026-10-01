@@ -221,8 +221,11 @@ the **User Scripts** plugin from Community Applications, add a script, paste the
 file in, set `CRON_SECRET` at the top to match the container's, and give it a
 custom schedule of `0 17 * * *`.
 
-Skipping this costs you: push notifications never fire, and smart lists rebuild
-lazily on first view (correct, just slow that once).
+Skipping this costs you the daily push (what airs today, news about what you
+follow, and the new challenges on the 1st), and smart lists rebuild lazily on
+first view (correct, just slow that once). Pushes sent the moment something
+happens still arrive without it: friend requests, recommendations, and requests
+landing on Plex.
 
 ---
 
